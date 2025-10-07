@@ -4,14 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import Script from 'next/script';
 import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Plus, Check } from 'lucide-react';
 import { getMovieDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
 import { formatVoteAverage, formatRuntime, formatDate } from '@/lib/utils';
 import MediaCard from '@/components/catalog/MediaCard';
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory, addToContinueWatching } from '@/lib/storage';
-import VideoPlayer from '@/components/VideoPlayer';
+import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
 
 export default function MovieDetailPage() {
     const params = useParams();
@@ -21,10 +19,7 @@ export default function MovieDetailPage() {
     const [movie, setMovie] = useState<MediaDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showPlayer, setShowPlayer] = useState(false);
     const [inWatchlist, setInWatchlist] = useState(false);
-    const [magnetLink, setMagnetLink] = useState('');
-    const [webTorrentReady, setWebTorrentReady] = useState(false);
 
     useEffect(() => {
         if (movieId) {
@@ -89,31 +84,8 @@ export default function MovieDetailPage() {
         (video) => video.type === 'Trailer' && video.site === 'YouTube'
     );
 
-    const handlePlayClick = () => {
-        // Prompt for magnet link if not provided
-        const magnet = prompt(
-            'Enter magnet link for this movie:\n\n' +
-            'You can find magnet links from torrent sites.\n' +
-            'Example: magnet:?xt=urn:btih:...'
-        );
-
-        if (magnet && magnet.trim().startsWith('magnet:')) {
-            setMagnetLink(magnet.trim());
-            setShowPlayer(true);
-        } else if (magnet) {
-            alert('Invalid magnet link. Please enter a valid magnet link starting with "magnet:"');
-        }
-    };
-
     return (
         <>
-            {/* Load WebTorrent CDN */}
-            <Script
-                src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"
-                onLoad={() => setWebTorrentReady(true)}
-                strategy="afterInteractive"
-            />
-
             <div className="min-h-screen bg-gray-950">
                 {/* Back Button */}
                 <div className="fixed top-4 left-4 z-50">
@@ -211,22 +183,12 @@ export default function MovieDetailPage() {
 
                                     {/* Action Buttons */}
                                     <div className="flex flex-wrap gap-4">
-                                        <Button
-                                            onClick={() => setShowPlayer(true)}
-                                            variant="primary"
-                                            size="lg"
-                                            className="gap-2"
-                                        >
-                                            <Play className="w-5 h-5 fill-white" />
-                                            Play Now
-                                        </Button>
-
                                         {trailer && (
                                             <Button
                                                 onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
-                                                variant="outline"
+                                                variant="primary"
                                                 size="lg"
-                                                className="gap-2 text-white border-white hover:bg-white/10"
+                                                className="gap-2"
                                             >
                                                 <Play className="w-5 h-5" />
                                                 Watch Trailer
@@ -321,18 +283,6 @@ export default function MovieDetailPage() {
                         </section>
                     )}
                 </div>
-
-                {/* Video Player Modal */}
-                {showPlayer && movie && (
-                    <VideoPlayer
-                        title={movie.title}
-                        magnetLink={magnetLink}
-                        onClose={() => setShowPlayer(false)}
-                        onProgress={(progress) => {
-                            addToContinueWatching(movie, 'movie', progress);
-                        }}
-                    />
-                )}
             </div>
         </>
     );

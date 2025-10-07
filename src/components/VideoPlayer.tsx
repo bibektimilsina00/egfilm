@@ -12,7 +12,10 @@ import {
     SkipForward,
     Settings,
     X,
-    Loader2
+    Loader2,
+    Download,
+    Users,
+    AlertCircle
 } from 'lucide-react';
 
 interface VideoPlayerProps {
@@ -33,6 +36,8 @@ export default function VideoPlayer({
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
+    const clientRef = useRef<any>(null);
+    const torrentRef = useRef<any>(null);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -42,85 +47,178 @@ export default function VideoPlayer({
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showControls, setShowControls] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingMessage, setLoadingMessage] = useState('Initializing...');
     const [torrentProgress, setTorrentProgress] = useState(0);
     const [downloadSpeed, setDownloadSpeed] = useState(0);
+    const [uploadSpeed, setUploadSpeed] = useState(0);
     const [peers, setPeers] = useState(0);
     const [torrentError, setTorrentError] = useState('');
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showSettings, setShowSettings] = useState(false);
+    const [buffered, setBuffered] = useState(0);
 
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const progressUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
-    // WebTorrent setup
+    // Helper functions
+    const formatSpeed = (bytesPerSecond: number): string => {
+        if (bytesPerSecond === 0) return '0 B/s';
+        const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+        const i = Math.floor(Math.log(bytesPerSecond) / Math.log(1024));
+        return `${(bytesPerSecond / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+    };
+
+    const formatTime = (seconds: number): string => {
+        if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const formatBytes = (bytes: number): string => {
+        if (bytes === 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+    };
+
+    // WebTorrent setup - Proper implementation
     useEffect(() => {
-        if (!magnetLink) return;
+        if (!magnetLink) {
+            if (videoUrl) {
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        let isMounted = true;
 
         const loadTorrent = async () => {
             try {
                 setIsLoading(true);
                 setTorrentError('');
+                setLoadingMessage('Connecting to WebTorrent network...');
 
+                // Check if WebTorrent is loaded
                 // @ts-ignore - WebTorrent is loaded via CDN
                 if (typeof WebTorrent === 'undefined') {
                     setTorrentError('WebTorrent not loaded. Please refresh the page.');
+                    setIsLoading(false);
                     return;
                 }
 
+                // Create WebTorrent client
                 // @ts-ignore
                 const client = new WebTorrent();
+                clientRef.current = client;
 
-                client.add(magnetLink, (torrent: any) => {
-                    console.log('Torrent loaded:', torrent.name);
+                setLoadingMessage('Fetching torrent metadata...');
+
+                // Add torrent
+                client.add(magnetLink, {
+                    // Announce trackers for better peer discovery
+                    announce: [
+                        'wss://tracker.openwebtorrent.com',
+                        'wss://tracker.btorrent.xyz',
+                        'wss://tracker.fastcast.nz',
+                    ]
+                }, (torrent: any) => {
+                    if (!isMounted) return;
+
+                    torrentRef.current = torrent;
+                    console.log('✅ Torrent loaded:', torrent.name);
+                    console.log('📦 Files:', torrent.files.length);
+
+                    setLoadingMessage('Finding video file...');
 
                     // Find the largest video file
-                    const videoFile = torrent.files.find((file: any) => {
-                        const ext = file.name.split('.').pop()?.toLowerCase();
-                        return ['mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v'].includes(ext || '');
-                    });
+                    const videoFile = torrent.files
+                        .filter((file: any) => {
+                            const ext = file.name.split('.').pop()?.toLowerCase();
+                            return ['mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v', 'flv', 'wmv'].includes(ext || '');
+                        })
+                        .sort((a: any, b: any) => b.length - a.length)[0];
 
                     if (!videoFile) {
-                        setTorrentError('No video file found in torrent');
+                        setTorrentError('No video file found in torrent. Available files: ' +
+                            torrent.files.map((f: any) => f.name).join(', '));
                         setIsLoading(false);
                         return;
                     }
 
-                    // Render to video element
-                    videoFile.renderTo(videoRef.current!, {
-                        autoplay: false,
-                        controls: false,
-                    });
+                    console.log('🎬 Selected file:', videoFile.name, `(${(videoFile.length / 1024 / 1024).toFixed(2)} MB)`);
+                    setLoadingMessage(`Loading ${videoFile.name}...`);
 
-                    setIsLoading(false);
+                    // Stream to video element using appendTo
+                    if (videoRef.current) {
+                        videoFile.appendTo(videoRef.current, {
+                            autoplay: false,
+                            controls: false,
+                            maxBlobLength: 200 * 1000 * 1000 // 200 MB
+                        }, (err: Error) => {
+                            if (err) {
+                                console.error('Error appending video:', err);
+                                setTorrentError('Failed to load video: ' + err.message);
+                                setIsLoading(false);
+                                return;
+                            }
+
+                            console.log('✅ Video ready to play');
+                            setIsLoading(false);
+                        });
+                    }
 
                     // Update torrent stats
                     const updateStats = setInterval(() => {
+                        if (!isMounted || !torrent) return;
+
                         setTorrentProgress(Math.round(torrent.progress * 100));
-                        setDownloadSpeed(torrent.downloadSpeed);
-                        setPeers(torrent.numPeers);
+                        setDownloadSpeed(torrent.downloadSpeed || 0);
+                        setUploadSpeed(torrent.uploadSpeed || 0);
+                        setPeers(torrent.numPeers || 0);
+
+                        // Log progress for debugging
+                        if (torrent.progress < 1) {
+                            console.log(`📥 Progress: ${(torrent.progress * 100).toFixed(1)}% | 
+                                Speed: ${formatSpeed(torrent.downloadSpeed)} | 
+                                Peers: ${torrent.numPeers}`);
+                        }
                     }, 1000);
 
-                    torrent.on('done', () => {
-                        console.log('Torrent download complete');
-                        setTorrentProgress(100);
-                    });
-
-                    // Cleanup
-                    return () => {
-                        clearInterval(updateStats);
-                        client.destroy();
-                    };
+                    // Cleanup stats interval
+                    return () => clearInterval(updateStats);
                 });
 
-            } catch (error) {
-                console.error('Error loading torrent:', error);
-                setTorrentError('Failed to load torrent');
-                setIsLoading(false);
+                // Handle client errors
+                client.on('error', (err: Error) => {
+                    console.error('❌ WebTorrent error:', err);
+                    if (isMounted) {
+                        setTorrentError('Connection error: ' + err.message);
+                        setIsLoading(false);
+                    }
+                });
+
+            } catch (error: any) {
+                console.error('❌ Failed to load torrent:', error);
+                if (isMounted) {
+                    setTorrentError(error.message || 'Failed to load torrent');
+                    setIsLoading(false);
+                }
             }
         };
 
         loadTorrent();
-    }, [magnetLink]);
+
+        // Cleanup
+        return () => {
+            isMounted = false;
+            if (clientRef.current) {
+                console.log('🧹 Cleaning up WebTorrent client');
+                clientRef.current.destroy();
+                clientRef.current = null;
+            }
+        };
+    }, [magnetLink, videoUrl]);
 
     // Direct video URL setup
     useEffect(() => {
@@ -290,21 +388,6 @@ export default function VideoPlayer({
         videoRef.current.currentTime = percentage * duration;
     };
 
-    const formatTime = (seconds: number) => {
-        if (isNaN(seconds)) return '0:00';
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const formatSpeed = (bytes: number) => {
-        if (bytes === 0) return '0 B/s';
-        const k = 1024;
-        const sizes = ['B/s', 'KB/s', 'MB/s'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-    };
-
     const changePlaybackRate = (rate: number) => {
         if (!videoRef.current) return;
         setPlaybackRate(rate);
@@ -327,29 +410,77 @@ export default function VideoPlayer({
             />
 
             {/* Loading Overlay */}
+            {/* Loading Indicator - Improved */}
             {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <div className="text-center">
-                        <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
-                        <p className="text-white text-lg">Loading video...</p>
-                        {magnetLink && (
-                            <div className="mt-4 space-y-2">
-                                <div className="text-gray-300">
-                                    Progress: {torrentProgress}%
+                <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-10">
+                    <div className="text-center max-w-md p-8">
+                        <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-6" />
+                        <h3 className="text-2xl font-bold text-white mb-3">{title}</h3>
+                        <p className="text-blue-400 font-medium mb-4">{loadingMessage}</p>
+
+                        {magnetLink && torrentProgress > 0 && (
+                            <div className="space-y-3">
+                                <div className="text-gray-300 flex items-center justify-center gap-2">
+                                    <Download className="w-4 h-4" />
+                                    <span>Downloading: {torrentProgress}%</span>
                                 </div>
-                                <div className="w-64 h-2 bg-gray-700 rounded-full mx-auto overflow-hidden">
+                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-blue-500 transition-all"
+                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 ease-out"
                                         style={{ width: `${torrentProgress}%` }}
                                     />
                                 </div>
-                                {downloadSpeed > 0 && (
-                                    <div className="text-gray-400 text-sm">
-                                        {formatSpeed(downloadSpeed)} • {peers} peers
+                                <div className="flex items-center justify-center gap-4 text-gray-400 text-sm">
+                                    {downloadSpeed > 0 && (
+                                        <div className="flex items-center gap-1">
+                                            <Download className="w-3 h-3" />
+                                            <span>{formatSpeed(downloadSpeed)}</span>
+                                        </div>
+                                    )}
+                                    {peers > 0 && (
+                                        <div className="flex items-center gap-1">
+                                            <Users className="w-3 h-3" />
+                                            <span>{peers} {peers === 1 ? 'peer' : 'peers'}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {torrentRef.current && (
+                                    <div className="text-xs text-gray-500 mt-2">
+                                        {formatBytes(torrentRef.current.downloaded)} / {formatBytes(torrentRef.current.length)}
                                     </div>
                                 )}
                             </div>
                         )}
+
+                        <p className="text-gray-500 text-sm mt-6">Please wait while we load the video...</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Message - Improved */}
+            {torrentError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-20">
+                    <div className="text-center max-w-lg p-8 bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl border border-red-900/50">
+                        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="w-12 h-12 text-red-500" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-3">Unable to Load Video</h3>
+                        <p className="text-gray-300 mb-6 leading-relaxed">{torrentError}</p>
+                        <div className="space-y-2">
+                            <p className="text-sm text-gray-500">Possible solutions:</p>
+                            <ul className="text-xs text-gray-400 text-left space-y-1 max-w-sm mx-auto">
+                                <li>• Verify the magnet link is correct</li>
+                                <li>• Check if the torrent has seeders</li>
+                                <li>• Try a different torrent or magnet link</li>
+                                <li>• Refresh the page and try again</li>
+                            </ul>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="mt-6 px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-105"
+                        >
+                            Close Player
+                        </button>
                     </div>
                 </div>
             )}

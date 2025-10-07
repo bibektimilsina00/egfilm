@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Torrent Video Streamer",
-  description: "Stream video torrents directly in your browser using WebTorrent. Progressive P2P streaming for movies and videos.",
+  title: "StreamFlix - Movies & TV Shows",
+  description: "Browse and discover movies and TV shows. Watch trailers, manage your watchlist, and enjoy content with friends.",
 };
 
 export default function RootLayout({

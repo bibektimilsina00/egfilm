@@ -97,7 +97,7 @@ export default function Footer() {
                 {/* Bottom */}
                 <div className="mt-12 pt-8 border-t border-gray-800 text-center">
                     <p className="text-gray-500 text-sm">
-                        © {new Date().getFullYear()} StreamFlix. Built with Next.js, TMDb API, and WebTorrent.
+                        © {new Date().getFullYear()} StreamFlix. Built with Next.js and TMDb API.
                     </p>
                 </div>
             </div>
