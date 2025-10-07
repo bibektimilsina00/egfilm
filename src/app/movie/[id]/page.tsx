@@ -2,24 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Plus, Check } from 'lucide-react';
+import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Plus, Check, Users } from 'lucide-react';
 import { getMovieDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
 import { formatVoteAverage, formatRuntime, formatDate } from '@/lib/utils';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
+import EmbeddedPlayer from '@/components/EmbeddedPlayer';
+import { getMovieEmbedUrl } from '@/lib/videoSources';
+import WatchTogetherModal from '@/components/WatchTogetherModal';
 
 export default function MovieDetailPage() {
     const params = useParams();
     const router = useRouter();
     const movieId = params?.id as string;
+    const { data: session, status } = useSession();
 
     const [movie, setMovie] = useState<MediaDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showPlayer, setShowPlayer] = useState(false);
     const [inWatchlist, setInWatchlist] = useState(false);
+    const [showWatchTogether, setShowWatchTogether] = useState(false);
 
     useEffect(() => {
         if (movieId) {
@@ -183,12 +190,38 @@ export default function MovieDetailPage() {
 
                                     {/* Action Buttons */}
                                     <div className="flex flex-wrap gap-4">
+                                        <Button
+                                            onClick={() => setShowPlayer(true)}
+                                            variant="primary"
+                                            size="lg"
+                                            className="gap-2"
+                                        >
+                                            <Play className="w-5 h-5 fill-white" />
+                                            Play Now
+                                        </Button>
+
+                                        <Button
+                                            onClick={() => {
+                                                if (status === 'unauthenticated') {
+                                                    router.push('/login');
+                                                } else {
+                                                    setShowWatchTogether(true);
+                                                }
+                                            }}
+                                            variant="primary"
+                                            size="lg"
+                                            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
+                                        >
+                                            <Users className="w-5 h-5" />
+                                            Watch Together
+                                        </Button>
+
                                         {trailer && (
                                             <Button
                                                 onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
-                                                variant="primary"
+                                                variant="outline"
                                                 size="lg"
-                                                className="gap-2"
+                                                className="gap-2 text-white border-white hover:bg-white/10"
                                             >
                                                 <Play className="w-5 h-5" />
                                                 Watch Trailer
@@ -283,6 +316,29 @@ export default function MovieDetailPage() {
                         </section>
                     )}
                 </div>
+
+                {/* Embedded Video Player */}
+                {showPlayer && movie && (
+                    <EmbeddedPlayer
+                        title={movie.title}
+                        embedUrl={getMovieEmbedUrl(Number(movieId))}
+                        onClose={() => setShowPlayer(false)}
+                        type="movie"
+                        tmdbId={Number(movieId)}
+                    />
+                )}
+
+                {/* Watch Together Modal */}
+                {showWatchTogether && movie && (
+                    <WatchTogetherModal
+                        isOpen={showWatchTogether}
+                        onClose={() => setShowWatchTogether(false)}
+                        movieTitle={movie.title}
+                        movieId={Number(movieId)}
+                        embedUrl={getMovieEmbedUrl(Number(movieId))}
+                        type="movie"
+                    />
+                )}
             </div>
         </>
     );

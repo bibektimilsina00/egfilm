@@ -2,25 +2,33 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Plus, Check } from 'lucide-react';
+import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Plus, Check, Users } from 'lucide-react';
 import { getTVDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
 import { formatVoteAverage, formatDate } from '@/lib/utils';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
+import EmbeddedPlayer from '@/components/EmbeddedPlayer';
+import { getTVEmbedUrl } from '@/lib/videoSources';
+import WatchTogetherModal from '@/components/WatchTogetherModal';
 
 export default function TVDetailPage() {
     const params = useParams();
     const router = useRouter();
     const tvId = params?.id as string;
+    const { data: session, status } = useSession();
 
     const [tv, setTv] = useState<MediaDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showPlayer, setShowPlayer] = useState(false);
     const [inWatchlist, setInWatchlist] = useState(false);
+    const [selectedSeason, setSelectedSeason] = useState(1);
+    const [selectedEpisode, setSelectedEpisode] = useState(1);
+    const [showWatchTogether, setShowWatchTogether] = useState(false);
 
     useEffect(() => {
         if (tvId) {
@@ -172,6 +180,39 @@ export default function TVDetailPage() {
                                     {tv.overview}
                                 </p>
 
+                                {/* Season and Episode Selectors */}
+                                <div className="flex flex-wrap gap-4 mb-6">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm text-gray-400">Season</label>
+                                        <select
+                                            value={selectedSeason}
+                                            onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                                            className="px-4 py-2 bg-gray-800/80 backdrop-blur-sm text-white rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {Array.from({ length: (tv as any).number_of_seasons || 1 }, (_, i) => i + 1).map((season) => (
+                                                <option key={season} value={season}>
+                                                    Season {season}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm text-gray-400">Episode</label>
+                                        <select
+                                            value={selectedEpisode}
+                                            onChange={(e) => setSelectedEpisode(Number(e.target.value))}
+                                            className="px-4 py-2 bg-gray-800/80 backdrop-blur-sm text-white rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {Array.from({ length: 20 }, (_, i) => i + 1).map((episode) => (
+                                                <option key={episode} value={episode}>
+                                                    Episode {episode}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div className="flex flex-wrap gap-4">
                                     <Button
                                         onClick={() => setShowPlayer(true)}
@@ -181,6 +222,22 @@ export default function TVDetailPage() {
                                     >
                                         <Play className="w-5 h-5 fill-white" />
                                         Watch Now
+                                    </Button>
+
+                                    <Button
+                                        onClick={() => {
+                                            if (status === 'unauthenticated') {
+                                                router.push('/login');
+                                            } else {
+                                                setShowWatchTogether(true);
+                                            }
+                                        }}
+                                        variant="primary"
+                                        size="lg"
+                                        className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
+                                    >
+                                        <Users className="w-5 h-5" />
+                                        Watch Together
                                     </Button>
 
                                     {trailer && (
@@ -281,24 +338,29 @@ export default function TVDetailPage() {
                 )}
             </div>
 
-            {showPlayer && (
-                <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
-                    <div className="relative w-full max-w-6xl">
-                        <Button
-                            onClick={() => setShowPlayer(false)}
-                            variant="outline"
-                            size="icon"
-                            className="absolute -top-12 right-0 text-white border-white hover:bg-white/10"
-                        >
-                            <span className="text-2xl">×</span>
-                        </Button>
-                        <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                            <div className="w-full h-full flex items-center justify-center text-white">
-                                <p>Video Player Coming Soon</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {/* Embedded Video Player */}
+            {showPlayer && tv && (
+                <EmbeddedPlayer
+                    title={`${(tv as any).name} - S${selectedSeason}E${selectedEpisode}`}
+                    embedUrl={getTVEmbedUrl(Number(tvId), selectedSeason, selectedEpisode)}
+                    onClose={() => setShowPlayer(false)}
+                    type="tv"
+                    tmdbId={Number(tvId)}
+                    season={selectedSeason}
+                    episode={selectedEpisode}
+                />
+            )}
+
+            {/* Watch Together Modal */}
+            {showWatchTogether && tv && (
+                <WatchTogetherModal
+                    isOpen={showWatchTogether}
+                    onClose={() => setShowWatchTogether(false)}
+                    movieTitle={`${(tv as any).name} - S${selectedSeason}E${selectedEpisode}`}
+                    movieId={Number(tvId)}
+                    embedUrl={getTVEmbedUrl(Number(tvId), selectedSeason, selectedEpisode)}
+                    type="tv"
+                />
             )}
         </div>
     );

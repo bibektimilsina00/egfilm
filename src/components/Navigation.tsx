@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Film, Search, Menu, X, Home, Tv, Play, Heart, Users, LogIn, LogOut, User, ChevronDown } from 'lucide-react';
+import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown } from 'lucide-react';
 
 export default function Navigation() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -44,7 +44,6 @@ export default function Navigation() {
         { href: '/movies', label: 'Movies', icon: Film },
         { href: '/tv', label: 'TV Shows', icon: Tv },
         { href: '/watchlist', label: 'Watchlist', icon: Heart },
-        { href: '/watch-party', label: 'Watch Together', icon: Users },
     ];
 
     return (

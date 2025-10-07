@@ -1,21 +1,10 @@
-# 🎬 StreamFlix - Ultimate Movie & TV Streaming Platform
-
-<div align="center">
-  
-  ![StreamFlix](https://img.shields.io/badge/StreamFlix-v2.0-blue?style=for-the-badge)
-  ![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black?style=for-the-badge&logo=next.js)
-  ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
-  ![Tailwind](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=for-the-badge&logo=tailwind-css)
-
-  **A beautiful, feature-rich streaming platform built with Next.js, TMDb API, and WebTorrent**
-
-</div>
-
----
-
-## ✨ Features
+# 🎬 StreamFlix -## ✨ Features
 
 ### 🎯 Core Features
+- **🎥 Embedded Video Player** - Stream movies and TV shows with multiple server options
+- **🔄 Multi-Server Support** - 5 different video sources for reliability (VidSrc, 2Embed, SuperEmbed, etc.)
+- **👥 Watch Together** - Watch with friends in real-time with video/voice calling and chat
+- **📺 Episode Selection** - Easy season and episode picker for TV shows
 - **🔍 Advanced Search** - Instant search with trending content fallback
 - **💝 Watchlist** - Save your favorite movies and TV shows
 - **📺 Continue Watching** - Pick up where you left off with progress tracking
@@ -31,6 +20,65 @@
 - **Top Rated** - Highest rated content of all time
 - **Genre Filtering** - Browse by your favorite genres
 - **Smart Categories** - Popular, Top Rated, and Trending tabs
+
+### 🎬 Video Player Features
+- **Server Switching** - Switch between video sources if one doesn't work
+- **Fullscreen Mode** - Immersive viewing experience
+- **HD Quality** - High-definition streaming from multiple providers
+- **TV Episode Selection** - Pick any season and episode
+- **Clean Interface** - Distraction-free player with intuitive controls
+
+### 👥 Watch Together Features
+- **Video Calling** - See your friends while watching with WebRTC
+- **Voice Chat** - Talk to friends during the movie
+- **Real-time Chat** - Text chat with participants
+- **Room Codes** - Easy 6-digit codes to join
+- **User Invites** - Search and invite specific users
+- **Participant List** - See everyone in the room
+- **Media Controls** - Toggle video/audio anytime
+- **Synchronized Playback** - Everyone watches at the same timeovie & TV Streaming Platform
+
+<div align="center">
+  
+  ![StreamFlix](https://img.shields.io/badge/StreamFlix-v2.0-blue?style=for-the-badge)
+  ![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black?style=for-the-badge&logo=next.js)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
+  ![Tailwind](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=for-the-badge&logo=tailwind-css)
+
+  **A beautiful, feature-rich streaming platform built with Next.js and TMDb API**
+
+</div>
+
+---
+
+## ✨ Features
+
+### 🎯 Core Features
+- **🎥 Embedded Video Player** - Stream movies and TV shows with multiple server options
+- **� Multi-Server Support** - 5 different video sources for reliability (VidSrc, 2Embed, SuperEmbed, etc.)
+- **📺 Episode Selection** - Easy season and episode picker for TV shows
+- **�🔍 Advanced Search** - Instant search with trending content fallback
+- **💝 Watchlist** - Save your favorite movies and TV shows
+- **📺 Continue Watching** - Pick up where you left off with progress tracking
+- **🎬 Movie Details** - Comprehensive information with cast, trailers, and similar content
+- **📺 TV Show Details** - Episode guides, seasons, and cast information
+- **🎨 Beautiful UI** - Dark theme with smooth animations and gradients
+- **📱 Fully Responsive** - Perfect experience on all devices
+
+### 🎪 Browse & Discover
+- **Trending Movies** - See what's hot this week
+- **Trending TV Shows** - Popular series trending now
+- **Popular Content** - Most viewed movies and shows
+- **Top Rated** - Highest rated content of all time
+- **Genre Filtering** - Browse by your favorite genres
+- **Smart Categories** - Popular, Top Rated, and Trending tabs
+
+### 🎬 Video Player Features
+- **Server Switching** - Switch between video sources if one doesn't work
+- **Fullscreen Mode** - Immersive viewing experience
+- **HD Quality** - High-definition streaming from multiple providers
+- **TV Episode Selection** - Pick any season and episode
+- **Clean Interface** - Distraction-free player with intuitive controls
 
 ## 🚀 Quick Start
 
@@ -96,7 +144,7 @@ All data is stored locally in your browser:
 - **TypeScript** - Type-safe development
 - **Tailwind CSS 4** - Utility-first styling
 - **TMDb API** - Movie and TV data
-- **WebTorrent** - P2P streaming
+- **Socket.IO** - Real-time synchronization for Watch Together
 - **localStorage** - Client-side persistence
 
 ## 📄 License
@@ -107,7 +155,7 @@ MIT License - Free to use for personal or commercial projects
 
 <div align="center">
   
-  **Built with ❤️ using Next.js, TMDb, and WebTorrent**
+  **Built with ❤️ using Next.js and TMDb API**
   
   ⭐ Star this repo if you find it useful!
 
