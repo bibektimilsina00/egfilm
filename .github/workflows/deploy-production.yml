@@ -1,0 +1,198 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main, production]
+    tags:
+      - "v*"
+  pull_request:
+    types: [closed]
+    branches: [main, production]
+
+jobs:
+  build-and-push:
+    if: |
+      (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)) &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production' || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    outputs:
+      app_version: ${{ steps.set-version.outputs.app_version }}
+      env: ${{ steps.set-version.outputs.env }}
+      image_tag: ${{ steps.set-version.outputs.image_tag }}
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Set version and environment
+        id: set-version
+        run: |
+          # Determine version based on trigger
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=$(echo ${{ github.ref }} | sed 's|refs/tags/||')
+            ENV="production"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            VERSION="latest"
+            ENV="production"
+          elif [[ "${{ github.ref }}" == "refs/heads/production" ]]; then
+            VERSION="latest"
+            ENV="production"
+          else
+            VERSION="dev"
+            ENV="staging"
+          fi
+
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "env=$ENV" >> $GITHUB_OUTPUT
+          echo "image_tag=ghcr.io/${{ github.repository }}:${VERSION}-${ENV}" >> $GITHUB_OUTPUT
+          echo "✅ Version: $VERSION, Environment: $ENV"
+
+      - name: 🔐 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: 📝 Generate .env file for build
+        run: |
+          cat <<EOF > .env.production
+          # Next.js Build Environment
+          NODE_ENV=production
+          NEXT_TELEMETRY_DISABLED=1
+          
+          # TMDb API (Public - used at build time and runtime)
+          NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+          NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+          
+          # NextAuth (Server-side only)
+          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+          EOF
+          
+          echo "✅ Environment file generated"
+
+      - name: 🏗️ Build Docker image
+        run: |
+          echo "🔨 Building StreamFlix Docker image..."
+          
+          # Normalize repo name (replace hyphens with underscores for GHCR)
+          REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg NODE_ENV=production \
+            --build-arg APP_VERSION="${{ steps.set-version.outputs.app_version }}" \
+            --build-arg GIT_BRANCH="${{ github.ref_name }}" \
+            --build-arg GIT_COMMIT="${{ github.sha }}" \
+            -t "ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}" \
+            -t "ghcr.io/${REPO_NORMALIZED}:deploy" \
+            .
+          
+          echo "✅ Docker image built successfully"
+
+      - name: 🚀 Push images to GHCR
+        run: |
+          REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          echo "📤 Pushing versioned image..."
+          docker push "ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}"
+          
+          echo "📤 Pushing deployment tag..."
+          docker push "ghcr.io/${REPO_NORMALIZED}:deploy"
+          
+          # For production, also push :latest tag
+          if [[ "${{ steps.set-version.outputs.env }}" == "production" ]]; then
+            echo "📤 Tagging and pushing :latest..."
+            docker tag "ghcr.io/${REPO_NORMALIZED}:deploy" "ghcr.io/${REPO_NORMALIZED}:latest"
+            docker push "ghcr.io/${REPO_NORMALIZED}:latest"
+          fi
+          
+          echo "✅ All images pushed to GHCR"
+
+      - name: 📊 Image summary
+        run: |
+          REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "### 🎉 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.set-version.outputs.env }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.set-version.outputs.app_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images pushed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${REPO_NORMALIZED}:deploy\`" >> $GITHUB_STEP_SUMMARY
+
+  deploy-to-server:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    
+    steps:
+      - name: 🔍 Debug information
+        run: |
+          echo "🔍 Deployment Configuration:"
+          echo "  Host: ${{ vars.SERVER_HOST }}"
+          echo "  User: ${{ vars.SERVER_USER }}"
+          echo "  Environment: ${{ needs.build-and-push.outputs.env }}"
+          echo "  Version: ${{ needs.build-and-push.outputs.app_version }}"
+
+      - name: 🚀 Deploy to Production Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            
+            # Normalize repository name and set image
+            REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export IMAGE_NAME="ghcr.io/${REPO_NORMALIZED}:deploy"
+            
+            # Login to GHCR
+            echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Create/update .env file
+            mkdir -p ~/streamflix
+            cat > ~/streamflix/.env << 'EOF'
+            NODE_ENV=production
+            NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+            NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            EOF
+            
+            # Run deployment script
+            cd ~/streamflix
+            bash deploy.sh
+
+      - name: 📊 Deployment summary
+        if: success()
+        run: |
+          echo "### 🎉 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Status:** Successfully deployed to production" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Environment:** ${{ needs.build-and-push.outputs.env }}" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Version:** ${{ needs.build-and-push.outputs.app_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **Server:** ${{ vars.SERVER_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "🐳 **Container:** streamflix-green" >> $GITHUB_STEP_SUMMARY
+          echo "🔌 **Port:** 8000" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Deployment failed
+        if: failure()
+        run: |
+          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the logs above for error details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Common issues:**" >> $GITHUB_STEP_SUMMARY
+          echo "- SSH connection failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Container health check failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Port already in use" >> $GITHUB_STEP_SUMMARY
+          echo "- Missing environment variables" >> $GITHUB_STEP_SUMMARY

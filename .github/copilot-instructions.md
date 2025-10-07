@@ -76,6 +76,35 @@ npm run dev          # Runs on port 8000 (not 3000!)
 # TMDb API key required: NEXT_PUBLIC_TMDB_API_KEY in .env.local
 ```
 
+### Docker Deployment (Production)
+```bash
+# Local testing with Docker Compose
+docker-compose up -d
+
+# Manual build and push to GHCR
+./build.sh --env production --version v1.0.0 --push
+
+# CI/CD: Push to main branch triggers automatic deployment
+git push origin main
+
+# View logs on server
+ssh user@server
+docker logs -f streamflix-green
+```
+
+**Deployment Script**: `deploy.sh` on server handles blue-green deployment
+- Must be placed at `~/streamflix/deploy.sh` on server
+- GitHub Actions SSHs to server and executes: `IMAGE_NAME=ghcr.io/.../stream-flix:deploy ./deploy.sh`
+- Script handles: pull image → blue container → health check → green deployment → cleanup
+
+### CI/CD Pipeline
+- **Trigger**: Push to `main` or `production` branch, or create version tag
+- **Build Job**: Builds Docker image, pushes to GHCR (ghcr.io)
+- **Deploy Job**: Blue-Green deployment to server via SSH
+- **Zero Downtime**: Tests new container on port 8001 before switching to 8000
+- **No codebase on server**: Everything runs from Docker image pulled from GHCR
+- **Setup Guide**: See `CICD_SETUP.md` for complete configuration
+
 ### Key Environment Variables
 ```env
 NEXT_PUBLIC_TMDB_API_KEY=your_key_here

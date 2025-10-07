@@ -1,0 +1,53 @@
+name: Build and Test
+
+on:
+  pull_request:
+    branches: [main, production]
+  push:
+    branches: [develop, staging]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Lint code
+        run: npm run lint || true
+
+      - name: 🏗️ Build application
+        env:
+          NEXT_PUBLIC_TMDB_API_KEY: ${{ secrets.TMDB_API_KEY || 'test_key' }}
+          NEXTAUTH_SECRET: test_secret_for_build
+          NEXTAUTH_URL: http://localhost:8000
+        run: npm run build
+
+      - name: 🐳 Test Docker build
+        run: |
+          docker build \
+            --build-arg NODE_ENV=production \
+            --build-arg APP_VERSION=test \
+            -t streamflix-test .
+          
+          echo "✅ Docker image builds successfully"
+
+      - name: 📊 Build summary
+        run: |
+          echo "### ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Docker image builds correctly and is ready for deployment." >> $GITHUB_STEP_SUMMARY
