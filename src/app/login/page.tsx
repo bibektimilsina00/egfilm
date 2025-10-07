@@ -31,7 +31,7 @@ export default function LoginPage() {
                 router.push('/');
                 router.refresh();
             }
-        } catch (error) {
+        } catch {
             setError('An error occurred. Please try again.');
         } finally {
             setLoading(false);
@@ -131,7 +131,7 @@ export default function LoginPage() {
 
                     <div className="mt-8 text-center">
                         <p className="text-gray-400">
-                            Don't have an account?{' '}
+                            Don&apos;t have an account?{' '}
                             <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors hover:underline">
                                 Create Account
                             </Link>

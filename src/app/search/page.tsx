@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Search as SearchIcon, Film, Sparkles, TrendingUp } from 'lucide-react';
+import { Search as SearchIcon, Sparkles, TrendingUp } from 'lucide-react';
 import { searchMulti, getTrending } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
 import MediaCard from '@/components/catalog/MediaCard';
@@ -11,7 +10,7 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-export default function SearchPage() {
+function SearchContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const query = searchParams?.get('q') || '';
@@ -204,5 +203,13 @@ export default function SearchPage() {
             {/* Footer */}
             <Footer />
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+            <SearchContent />
+        </Suspense>
     );
 }

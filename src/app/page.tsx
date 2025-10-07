@@ -74,7 +74,7 @@ export default function HomePage() {
         setTopRatedMovies((topRatedResp && topRatedResp.results) || []);
       } catch (err) {
         // Keep console error for debugging
-        // eslint-disable-next-line no-console
+         
         console.error('Error loading content:', err);
       } finally {
         if (!cancelled) setLoading(false);
