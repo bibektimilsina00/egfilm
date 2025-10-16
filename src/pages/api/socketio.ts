@@ -2,6 +2,12 @@ import { Server as NetServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { NextApiRequest } from 'next';
 import { NextApiResponseServerIO } from '@/types/socket';
+import {
+    addRoomParticipant,
+    removeRoomParticipant,
+    saveChatMessage,
+    updateRoomActivity,
+} from '@/lib/services/watchRoom.service';
 
 export const config = {
     api: {
@@ -27,6 +33,8 @@ interface WatchTogetherRoom {
     participants: Map<string, {
         id: string;
         username: string;
+        userId?: string;
+        participantDbId?: string; // Database ID for participant
         hasVideo: boolean;
         hasAudio: boolean;
     }>;
@@ -148,8 +156,8 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             });
 
             // Watch Together - Join room
-            socket.on('join-watch-together', ({ roomCode, username }) => {
-                console.log(`User ${username} joining room ${roomCode}`);
+            socket.on('join-watch-together', async ({ roomCode, username, userId }) => {
+                console.log(`User ${username} joining room ${roomCode} with socket ${socket.id}`);
 
                 let room = watchTogetherRooms.get(roomCode);
 
@@ -167,10 +175,45 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                     watchTogetherRooms.set(roomCode, room);
                 }
 
-                // Add participant
+                // Remove and disconnect any previous participant with the same userId
+                for (const [sid, participant] of room.participants.entries()) {
+                    if (participant.userId === userId) {
+                        console.log(`Disconnecting duplicate participant with userId ${userId} (socket ${sid})`);
+                        room.participants.delete(sid);
+                        const oldSocket = io.sockets.sockets.get(sid);
+                        if (oldSocket) {
+                            oldSocket.emit('force-disconnect', { reason: 'Another session joined with your account.' });
+                            oldSocket.disconnect(true);
+                        }
+                    }
+                }
+
+                // Check if this socket is already in the room
+                if (room.participants.has(socket.id)) {
+                    console.log(`Socket ${socket.id} already in room, skipping duplicate join`);
+                    socket.emit('room-joined', {
+                        roomCode,
+                        participants: Array.from(room.participants.values()),
+                        messages: room.messages
+                    });
+                    return;
+                }
+
+                // Save participant to database
+                let participantDbId: string | undefined;
+                try {
+                    const dbParticipant = await addRoomParticipant(roomCode, username, userId);
+                    participantDbId = dbParticipant.id;
+                } catch (error) {
+                    console.error('Error saving participant to database:', error);
+                }
+
+                // Add participant to in-memory room
                 room.participants.set(socket.id, {
                     id: socket.id,
                     username,
+                    userId,
+                    participantDbId,
                     hasVideo: false,
                     hasAudio: true
                 });
@@ -195,9 +238,20 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             });
 
             // Watch Together - Leave room
-            socket.on('leave-watch-together', ({ roomCode, username }) => {
+            socket.on('leave-watch-together', async ({ roomCode, username }) => {
                 const room = watchTogetherRooms.get(roomCode);
                 if (!room) return;
+
+                const participant = room.participants.get(socket.id);
+
+                // Mark participant as left in database
+                if (participant?.participantDbId) {
+                    try {
+                        await removeRoomParticipant(participant.participantDbId);
+                    } catch (error) {
+                        console.error('Error marking participant as left:', error);
+                    }
+                }
 
                 room.participants.delete(socket.id);
                 socket.leave(roomCode);
@@ -217,12 +271,37 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             });
 
             // Watch Together - Send chat message
-            socket.on('send-chat-message', ({ roomCode, message }) => {
+            socket.on('send-chat-message', async ({ roomCode, message }) => {
                 const room = watchTogetherRooms.get(roomCode);
                 if (!room) return;
 
                 room.messages.push(message);
+
+                // Send to everyone in the room INCLUDING the sender
+                // This ensures all clients (including sender) receive the message
                 io.to(roomCode).emit('chat-message', message);
+
+                // Save message to database
+                try {
+                    const participant = room.participants.get(socket.id);
+                    const roomData = await import('@/lib/services/watchRoom.service').then(m =>
+                        m.getWatchRoomByCode(roomCode)
+                    );
+
+                    if (roomData) {
+                        await saveChatMessage({
+                            roomId: roomData.id,
+                            userId: participant?.userId,
+                            username: message.username,
+                            message: message.message,
+                        });
+
+                        // Update room activity
+                        await updateRoomActivity(roomCode);
+                    }
+                } catch (error) {
+                    console.error('Error saving chat message:', error);
+                }
             });
 
             // Watch Together - Update media status
@@ -242,6 +321,15 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                         hasAudio
                     });
                 }
+            });
+
+            // Watch Together - Typing indicators
+            socket.on('typing', ({ roomCode, username }) => {
+                socket.to(roomCode).emit('user-typing', { username });
+            });
+
+            socket.on('stop-typing', ({ roomCode, username }) => {
+                socket.to(roomCode).emit('user-stopped-typing', { username });
             });
 
             // Watch Together - WebRTC Signaling
@@ -292,9 +380,19 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 });
 
                 // Remove from Watch Together rooms
-                watchTogetherRooms.forEach((room, roomCode) => {
+                watchTogetherRooms.forEach(async (room, roomCode) => {
                     if (room.participants.has(socket.id)) {
                         const participant = room.participants.get(socket.id);
+
+                        // Mark participant as left in database
+                        if (participant?.participantDbId) {
+                            try {
+                                await removeRoomParticipant(participant.participantDbId);
+                            } catch (error) {
+                                console.error('Error marking participant as left on disconnect:', error);
+                            }
+                        }
+
                         room.participants.delete(socket.id);
 
                         // Notify others

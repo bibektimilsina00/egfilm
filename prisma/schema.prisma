@@ -1,0 +1,142 @@
+// StreamFlix Database Schema
+// SQLite database for persistent user data and preferences
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  watchlist        WatchlistItem[]
+  continueWatching ContinueWatching[]
+  watchRooms       WatchRoom[]
+  sentNotifications     Notification[] @relation("SentNotifications")
+  receivedNotifications Notification[] @relation("ReceivedNotifications")
+}
+
+model WatchlistItem {
+  id         String   @id @default(cuid())
+  userId     String
+  mediaId    Int
+  mediaType  String   // 'movie' or 'tv'
+  title      String
+  posterPath String?
+  addedAt    DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, mediaId, mediaType])
+  @@index([userId])
+}
+
+model ContinueWatching {
+  id         String   @id @default(cuid())
+  userId     String
+  mediaId    Int
+  mediaType  String   // 'movie' or 'tv'
+  title      String
+  posterPath String?
+  progress   Int      // percentage 0-100
+  season     Int?     // for TV shows
+  episode     Int?     // for TV shows
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, mediaId, mediaType])
+  @@index([userId])
+}
+
+model WatchRoom {
+  id          String   @id @default(cuid())
+  roomCode    String   @unique
+  creatorId   String
+  mediaId     Int
+  mediaType   String   // 'movie' or 'tv'
+  mediaTitle  String
+  embedUrl    String?  // URL for embedded video player
+  posterPath  String?
+  season      Int?     // for TV shows
+  episode     Int?     // for TV shows
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  
+  // Relations
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  participants RoomParticipant[]
+  
+  @@index([roomCode])
+  @@index([creatorId])
+  @@index([isActive])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // 'watch_invite', 'room_join', 'system'
+  title       String
+  message     String
+  fromUserId  String
+  toUserId    String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  // Watch Together specific fields
+  roomCode    String?
+  mediaId     Int?
+  mediaType   String?  // 'movie' or 'tv'
+  mediaTitle  String?
+  embedUrl    String?
+  
+  // Relations
+  fromUser User @relation("SentNotifications", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("ReceivedNotifications", fields: [toUserId], references: [id], onDelete: Cascade)
+  
+  @@index([toUserId, isRead])
+  @@index([toUserId, createdAt])
+}
+
+model RoomParticipant {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String?  // null for guests
+  username  String
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+  
+  // Relations
+  room WatchRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  @@index([roomId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String?  // null for system messages
+  username  String
+  message   String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  room WatchRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  @@index([roomId])
+  @@index([createdAt])
+}

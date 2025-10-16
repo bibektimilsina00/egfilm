@@ -16,6 +16,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Set build-time environment variables
 # Next.js collects telemetry data by default - disable it
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -34,8 +37,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Create data directory for database
+RUN mkdir -p /app/data
+RUN chown nextjs:nodejs /app/data
+
 # Copy necessary files
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -53,5 +63,5 @@ EXPOSE 8000
 ENV PORT=8000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["node", "server.js"]
+# Start the application with database migration
+CMD sh -c "npx prisma migrate deploy && node server.js"

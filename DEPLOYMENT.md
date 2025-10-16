@@ -19,23 +19,50 @@ SERVER_USER           # SSH user (e.g., ubuntu, root, your-username)
 SSH_PORT              # SSH port (default: 22)
 ```
 
-### 2. Setup Server
+### 2. Setup Server (REQUIRED BEFORE FIRST DEPLOYMENT)
+
+**⚠️ Important:** You MUST run this setup on your server before the first deployment, otherwise GitHub Actions will fail with "docker: command not found".
 
 SSH into your server and run:
 
 ```bash
-# Download setup script
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/torrent-streamer/main/server-setup.sh
+# Method 1: Download and run setup script (Recommended)
+curl -O https://raw.githubusercontent.com/bibektimilsina00/stream-flix/main/server-setup.sh
 chmod +x server-setup.sh
 ./server-setup.sh
 
 # Download deploy script
 cd ~/streamflix
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/torrent-streamer/main/deploy.sh
+curl -O https://raw.githubusercontent.com/bibektimilsina00/stream-flix/main/deploy.sh
 chmod +x deploy.sh
 ```
 
-Or copy both `server-setup.sh` and `deploy.sh` to your server manually.
+**Method 2: Manual setup:**
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Logout and login again for docker group to take effect
+exit
+# SSH back in
+
+# Verify Docker is installed
+docker --version
+
+# Create directories and copy scripts
+mkdir -p ~/streamflix
+cd ~/streamflix
+# Copy deploy.sh to ~/streamflix/deploy.sh
+# Copy .env file with your production values
+```
+
+**After setup, test Docker:**
+```bash
+docker ps
+# Should show empty list or running containers, not "command not found"
+```
 
 ### 3. Deploy
 

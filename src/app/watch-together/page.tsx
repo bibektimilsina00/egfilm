@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Video, VideoOff, Mic, MicOff, Phone, MessageCircle, Users, Copy, Check, Send, X, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import io, { Socket } from 'socket.io-client';
@@ -27,6 +28,7 @@ let peerConnections: { [key: string]: RTCPeerConnection } = {};
 function WatchTogetherContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
     const roomCode = searchParams?.get('room');
     const username = searchParams?.get('username');
 
@@ -42,6 +44,8 @@ function WatchTogetherContent() {
     const [error, setError] = useState('');
     const [roomData, setRoomData] = useState<any>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [typingUsers, setTypingUsers] = useState<string[]>([]);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -49,14 +53,27 @@ function WatchTogetherContent() {
     const videoContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        // Clear localStorage and modal state if joining via notification link
+        if (roomCode && username) {
+            // Remove any localStorage backup for this room
+            localStorage.removeItem(`room_${roomCode}`);
+            // Optionally, clear any modal state here if you use a modal open state
+            console.log('🧹 Cleared localStorage for room', roomCode, 'on notification join');
+        }
+    }, [roomCode, username]);
+
+    useEffect(() => {
         if (!roomCode || !username) {
             setError('Missing room code or username');
             setIsConnecting(false);
             return;
         }
-
-        initializeRoom();
-
+        // Only call initializeRoom if not already connected
+        if (!socket || !socket.connected) {
+            initializeRoom();
+        } else {
+            console.log('Socket already connected, skipping initializeRoom');
+        }
         return () => {
             cleanup();
         };
@@ -68,10 +85,37 @@ function WatchTogetherContent() {
 
     const initializeRoom = async () => {
         try {
-            // Load room data from localStorage (will be replaced with API)
-            const savedRoom = localStorage.getItem(`room_${roomCode}`);
-            if (savedRoom) {
-                setRoomData(JSON.parse(savedRoom));
+            // Prevent duplicate initialization
+            if (socket && socket.connected) {
+                console.log('Socket already connected, skipping initialization');
+                return;
+            }
+
+            // Fetch room data from database
+            const roomResponse = await fetch(`/api/watch-room?roomCode=${roomCode}`);
+            if (roomResponse.ok) {
+                const data = await roomResponse.json();
+                setRoomData(data.room);
+            } else {
+                // Fallback to localStorage if room not in database
+                const savedRoom = localStorage.getItem(`room_${roomCode}`);
+                if (savedRoom) {
+                    setRoomData(JSON.parse(savedRoom));
+                }
+            }
+
+            // Get userId from database using session email
+            let userId = null;
+            if (session?.user?.email) {
+                try {
+                    const userResponse = await fetch('/api/auth/user');
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        userId = userData.id;
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch user ID:', error);
+                }
             }
 
             // Initialize socket connection
@@ -80,7 +124,7 @@ function WatchTogetherContent() {
 
             socket.on('connect', () => {
                 console.log('Connected to socket');
-                socket.emit('join-watch-together', { roomCode, username });
+                socket.emit('join-watch-together', { roomCode, username, userId });
             });
 
             socket.on('room-joined', (data) => {
@@ -108,6 +152,22 @@ function WatchTogetherContent() {
 
             socket.on('chat-message', (message: ChatMessage) => {
                 setChatMessages(prev => [...prev, message]);
+            });
+
+            // Typing indicator events
+            socket.on('user-typing', ({ username: typingUsername }) => {
+                if (typingUsername !== username) {
+                    setTypingUsers(prev => {
+                        if (!prev.includes(typingUsername)) {
+                            return [...prev, typingUsername];
+                        }
+                        return prev;
+                    });
+                }
+            });
+
+            socket.on('user-stopped-typing', ({ username: typingUsername }) => {
+                setTypingUsers(prev => prev.filter(u => u !== typingUsername));
             });
 
             socket.on('webrtc-offer', async ({ from, offer }) => {
@@ -139,17 +199,20 @@ function WatchTogetherContent() {
                 audio: isAudioEnabled
             };
 
-            if (isVideoEnabled || isAudioEnabled) {
+            // Only try to get user media if in browser and mediaDevices is available
+            if ((isVideoEnabled || isAudioEnabled) && typeof window !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 localStreamRef.current = stream;
 
                 if (localVideoRef.current && isVideoEnabled) {
                     localVideoRef.current.srcObject = stream;
                 }
+            } else {
+                localStreamRef.current = null;
             }
-        } catch (err: any) {
-            console.error('Error accessing media devices:', err);
-            addSystemMessage('Could not access camera/microphone');
+        } catch (error) {
+            console.error('Error setting up local media:', error);
+            localStreamRef.current = null;
         }
     };
 
@@ -294,6 +357,8 @@ function WatchTogetherContent() {
     };
 
     const cleanup = () => {
+        console.log('🧹 Cleaning up watch together session');
+
         // Stop all media tracks
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
@@ -306,7 +371,9 @@ function WatchTogetherContent() {
         // Disconnect socket
         if (socket) {
             socket.emit('leave-watch-together', { roomCode, username });
+            socket.removeAllListeners(); // Remove all event listeners
             socket.disconnect();
+            socket = null as any; // Clear the socket reference
         }
     };
 
@@ -322,6 +389,32 @@ function WatchTogetherContent() {
 
         socket.emit('send-chat-message', { roomCode, message });
         setChatInput('');
+
+        // Stop typing indicator
+        socket.emit('stop-typing', { roomCode, username });
+    };
+
+    const handleTyping = (value: string) => {
+        setChatInput(value);
+
+        if (!socket) return;
+
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Emit typing event
+        if (value.length > 0) {
+            socket.emit('typing', { roomCode, username });
+
+            // Set timeout to stop typing after 3 seconds of inactivity
+            typingTimeoutRef.current = setTimeout(() => {
+                socket.emit('stop-typing', { roomCode, username });
+            }, 3000);
+        } else {
+            socket.emit('stop-typing', { roomCode, username });
+        }
     };
 
     const addSystemMessage = (text: string) => {
@@ -535,6 +628,25 @@ function WatchTogetherContent() {
                                         )}
                                     </div>
                                 ))}
+
+                                {/* Typing Indicator */}
+                                {typingUsers.length > 0 && (
+                                    <div className="flex items-center gap-2 text-gray-400 text-sm italic">
+                                        <div className="flex gap-1">
+                                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                        </div>
+                                        <span>
+                                            {typingUsers.length === 1
+                                                ? `${typingUsers[0]} is typing...`
+                                                : typingUsers.length === 2
+                                                    ? `${typingUsers[0]} and ${typingUsers[1]} are typing...`
+                                                    : `${typingUsers.length} people are typing...`}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div ref={chatEndRef} />
                             </div>
 
@@ -544,7 +656,7 @@ function WatchTogetherContent() {
                                     <input
                                         type="text"
                                         value={chatInput}
-                                        onChange={(e) => setChatInput(e.target.value)}
+                                        onChange={(e) => handleTyping(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                                         placeholder="Type a message..."
                                         className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"

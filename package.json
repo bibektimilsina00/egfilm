@@ -6,9 +6,16 @@
     "dev": "next dev --port 8000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
+    "@prisma/client": "^6.17.1",
     "@tanstack/react-query": "^5.90.2",
     "@types/bcryptjs": "^2.4.6",
     "axios": "^1.12.2",
@@ -20,6 +27,7 @@
     "lucide-react": "^0.545.0",
     "next": "15.5.4",
     "next-auth": "^5.0.0-beta.29",
+    "prisma": "^6.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-intersection-observer": "^9.16.0",

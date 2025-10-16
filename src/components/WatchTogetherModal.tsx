@@ -16,8 +16,8 @@ interface WatchTogetherModalProps {
 
 interface User {
     id: string;
-    username: string;
-    avatar?: string;
+    name: string;
+    email: string;
 }
 
 export default function WatchTogetherModal({
@@ -34,8 +34,13 @@ export default function WatchTogetherModal({
     const [roomCode, setRoomCode] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [searching, setSearching] = useState(false);
     const [copied, setCopied] = useState(false);
     const [generatedRoomCode, setGeneratedRoomCode] = useState('');
+    const [sendingInvites, setSendingInvites] = useState(false);
+    const [error, setError] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
 
     // Settings
     const [enableVideo, setEnableVideo] = useState(false);
@@ -71,11 +76,14 @@ export default function WatchTogetherModal({
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleCreateRoom = () => {
+    const handleCreateRoom = async () => {
         if (!username.trim()) {
-            alert('Please enter your username');
+            setError('Please enter your username');
             return;
         }
+
+        setError('');
+        setIsCreating(true);
 
         // Save username for future use
         localStorage.setItem('watchTogether_username', username);
@@ -94,8 +102,68 @@ export default function WatchTogetherModal({
             timestamp: Date.now()
         };
 
-        // Store in localStorage (will be replaced with proper backend later)
+        // Store in localStorage as backup
         localStorage.setItem(`room_${generatedRoomCode}`, JSON.stringify(roomData));
+
+        // Save to database if user is logged in
+        if (session?.user?.email) {
+            try {
+                console.log('🎬 Creating room in database:', generatedRoomCode);
+
+                const roomResponse = await fetch('/api/watch-room', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        roomCode: generatedRoomCode,
+                        mediaId: movieId,
+                        mediaType: type,
+                        mediaTitle: movieTitle,
+                        embedUrl: embedUrl, // <-- FIX: pass embedUrl
+                        posterPath: null, // You can pass poster path if available
+                        season: null, // For TV shows
+                        episode: null, // For TV shows
+                    }),
+                });
+
+                if (!roomResponse.ok) {
+                    const errorData = await roomResponse.json().catch(() => ({}));
+                    console.error('❌ Failed to create room:', errorData);
+                    throw new Error(`Failed to create room: ${roomResponse.status}`);
+                }
+
+                const roomResult = await roomResponse.json();
+                console.log('✅ Room created successfully:', roomResult.room?.id);
+
+                // Send invitations to selected users automatically
+                if (selectedUsers.length > 0) {
+                    console.log('📧 Sending invites to', selectedUsers.length, 'users');
+                    const promises = selectedUsers.map((user) =>
+                        fetch('/api/notifications/invite', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                toUserId: user.id,
+                                roomCode: generatedRoomCode,
+                                mediaTitle: movieTitle,
+                                mediaId: movieId,
+                                mediaType: type,
+                                embedUrl: embedUrl,
+                            }),
+                        })
+                    );
+
+                    await Promise.all(promises);
+                    console.log('✅ Invites sent successfully!');
+                }
+            } catch (error) {
+                console.error('❌ Error saving room to database:', error);
+                setError('Failed to create room. Please try again.');
+                setIsCreating(false);
+                return; // Don't navigate if room creation failed
+            }
+        }
+
+        setIsCreating(false);
 
         // Navigate to watch party page
         window.location.href = `/watch-together?room=${generatedRoomCode}&username=${encodeURIComponent(username)}`;
@@ -129,24 +197,63 @@ export default function WatchTogetherModal({
         setSelectedUsers(selectedUsers.filter(u => u.id !== userId));
     };
 
-    // Mock user search - replace with actual API call
-    const searchUsers = (query: string): User[] => {
-        if (!query) return [];
+    // Search users from database
+    useEffect(() => {
+        const searchUsersFromDB = async () => {
+            if (!searchQuery || searchQuery.trim().length < 2) {
+                setSearchResults([]);
+                return;
+            }
 
-        // Mock data
-        const mockUsers: User[] = [
-            { id: '1', username: 'john_doe' },
-            { id: '2', username: 'jane_smith' },
-            { id: '3', username: 'movie_lover' },
-            { id: '4', username: 'netflix_fan' },
-        ];
+            setSearching(true);
+            try {
+                const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setSearchResults(data.users);
+                }
+            } catch (error) {
+                console.error('Error searching users:', error);
+            } finally {
+                setSearching(false);
+            }
+        };
 
-        return mockUsers.filter(u =>
-            u.username.toLowerCase().includes(query.toLowerCase())
-        );
+        const timeoutId = setTimeout(searchUsersFromDB, 300); // Debounce search
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery]);
+
+    const sendInvitesToSelectedUsers = async () => {
+        if (selectedUsers.length === 0 || !session?.user?.email) return;
+
+        setSendingInvites(true);
+        try {
+            const promises = selectedUsers.map((user) =>
+                fetch('/api/notifications/invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        toUserId: user.id,
+                        roomCode: generatedRoomCode,
+                        mediaTitle: movieTitle,
+                        mediaId: movieId,
+                        mediaType: type,
+                        embedUrl: embedUrl,
+                    }),
+                })
+            );
+
+            console.log('Sending invites to', selectedUsers.length, 'users', embedUrl ? 'with embedUrl' : 'without embedUrl');
+
+            await Promise.all(promises);
+            alert(`Invites sent to ${selectedUsers.length} user(s)!`);
+        } catch (error) {
+            console.error('Error sending invites:', error);
+            alert('Failed to send some invites');
+        } finally {
+            setSendingInvites(false);
+        }
     };
-
-    const searchResults = searchUsers(searchQuery);
 
     if (!isOpen) return null;
 
@@ -174,6 +281,13 @@ export default function WatchTogetherModal({
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
+                            <p className="text-red-400 text-sm">{error}</p>
+                        </div>
+                    )}
+
                     {/* Mode Selector */}
                     <div className="flex gap-2 mb-6">
                         <button
@@ -287,21 +401,34 @@ export default function WatchTogetherModal({
                                 </div>
 
                                 {/* Search Results */}
-                                {searchQuery && searchResults.length > 0 && (
+                                {searchQuery && (
                                     <div className="mt-2 bg-gray-800 rounded-lg border border-gray-700 max-h-40 overflow-y-auto">
-                                        {searchResults.map(user => (
-                                            <button
-                                                key={user.id}
-                                                onClick={() => handleAddUser(user)}
-                                                className="w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors flex items-center justify-between"
-                                                disabled={selectedUsers.some(u => u.id === user.id)}
-                                            >
-                                                <span className="text-white">{user.username}</span>
-                                                {selectedUsers.some(u => u.id === user.id) && (
-                                                    <Check className="w-4 h-4 text-green-500" />
-                                                )}
-                                            </button>
-                                        ))}
+                                        {searching ? (
+                                            <div className="px-4 py-3 text-center text-gray-400">
+                                                Searching...
+                                            </div>
+                                        ) : searchResults.length > 0 ? (
+                                            searchResults.map(user => (
+                                                <button
+                                                    key={user.id}
+                                                    onClick={() => handleAddUser(user)}
+                                                    className="w-full px-4 py-2 text-left hover:bg-gray-700 transition-colors flex items-center justify-between"
+                                                    disabled={selectedUsers.some(u => u.id === user.id)}
+                                                >
+                                                    <div>
+                                                        <div className="text-white font-medium">{user.name}</div>
+                                                        <div className="text-xs text-gray-400">{user.email}</div>
+                                                    </div>
+                                                    {selectedUsers.some(u => u.id === user.id) && (
+                                                        <Check className="w-4 h-4 text-green-500" />
+                                                    )}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-4 py-3 text-center text-gray-400">
+                                                No users found
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -313,7 +440,7 @@ export default function WatchTogetherModal({
                                                 key={user.id}
                                                 className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-full"
                                             >
-                                                <span className="text-sm">{user.username}</span>
+                                                <span className="text-sm">{user.name}</span>
                                                 <button
                                                     onClick={() => handleRemoveUser(user.id)}
                                                     className="hover:bg-blue-700 rounded-full p-0.5"
@@ -327,13 +454,34 @@ export default function WatchTogetherModal({
                             </div>
 
                             {/* Create Button */}
-                            <Button
-                                onClick={handleCreateRoom}
-                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all"
-                            >
-                                <Users className="w-5 h-5 mr-2" />
-                                Create Watch Party
-                            </Button>
+                            <div className="space-y-2">
+                                {selectedUsers.length > 0 && (
+                                    <Button
+                                        onClick={sendInvitesToSelectedUsers}
+                                        disabled={sendingInvites}
+                                        className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50"
+                                    >
+                                        {sendingInvites ? 'Sending...' : `Send Invites (${selectedUsers.length})`}
+                                    </Button>
+                                )}
+                                <Button
+                                    onClick={handleCreateRoom}
+                                    disabled={isCreating}
+                                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isCreating ? (
+                                        <>
+                                            <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Creating Room...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Users className="w-5 h-5 mr-2" />
+                                            Create & Join Room
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="space-y-6">

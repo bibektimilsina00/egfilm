@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export default function Navigation() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -102,47 +103,52 @@ export default function Navigation() {
                         </form>
 
                         {/* Auth Section - Compact with Dropdown */}
-                        <div className="hidden md:block relative" ref={userMenuRef}>
-                            {session ? (
-                                <>
-                                    <button
-                                        onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 rounded-full transition-all"
-                                    >
-                                        <User className="w-4 h-4 text-gray-300" />
-                                        <span className="text-sm text-gray-300 max-w-[100px] truncate">{session.user?.name}</span>
-                                        <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-                                    </button>
+                        <div className="hidden md:flex items-center gap-2">
+                            {/* Notification Bell */}
+                            <NotificationBell />
 
-                                    {/* User Dropdown Menu */}
-                                    {userMenuOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-xl py-2 z-50">
-                                            <div className="px-4 py-2 border-b border-gray-800">
-                                                <p className="text-sm text-gray-400">Signed in as</p>
-                                                <p className="text-sm text-white font-medium truncate">{session.user?.email}</p>
+                            <div className="relative" ref={userMenuRef}>
+                                {session ? (
+                                    <>
+                                        <button
+                                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 rounded-full transition-all"
+                                        >
+                                            <User className="w-4 h-4 text-gray-300" />
+                                            <span className="text-sm text-gray-300 max-w-[100px] truncate">{session.user?.name}</span>
+                                            <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {/* User Dropdown Menu */}
+                                        {userMenuOpen && (
+                                            <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-xl py-2 z-50">
+                                                <div className="px-4 py-2 border-b border-gray-800">
+                                                    <p className="text-sm text-gray-400">Signed in as</p>
+                                                    <p className="text-sm text-white font-medium truncate">{session.user?.email}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        signOut();
+                                                        setUserMenuOpen(false);
+                                                    }}
+                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                    Sign Out
+                                                </button>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    signOut();
-                                                    setUserMenuOpen(false);
-                                                }}
-                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all"
-                                            >
-                                                <LogOut className="w-4 h-4" />
-                                                Sign Out
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <Link
-                                    href="/login"
-                                    className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all text-sm"
-                                >
-                                    <LogIn className="w-4 h-4" />
-                                    <span>Sign In</span>
-                                </Link>
-                            )}
+                                        )}
+                                    </>
+                                ) : (
+                                    <Link
+                                        href="/login"
+                                        className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all text-sm"
+                                    >
+                                        <LogIn className="w-4 h-4" />
+                                        <span>Sign In</span>
+                                    </Link>
+                                )}
+                            </div>
                         </div>
 
                         {/* Mobile Menu Button */}
