@@ -338,7 +338,7 @@ function WatchTogetherContent() {
         const turnServer = process.env.NEXT_PUBLIC_TURN_SERVER || '128.199.195.107';
         const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME || 'streamflix';
         const turnPassword = process.env.NEXT_PUBLIC_TURN_PASSWORD || 'streamflixpass123';
-        
+
         const configuration: RTCConfiguration = {
             iceServers: [
                 // Priority 1: Self-hosted TURN server (most reliable for restricted networks)
@@ -405,7 +405,7 @@ function WatchTogetherContent() {
             const iceState = peerConnection.iceConnectionState;
             const iceGatheringState = peerConnection.iceGatheringState;
             console.log(`🔌 [CONNECTION STATE] ${peerId.substring(0, 8)}... → ${state} (ICE: ${iceState}, gathering: ${iceGatheringState})`);
-            
+
             if (state === 'connected') {
                 console.log(`✅ [PEER CONNECTION ESTABLISHED] Video/audio should now flow`);
             } else if (state === 'failed') {
@@ -428,7 +428,7 @@ function WatchTogetherContent() {
             const state = peerConnection.iceConnectionState;
             const connectionState = peerConnection.connectionState;
             console.log(`❄️ [ICE STATE] ${peerId.substring(0, 8)}... → ${state} (connection: ${connectionState})`);
-            
+
             if (state === 'connected' || state === 'completed') {
                 console.log(`✅ [ICE CONNECTED] P2P connection established`);
             } else if (state === 'failed') {
@@ -456,7 +456,7 @@ function WatchTogetherContent() {
             if (gatheringState === 'complete') {
                 console.log(`✅ [ICE GATHERING] Complete for ${peerId.substring(0, 8)}...`);
             }
-            
+
             if (event.candidate) {
                 const candidateStr = event.candidate.candidate || '';
                 let candidateType = 'unknown';
@@ -464,7 +464,7 @@ function WatchTogetherContent() {
                 else if (candidateStr.includes('srflx')) candidateType = 'srflx (STUN)';
                 else if (candidateStr.includes('relay')) candidateType = 'relay (TURN)';
                 else if (candidateStr.includes('prflx')) candidateType = 'prflx (peer reflexive)';
-                
+
                 console.log(`📤 [ICE CANDIDATE LOCAL] Type: ${candidateType}, Candidate: ${candidateStr.substring(0, 50)}...`);
                 socket.emit('webrtc-ice-candidate', {
                     roomCode,
@@ -492,7 +492,7 @@ function WatchTogetherContent() {
             });
             console.log(`📤 [OFFER SENT] To ${peerId.substring(0, 8)}...`);
         }
-    };    const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
+    }; const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
         try {
             console.log(`🎥 [WEBRTC OFFER RECEIVED] From: ${from.substring(0, 8)}..., Type: ${offer.type}`);
 
@@ -547,7 +547,7 @@ function WatchTogetherContent() {
             else if (candidateStr.includes('srflx')) candidateType = 'srflx (STUN)';
             else if (candidateStr.includes('relay')) candidateType = 'relay (TURN)';
             else if (candidateStr.includes('prflx')) candidateType = 'prflx (peer reflexive)';
-            
+
             console.log(`❄️ [ICE CANDIDATE RECEIVED] From: ${from.substring(0, 8)}..., Type: ${candidateType}, Candidate: ${candidateStr.substring(0, 50)}...`);
 
             const peerConnection = peerConnections[from];

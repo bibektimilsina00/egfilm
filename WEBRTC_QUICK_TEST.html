@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@
             background: #1a1a1a;
             color: #0f0;
         }
+
         .test-section {
             background: #222;
             padding: 20px;
@@ -20,9 +22,19 @@
             border-radius: 5px;
             border-left: 3px solid #0f0;
         }
-        .success { color: #0f0; }
-        .error { color: #f00; }
-        .pending { color: #ff0; }
+
+        .success {
+            color: #0f0;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .pending {
+            color: #ff0;
+        }
+
         button {
             background: #0f0;
             color: #000;
@@ -32,14 +44,16 @@
             cursor: pointer;
             font-weight: bold;
         }
+
         button:hover {
             background: #0a0;
         }
     </style>
 </head>
+
 <body>
     <h1>🔍 WebRTC STUN/TURN Test</h1>
-    
+
     <div class="test-section">
         <h2>STUN Server Connectivity</h2>
         <button onclick="testSTUN()">Test STUN Servers</button>
@@ -62,7 +76,7 @@
         async function testSTUN() {
             const results = document.getElementById('stun-results');
             results.innerHTML = '<p class="pending">Testing STUN servers...</p>';
-            
+
             const servers = [
                 'stun.l.google.com:19302',
                 'stun1.l.google.com:19302',
@@ -183,7 +197,7 @@
         function networkInfo() {
             const results = document.getElementById('network-results');
             const pc = new RTCPeerConnection();
-            
+
             let html = '<p>Gathering network info...</p>';
 
             pc.onicecandidate = (e) => {
@@ -205,4 +219,5 @@
         }
     </script>
 </body>
+
 </html>
