@@ -39,6 +39,7 @@ function WatchTogetherContent() {
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [showChat, setShowChat] = useState(true);
     const [showParticipants, setShowParticipants] = useState(true);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [copied, setCopied] = useState(false);
     const [isConnecting, setIsConnecting] = useState(true);
     const [error, setError] = useState('');
@@ -51,14 +52,12 @@ function WatchTogetherContent() {
     const localStreamRef = useRef<MediaStream | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const videoContainerRef = useRef<HTMLDivElement>(null);
+    const isInitializedRef = useRef(false); // Track initialization to prevent double mount
 
     useEffect(() => {
         // Clear localStorage and modal state if joining via notification link
         if (roomCode && username) {
-            // Remove any localStorage backup for this room
             localStorage.removeItem(`room_${roomCode}`);
-            // Optionally, clear any modal state here if you use a modal open state
-            console.log('🧹 Cleared localStorage for room', roomCode, 'on notification join');
         }
     }, [roomCode, username]);
 
@@ -68,14 +67,22 @@ function WatchTogetherContent() {
             setIsConnecting(false);
             return;
         }
+
+        // Prevent double initialization in React Strict Mode
+        if (isInitializedRef.current) {
+            return;
+        }
+
         // Only call initializeRoom if not already connected
         if (!socket || !socket.connected) {
+            isInitializedRef.current = true;
             initializeRoom();
-        } else {
-            console.log('Socket already connected, skipping initializeRoom');
         }
+
         return () => {
-            cleanup();
+            // Only cleanup on actual unmount (when component is being destroyed)
+            // Don't cleanup during Strict Mode development double-mount
+            // The cleanup will happen when user explicitly leaves the room
         };
     }, [roomCode, username]);
 
@@ -83,11 +90,17 @@ function WatchTogetherContent() {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [chatMessages]);
 
+    // Reset unread count when chat is opened
+    useEffect(() => {
+        if (showChat && !showParticipants) {
+            setUnreadCount(0);
+        }
+    }, [showChat, showParticipants]);
+
     const initializeRoom = async () => {
         try {
             // Prevent duplicate initialization
             if (socket && socket.connected) {
-                console.log('Socket already connected, skipping initialization');
                 return;
             }
 
@@ -105,7 +118,7 @@ function WatchTogetherContent() {
             }
 
             // Get userId from database using session email
-            let userId = null;
+            let userId: string | null = null;
             if (session?.user?.email) {
                 try {
                     const userResponse = await fetch('/api/auth/user');
@@ -114,30 +127,44 @@ function WatchTogetherContent() {
                         userId = userData.id;
                     }
                 } catch (error) {
-                    console.error('Failed to fetch user ID:', error);
+                    // Failed to fetch user ID, will join as guest
                 }
             }
 
-            // Initialize socket connection
-            await fetch('/api/socketio');
-            socket = io({ path: '/api/socketio' });
+            // Initialize socket connection AFTER getting userId
+            socket = io({
+                path: '/api/socketio',
+                autoConnect: false  // Don't connect immediately, wait for listeners
+            });
 
+            // Set up all event listeners BEFORE connecting
             socket.on('connect', () => {
-                console.log('Connected to socket');
                 socket.emit('join-watch-together', { roomCode, username, userId });
+            });
+
+            socket.on('connect_error', (error) => {
+                setError('Failed to connect to server');
+                setIsConnecting(false);
             });
 
             socket.on('room-joined', (data) => {
                 setParticipants(data.participants);
                 setChatMessages(data.messages || []);
                 setIsConnecting(false);
+
+                // Initialize WebRTC connections with all existing participants
+                // Only create offers if we're the one joining (to avoid both sides sending offers)
+                data.participants.forEach((participant: Participant) => {
+                    if (participant.id !== socket.id) {
+                        initializePeerConnection(participant.id, true); // Send offer to existing participants
+                    }
+                });
             });
 
             socket.on('participant-joined', (data) => {
                 setParticipants(data.participants);
                 addSystemMessage(`${data.newParticipant.username} joined the room`);
-                // Initialize WebRTC connection with new participant
-                initializePeerConnection(data.newParticipant.id);
+                // Don't initialize connection here - the new participant will send offers
             });
 
             socket.on('participant-left', (data) => {
@@ -152,6 +179,18 @@ function WatchTogetherContent() {
 
             socket.on('chat-message', (message: ChatMessage) => {
                 setChatMessages(prev => [...prev, message]);
+                // Increment unread count if chat is not visible and message is not from current user or system
+                if (message.username !== username && message.username !== 'System') {
+                    setShowChat(currentShowChat => {
+                        setShowParticipants(currentShowParticipants => {
+                            if (!currentShowChat || currentShowParticipants) {
+                                setUnreadCount(prev => prev + 1);
+                            }
+                            return currentShowParticipants;
+                        });
+                        return currentShowChat;
+                    });
+                }
             });
 
             // Typing indicator events
@@ -182,11 +221,19 @@ function WatchTogetherContent() {
                 await handleIceCandidate(from, candidate);
             });
 
-            // Initialize local media
+            socket.on('participant-updated', ({ participantId, hasVideo, hasAudio }) => {
+                setParticipants(prev => prev.map(p =>
+                    p.id === participantId ? { ...p, hasVideo, hasAudio } : p
+                ));
+            });
+
+            // Initialize local media BEFORE connecting socket
             await setupLocalMedia();
 
+            // Now connect the socket (this will trigger the 'connect' event)
+            socket.connect();
+
         } catch (err: any) {
-            console.error('Error initializing room:', err);
             setError(err.message || 'Failed to join room');
             setIsConnecting(false);
         }
@@ -194,29 +241,58 @@ function WatchTogetherContent() {
 
     const setupLocalMedia = async () => {
         try {
+            // Check if mediaDevices is available
+            if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const errorMsg = '⚠️ Camera/microphone access is not available in your browser';
+                addSystemMessage(errorMsg);
+                localStreamRef.current = null;
+                return;
+            }
+
+            // Request BOTH camera and microphone permissions upfront
+            // This shows the browser permission dialog
             const constraints: MediaStreamConstraints = {
-                video: isVideoEnabled,
-                audio: isAudioEnabled
+                video: true,  // Always request video permission
+                audio: true   // Always request audio permission
             };
 
-            // Only try to get user media if in browser and mediaDevices is available
-            if ((isVideoEnabled || isAudioEnabled) && typeof window !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                localStreamRef.current = stream;
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            localStreamRef.current = stream;
 
-                if (localVideoRef.current && isVideoEnabled) {
-                    localVideoRef.current.srcObject = stream;
-                }
-            } else {
-                localStreamRef.current = null;
+            // Set initial states (video OFF, audio ON by default)
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = false; // Start with video OFF
             }
-        } catch (error) {
-            console.error('Error setting up local media:', error);
+
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = true; // Start with audio ON
+            }
+
+            // Update UI states to match
+            setIsVideoEnabled(false);
+            setIsAudioEnabled(true);
+
+            // Set local video element but don't show video initially
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+            }
+
+            addSystemMessage('✅ Camera and microphone permissions granted');
+        } catch (error: any) {
             localStreamRef.current = null;
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                addSystemMessage('❌ Camera/microphone access denied. Please allow permissions in your browser.');
+            } else if (error.name === 'NotFoundError') {
+                addSystemMessage('❌ No camera or microphone found on your device.');
+            } else {
+                addSystemMessage('❌ Failed to access camera/microphone: ' + error.message);
+            }
         }
     };
 
-    const initializePeerConnection = async (peerId: string) => {
+    const initializePeerConnection = async (peerId: string, shouldCreateOffer: boolean = false) => {
         const configuration: RTCConfiguration = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -229,7 +305,8 @@ function WatchTogetherContent() {
 
         // Add local stream tracks
         if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => {
+            const tracks = localStreamRef.current.getTracks();
+            tracks.forEach(track => {
                 peerConnection.addTrack(track, localStreamRef.current!);
             });
         }
@@ -237,10 +314,19 @@ function WatchTogetherContent() {
         // Handle incoming streams
         peerConnection.ontrack = (event) => {
             const [remoteStream] = event.streams;
-            // Update participant stream
             setParticipants(prev => prev.map(p =>
                 p.id === peerId ? { ...p, stream: remoteStream } : p
             ));
+        };
+
+        // Handle connection state changes
+        peerConnection.onconnectionstatechange = () => {
+            // Connection state tracking
+        };
+
+        // Handle ICE connection state
+        peerConnection.oniceconnectionstatechange = () => {
+            // ICE state tracking
         };
 
         // Handle ICE candidates
@@ -254,14 +340,16 @@ function WatchTogetherContent() {
             }
         };
 
-        // Create and send offer
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        socket.emit('webrtc-offer', {
-            roomCode,
-            to: peerId,
-            offer
-        });
+        // Only create and send offer if explicitly requested
+        if (shouldCreateOffer) {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('webrtc-offer', {
+                roomCode,
+                to: peerId,
+                offer
+            });
+        }
     };
 
     const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
@@ -297,57 +385,76 @@ function WatchTogetherContent() {
     };
 
     const toggleVideo = async () => {
-        if (!localStreamRef.current) {
-            // Enable video
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const videoTrack = stream.getVideoTracks()[0];
-
-                localStreamRef.current = stream;
-
-                if (localVideoRef.current) {
-                    localVideoRef.current.srcObject = localStreamRef.current;
-                }
-
-                // Add to all peer connections
-                Object.values(peerConnections).forEach(pc => {
-                    pc.addTrack(videoTrack, localStreamRef.current!);
-                });
-
-                setIsVideoEnabled(true);
-            } catch (err) {
-                console.error('Error enabling video:', err);
-                addSystemMessage('Could not access camera');
+        try {
+            if (!socket || !socket.connected) {
+                addSystemMessage('❌ Not connected to room. Please reload the page.');
+                return;
             }
-        } else {
-            // Toggle existing video track
+
+            if (!localStreamRef.current) {
+                addSystemMessage('❌ No media stream available. Please reload the page.');
+                return;
+            }
+
             const videoTrack = localStreamRef.current.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                setIsVideoEnabled(videoTrack.enabled);
+            if (!videoTrack) {
+                addSystemMessage('❌ No camera track found. Please reload the page.');
+                return;
             }
-        }
 
-        socket.emit('update-media-status', {
-            roomCode,
-            hasVideo: !isVideoEnabled,
-            hasAudio: isAudioEnabled
-        });
+            // Simply toggle the enabled state
+            videoTrack.enabled = !videoTrack.enabled;
+            const newVideoState = videoTrack.enabled;
+            setIsVideoEnabled(newVideoState);
+
+            console.log('📹 Video toggled:', newVideoState, 'localVideoRef:', !!localVideoRef.current, 'srcObject:', !!localVideoRef.current?.srcObject);
+
+            // Notify other participants
+            socket.emit('update-media-status', {
+                roomCode,
+                hasVideo: newVideoState,
+                hasAudio: isAudioEnabled
+            });
+
+            addSystemMessage(newVideoState ? '📹 Camera enabled' : '📹 Camera disabled');
+        } catch (err: any) {
+            addSystemMessage('❌ Could not toggle camera: ' + err.message);
+        }
     };
 
     const toggleAudio = () => {
-        if (localStreamRef.current) {
-            const audioTrack = localStreamRef.current.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                setIsAudioEnabled(audioTrack.enabled);
-
-                socket.emit('update-media-status', {
-                    roomCode,
-                    hasVideo: isVideoEnabled,
-                    hasAudio: audioTrack.enabled
-                });
+        try {
+            if (!socket || !socket.connected) {
+                addSystemMessage('❌ Not connected to room. Please reload the page.');
+                return;
             }
+
+            if (!localStreamRef.current) {
+                addSystemMessage('❌ No media stream available. Please reload the page.');
+                return;
+            }
+
+            const audioTrack = localStreamRef.current.getAudioTracks()[0];
+            if (!audioTrack) {
+                addSystemMessage('❌ No microphone track found. Please reload the page.');
+                return;
+            }
+
+            // Simply toggle the enabled state
+            audioTrack.enabled = !audioTrack.enabled;
+            const newAudioState = audioTrack.enabled;
+            setIsAudioEnabled(newAudioState);
+
+            // Notify other participants
+            socket.emit('update-media-status', {
+                roomCode,
+                hasVideo: isVideoEnabled,
+                hasAudio: newAudioState
+            });
+
+            addSystemMessage(newAudioState ? '🎤 Microphone enabled' : '🎤 Microphone muted');
+        } catch (err: any) {
+            addSystemMessage('❌ Could not toggle microphone: ' + err.message);
         }
     };
 
@@ -357,11 +464,9 @@ function WatchTogetherContent() {
     };
 
     const cleanup = () => {
-        console.log('🧹 Cleaning up watch together session');
-
         // Stop all media tracks
         if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
         }
 
         // Close all peer connections
@@ -380,6 +485,11 @@ function WatchTogetherContent() {
     const sendMessage = () => {
         if (!chatInput.trim()) return;
 
+        if (!socket || !socket.connected) {
+            addSystemMessage('❌ Not connected to room. Cannot send message.');
+            return;
+        }
+
         const message: ChatMessage = {
             id: Date.now().toString(),
             username: username || 'Anonymous',
@@ -397,7 +507,7 @@ function WatchTogetherContent() {
     const handleTyping = (value: string) => {
         setChatInput(value);
 
-        if (!socket) return;
+        if (!socket || !socket.connected) return;
 
         // Clear existing timeout
         if (typingTimeoutRef.current) {
@@ -410,7 +520,9 @@ function WatchTogetherContent() {
 
             // Set timeout to stop typing after 3 seconds of inactivity
             typingTimeoutRef.current = setTimeout(() => {
-                socket.emit('stop-typing', { roomCode, username });
+                if (socket && socket.connected) {
+                    socket.emit('stop-typing', { roomCode, username });
+                }
             }, 3000);
         } else {
             socket.emit('stop-typing', { roomCode, username });
@@ -511,7 +623,8 @@ function WatchTogetherContent() {
                 <div className="flex-1 flex flex-col bg-black relative" ref={videoContainerRef}>
                     {/* Video Player */}
                     <div className="flex-1 flex items-center justify-center relative">
-                        {roomData?.embedUrl ? (
+                        {/* Temporarily commented out to prevent console clearing by iframe */}
+                        {/* {roomData?.embedUrl ? (
                             <iframe
                                 src={roomData.embedUrl}
                                 className="w-full h-full"
@@ -520,12 +633,105 @@ function WatchTogetherContent() {
                                 allowFullScreen
                                 title={roomData.movieTitle}
                             />
-                        ) : (
-                            <div className="text-center">
-                                <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
-                                <p className="text-gray-400">No video selected</p>
-                            </div>
-                        )}
+                        ) : ( */}
+                        <div className="text-center">
+                            <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-400">Video player temporarily disabled for debugging</p>
+                            {roomData?.embedUrl && (
+                                <p className="text-gray-500 text-sm mt-2">embedUrl: {roomData.embedUrl.substring(0, 50)}...</p>
+                            )}
+                        </div>
+                        {/* )} */}
+
+                        {/* Floating Video Grid - Shows all participants with active video */}
+                        <div className="absolute top-4 right-4 z-20 space-y-2 max-w-xs">
+                            {/* Your Video */}
+                            {isVideoEnabled && (
+                                <div className="bg-gray-900/90 backdrop-blur-sm rounded-lg overflow-hidden shadow-2xl border border-gray-700">
+                                    <div className="relative">
+                                        <video
+                                            ref={localVideoRef}
+                                            autoPlay
+                                            muted
+                                            playsInline
+                                            className="w-48 h-36 object-cover"
+                                        />
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-white text-xs font-semibold truncate">{username} (You)</p>
+                                                <div className="flex items-center gap-1">
+                                                    {isAudioEnabled ? (
+                                                        <Mic className="w-3 h-3 text-green-400" />
+                                                    ) : (
+                                                        <MicOff className="w-3 h-3 text-red-400" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Other Participants' Videos */}
+                            {participants
+                                .filter(p => p.username !== username && p.hasVideo && p.stream)
+                                .map((participant) => (
+                                    <div key={participant.id} className="bg-gray-900/90 backdrop-blur-sm rounded-lg overflow-hidden shadow-2xl border border-gray-700">
+                                        <div className="relative">
+                                            <video
+                                                autoPlay
+                                                playsInline
+                                                ref={(video) => {
+                                                    if (video && participant.stream) {
+                                                        video.srcObject = participant.stream;
+                                                    }
+                                                }}
+                                                className="w-48 h-36 object-cover"
+                                            />
+                                            {/* Hidden audio element for this participant */}
+                                            <audio
+                                                autoPlay
+                                                playsInline
+                                                ref={(audio) => {
+                                                    if (audio && participant.stream) {
+                                                        audio.srcObject = participant.stream;
+                                                    }
+                                                }}
+                                            />
+                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-white text-xs font-semibold truncate">{participant.username}</p>
+                                                    <div className="flex items-center gap-1">
+                                                        {participant.hasAudio ? (
+                                                            <Mic className="w-3 h-3 text-green-400" />
+                                                        ) : (
+                                                            <MicOff className="w-3 h-3 text-red-400" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                            {/* Audio-only participants (no video but audio is on) */}
+                            {participants
+                                .filter(p => p.username !== username && !p.hasVideo && p.stream)
+                                .map((participant) => (
+                                    <div key={participant.id}>
+                                        {/* Just audio element, no visual */}
+                                        <audio
+                                            autoPlay
+                                            playsInline
+                                            ref={(audio) => {
+                                                if (audio && participant.stream) {
+                                                    audio.srcObject = participant.stream;
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                        </div>
 
                         {/* Fullscreen Toggle */}
                         <button
@@ -570,9 +776,14 @@ function WatchTogetherContent() {
                             onClick={() => setShowChat(!showChat)}
                             variant="outline"
                             size="lg"
-                            className="rounded-full"
+                            className="rounded-full relative"
                         >
                             <MessageCircle className="w-6 h-6" />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </Button>
                         <Button
                             onClick={() => setShowParticipants(!showParticipants)}
@@ -592,10 +803,15 @@ function WatchTogetherContent() {
                     <div className="flex border-b border-gray-800">
                         <button
                             onClick={() => { setShowChat(true); setShowParticipants(false); }}
-                            className={`flex-1 py-3 px-4 font-semibold transition-colors ${showChat && !showParticipants ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}
+                            className={`flex-1 py-3 px-4 font-semibold transition-colors relative ${showChat && !showParticipants ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}
                         >
                             <MessageCircle className="w-5 h-5 inline mr-2" />
                             Chat
+                            {unreadCount > 0 && (
+                                <span className="absolute top-2 right-3 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </button>
                         <button
                             onClick={() => { setShowParticipants(true); setShowChat(false); }}
@@ -672,7 +888,7 @@ function WatchTogetherContent() {
                     {showParticipants && !showChat && (
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {/* Local User Video */}
-                            <div className="bg-gray-800 rounded-lg p-3">
+                            <div className="bg-gray-800 rounded-lg p-3 relative">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                                         {username?.charAt(0).toUpperCase()}
@@ -680,12 +896,28 @@ function WatchTogetherContent() {
                                     <div className="flex-1">
                                         <p className="text-white font-semibold">{username} (You)</p>
                                         <div className="flex items-center gap-2 text-xs text-gray-400">
-                                            {isVideoEnabled ? <Video className="w-3 h-3" /> : <VideoOff className="w-3 h-3" />}
-                                            {isAudioEnabled ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                                            {isVideoEnabled ? (
+                                                <span className="flex items-center gap-1 text-green-400">
+                                                    <Video className="w-3 h-3" /> Camera On
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-red-400">
+                                                    <VideoOff className="w-3 h-3" /> Camera Off
+                                                </span>
+                                            )}
+                                            {isAudioEnabled ? (
+                                                <span className="flex items-center gap-1 text-green-400">
+                                                    <Mic className="w-3 h-3" /> Mic On
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-red-400">
+                                                    <MicOff className="w-3 h-3" /> Muted
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                                {isVideoEnabled && (
+                                {isVideoEnabled ? (
                                     <video
                                         ref={localVideoRef}
                                         autoPlay
@@ -693,12 +925,16 @@ function WatchTogetherContent() {
                                         playsInline
                                         className="w-full aspect-video bg-gray-900 rounded object-cover"
                                     />
+                                ) : (
+                                    <div className="w-full aspect-video bg-gray-900 rounded flex items-center justify-center">
+                                        <VideoOff className="w-12 h-12 text-gray-600" />
+                                    </div>
                                 )}
                             </div>
 
                             {/* Other Participants */}
                             {participants.filter(p => p.username !== username).map((participant) => (
-                                <div key={participant.id} className="bg-gray-800 rounded-lg p-3">
+                                <div key={participant.id} className="bg-gray-800 rounded-lg p-3 relative">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                                             {participant.username.charAt(0).toUpperCase()}
@@ -706,12 +942,28 @@ function WatchTogetherContent() {
                                         <div className="flex-1">
                                             <p className="text-white font-semibold">{participant.username}</p>
                                             <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                {participant.hasVideo ? <Video className="w-3 h-3" /> : <VideoOff className="w-3 h-3" />}
-                                                {participant.hasAudio ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                                                {participant.hasVideo ? (
+                                                    <span className="flex items-center gap-1 text-green-400">
+                                                        <Video className="w-3 h-3" /> Camera On
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-red-400">
+                                                        <VideoOff className="w-3 h-3" /> Camera Off
+                                                    </span>
+                                                )}
+                                                {participant.hasAudio ? (
+                                                    <span className="flex items-center gap-1 text-green-400">
+                                                        <Mic className="w-3 h-3" /> Mic On
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-red-400">
+                                                        <MicOff className="w-3 h-3" /> Muted
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
-                                    {participant.hasVideo && participant.stream && (
+                                    {participant.hasVideo && participant.stream ? (
                                         <video
                                             autoPlay
                                             playsInline
@@ -721,6 +973,25 @@ function WatchTogetherContent() {
                                                 }
                                             }}
                                             className="w-full aspect-video bg-gray-900 rounded object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full aspect-video bg-gray-900 rounded flex items-center justify-center">
+                                            <div className="text-center">
+                                                <VideoOff className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                                                <p className="text-gray-500 text-sm">Camera off</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Audio element for remote audio (hidden but active) */}
+                                    {participant.stream && (
+                                        <audio
+                                            autoPlay
+                                            playsInline
+                                            ref={(audio) => {
+                                                if (audio && participant.stream) {
+                                                    audio.srcObject = participant.stream;
+                                                }
+                                            }}
                                         />
                                     )}
                                 </div>

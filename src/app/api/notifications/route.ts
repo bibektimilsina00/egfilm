@@ -32,11 +32,8 @@ export async function GET(request: NextRequest) {
         const unreadOnly = searchParams.get('unreadOnly') === 'true';
         const countOnly = searchParams.get('countOnly') === 'true';
 
-        console.log('📬 Fetching notifications for user:', user.id);
-
         if (countOnly) {
             const count = await getUnreadCount(user.id);
-            console.log('📊 Unread count:', count);
             return NextResponse.json({ count });
         }
 

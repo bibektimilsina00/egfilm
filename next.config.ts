@@ -13,6 +13,20 @@ const nextConfig: NextConfig = {
   },
   // Enable standalone output for Docker
   output: 'standalone',
+  // Add headers to suppress Permissions-Policy warnings
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'interest-cohort=(), browsing-topics=()',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

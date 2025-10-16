@@ -157,11 +157,12 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
             // Watch Together - Join room
             socket.on('join-watch-together', async ({ roomCode, username, userId }) => {
-                console.log(`User ${username} joining room ${roomCode} with socket ${socket.id}`);
+                console.log(`📥 User ${username} joining room ${roomCode} with socket ${socket.id}, userId: ${userId || 'guest'}`);
 
                 let room = watchTogetherRooms.get(roomCode);
 
                 if (!room) {
+                    console.log(`🆕 Creating new room: ${roomCode}`);
                     // Create room if it doesn't exist
                     room = {
                         roomCode,
@@ -176,21 +177,24 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 }
 
                 // Remove and disconnect any previous participant with the same userId
-                for (const [sid, participant] of room.participants.entries()) {
-                    if (participant.userId === userId) {
-                        console.log(`Disconnecting duplicate participant with userId ${userId} (socket ${sid})`);
-                        room.participants.delete(sid);
-                        const oldSocket = io.sockets.sockets.get(sid);
-                        if (oldSocket) {
-                            oldSocket.emit('force-disconnect', { reason: 'Another session joined with your account.' });
-                            oldSocket.disconnect(true);
+                // Only do this if userId is not null (to avoid matching all guests)
+                if (userId) {
+                    for (const [sid, participant] of room.participants.entries()) {
+                        if (participant.userId && participant.userId === userId) {
+                            console.log(`🔄 Disconnecting duplicate participant with userId ${userId} (socket ${sid})`);
+                            room.participants.delete(sid);
+                            const oldSocket = io.sockets.sockets.get(sid);
+                            if (oldSocket) {
+                                oldSocket.emit('force-disconnect', { reason: 'Another session joined with your account.' });
+                                oldSocket.disconnect(true);
+                            }
                         }
                     }
                 }
 
                 // Check if this socket is already in the room
                 if (room.participants.has(socket.id)) {
-                    console.log(`Socket ${socket.id} already in room, skipping duplicate join`);
+                    console.log(`⚠️ Socket ${socket.id} already in room, skipping duplicate join`);
                     socket.emit('room-joined', {
                         roomCode,
                         participants: Array.from(room.participants.values()),
@@ -202,10 +206,12 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 // Save participant to database
                 let participantDbId: string | undefined;
                 try {
+                    console.log(`💾 Saving participant ${username} to database...`);
                     const dbParticipant = await addRoomParticipant(roomCode, username, userId);
                     participantDbId = dbParticipant.id;
+                    console.log(`✅ Participant saved with DB ID: ${participantDbId}`);
                 } catch (error) {
-                    console.error('Error saving participant to database:', error);
+                    console.error('❌ Error saving participant to database:', error);
                 }
 
                 // Add participant to in-memory room
@@ -219,13 +225,16 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 });
 
                 socket.join(roomCode);
+                console.log(`✅ User ${username} joined room ${roomCode}, total participants: ${room.participants.size}`);
 
                 // Send room data to the user
-                socket.emit('room-joined', {
+                const roomData = {
                     roomCode,
                     participants: Array.from(room.participants.values()),
                     messages: room.messages
-                });
+                };
+                console.log(`📤 Emitting room-joined to ${socket.id}:`, roomData);
+                socket.emit('room-joined', roomData);
 
                 // Notify others
                 socket.to(roomCode).emit('participant-joined', {
@@ -235,6 +244,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                         username
                     }
                 });
+                console.log(`📢 Notified other participants about ${username} joining`);
             });
 
             // Watch Together - Leave room
