@@ -375,7 +375,7 @@ function WatchTogetherContent() {
         peerConnection.onconnectionstatechange = () => {
             const state = peerConnection.connectionState;
             console.log(`🔌 [CONNECTION STATE] ${peerId.substring(0, 8)}... → ${state}`);
-            
+
             if (state === 'connected') {
                 console.log(`✅ [PEER CONNECTION ESTABLISHED] Video/audio should now flow`);
             } else if (state === 'failed') {
@@ -389,7 +389,7 @@ function WatchTogetherContent() {
         peerConnection.oniceconnectionstatechange = () => {
             const state = peerConnection.iceConnectionState;
             console.log(`❄️ [ICE STATE] ${peerId.substring(0, 8)}... → ${state}`);
-            
+
             if (state === 'connected' || state === 'completed') {
                 console.log(`✅ [ICE CONNECTED] P2P connection established`);
             } else if (state === 'failed') {
@@ -405,7 +405,7 @@ function WatchTogetherContent() {
             if (gatheringState === 'complete') {
                 console.log(`✅ [ICE GATHERING] Complete for ${peerId.substring(0, 8)}...`);
             }
-            
+
             if (event.candidate) {
                 console.log(`📤 [ICE CANDIDATE LOCAL] Generated: ${event.candidate.candidate?.substring(0, 40)}...`);
                 socket.emit('webrtc-ice-candidate', {
