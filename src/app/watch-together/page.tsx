@@ -334,18 +334,33 @@ function WatchTogetherContent() {
     };
 
     const initializePeerConnection = async (peerId: string, shouldCreateOffer: boolean = false) => {
+        // Get TURN server from environment or use default
+        const turnServer = process.env.NEXT_PUBLIC_TURN_SERVER || '128.199.195.107';
+        const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME || 'streamflix';
+        const turnPassword = process.env.NEXT_PUBLIC_TURN_PASSWORD || 'streamflixpass123';
+        
         const configuration: RTCConfiguration = {
             iceServers: [
-                // Primary STUN servers (Google)
+                // Priority 1: Self-hosted TURN server (most reliable for restricted networks)
+                {
+                    urls: [
+                        `turn:${turnServer}:3478?transport=udp`,
+                        `turn:${turnServer}:3478?transport=tcp`,
+                        `turn:${turnServer}:5349?transport=tcp`
+                    ],
+                    username: turnUsername,
+                    credential: turnPassword
+                },
+                // Priority 2: Primary STUN servers (Google)
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-                // Fallback STUN servers (Twilio/other providers)
+                // Priority 3: Fallback STUN servers (Twilio/other providers)
                 { urls: 'stun:stun.services.mozilla.com:3478' },
                 { urls: 'stun:stun.stunprotocol.org:3478' },
-                // Free TURN server fallback (for restrictive NAT/firewalls)
+                // Priority 4: Free TURN server fallback (for restrictive NAT/firewalls)
                 {
                     urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
                     username: 'openrelay',
@@ -387,12 +402,22 @@ function WatchTogetherContent() {
         // Handle connection state changes
         peerConnection.onconnectionstatechange = () => {
             const state = peerConnection.connectionState;
-            console.log(`🔌 [CONNECTION STATE] ${peerId.substring(0, 8)}... → ${state}`);
+            const iceState = peerConnection.iceConnectionState;
+            const iceGatheringState = peerConnection.iceGatheringState;
+            console.log(`🔌 [CONNECTION STATE] ${peerId.substring(0, 8)}... → ${state} (ICE: ${iceState}, gathering: ${iceGatheringState})`);
             
             if (state === 'connected') {
                 console.log(`✅ [PEER CONNECTION ESTABLISHED] Video/audio should now flow`);
             } else if (state === 'failed') {
-                console.error(`❌ [CONNECTION FAILED] ${peerId.substring(0, 8)}... - may be firewall/NAT issue`);
+                console.error(`❌ [CONNECTION FAILED] ${peerId.substring(0, 8)}...`);
+                console.error(`   ICE State: ${iceState}`);
+                console.error(`   ICE Gathering: ${iceGatheringState}`);
+                console.error(`   Likely causes:`);
+                console.error(`   • Firewall blocking UDP (STUN)`);
+                console.error(`   • ISP blocking P2P ports`);
+                console.error(`   • No public IP available`);
+                console.error(`   • TURN server unreachable`);
+                console.error(`   📋 Run firewall-test.sh on your VPS to diagnose`);
             } else if (state === 'disconnected') {
                 console.warn(`⚠️ [CONNECTION DISCONNECTED] ${peerId.substring(0, 8)}...`);
             }
