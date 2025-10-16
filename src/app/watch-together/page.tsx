@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Video, VideoOff, Mic, MicOff, Phone, MessageCircle, Users, Copy, Check, Send, X, Maximize, Minimize } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, Phone, MessageCircle, Users, Copy, Check, Send, X, Maximize, Minimize, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import io, { Socket } from 'socket.io-client';
+import { VIDEO_SOURCES } from '@/lib/videoSources';
 
 interface Participant {
     id: string;
@@ -47,6 +48,9 @@ function WatchTogetherContent() {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
+    const [showSourceMenu, setShowSourceMenu] = useState(false);
+    const [currentEmbedUrl, setCurrentEmbedUrl] = useState('');
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -109,11 +113,14 @@ function WatchTogetherContent() {
             if (roomResponse.ok) {
                 const data = await roomResponse.json();
                 setRoomData(data.room);
+                setCurrentEmbedUrl(data.room.embedUrl);
             } else {
                 // Fallback to localStorage if room not in database
                 const savedRoom = localStorage.getItem(`room_${roomCode}`);
                 if (savedRoom) {
-                    setRoomData(JSON.parse(savedRoom));
+                    const parsedRoom = JSON.parse(savedRoom);
+                    setRoomData(parsedRoom);
+                    setCurrentEmbedUrl(parsedRoom.embedUrl);
                 }
             }
 
@@ -458,6 +465,26 @@ function WatchTogetherContent() {
         }
     };
 
+    const changeVideoSource = (index: number) => {
+        if (!roomData) return;
+
+        setCurrentSourceIndex(index);
+        const source = VIDEO_SOURCES[index];
+
+        // Generate new embed URL based on media type
+        let newUrl: string;
+        if (roomData.type === 'tv' && roomData.season && roomData.episode) {
+            newUrl = source.embed(roomData.movieId, 'tv', roomData.season, roomData.episode);
+        } else {
+            newUrl = source.embed(roomData.movieId, 'movie');
+        }
+
+        setCurrentEmbedUrl(newUrl);
+        setShowSourceMenu(false);
+
+        addSystemMessage(`📺 Switched to ${source.name}`);
+    };
+
     const leaveRoom = () => {
         cleanup();
         router.push('/');
@@ -621,30 +648,83 @@ function WatchTogetherContent() {
             <div className="flex-1 flex overflow-hidden">
                 {/* Main Video Area */}
                 <div className="flex-1 flex flex-col bg-black relative" ref={videoContainerRef}>
+                    {/* Video Player Controls - Top Right */}
+                    <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                        {/* Source Selector */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowSourceMenu(!showSourceMenu)}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-900/90 backdrop-blur-sm hover:bg-gray-800/90 text-white rounded-lg transition-colors border border-gray-700 shadow-lg"
+                            >
+                                <span className="text-sm font-medium">
+                                    {VIDEO_SOURCES[currentSourceIndex].name}
+                                </span>
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+
+                            {showSourceMenu && (
+                                <div className="absolute top-full right-0 mt-2 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-2xl border border-gray-700 min-w-[220px] z-50">
+                                    <div className="p-2">
+                                        <div className="text-xs text-gray-400 px-3 py-2 font-semibold">
+                                            Select Video Server
+                                        </div>
+                                        {VIDEO_SOURCES.map((source, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => changeVideoSource(index)}
+                                                className={`w-full text-left px-3 py-2 rounded transition-colors ${currentSourceIndex === index
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-medium">{source.name}</span>
+                                                    <span className="text-xs bg-green-600 px-2 py-0.5 rounded font-semibold">
+                                                        {source.quality}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Fullscreen Button */}
+                        <button
+                            onClick={toggleFullscreen}
+                            className="p-2.5 bg-gray-900/90 backdrop-blur-sm hover:bg-gray-800/90 text-white rounded-lg transition-colors border border-gray-700 shadow-lg"
+                            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                        >
+                            {isFullscreen ? (
+                                <Minimize className="w-5 h-5" />
+                            ) : (
+                                <Maximize className="w-5 h-5" />
+                            )}
+                        </button>
+                    </div>
+
                     {/* Video Player */}
                     <div className="flex-1 flex items-center justify-center relative">
-                        {/* Temporarily commented out to prevent console clearing by iframe */}
-                        {/* {roomData?.embedUrl ? (
+                        {currentEmbedUrl ? (
                             <iframe
-                                src={roomData.embedUrl}
+                                key={currentEmbedUrl}
+                                src={currentEmbedUrl}
                                 className="w-full h-full"
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                                 allowFullScreen
-                                title={roomData.movieTitle}
+                                title={roomData?.movieTitle}
                             />
-                        ) : ( */}
-                        <div className="text-center">
-                            <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
-                            <p className="text-gray-400">Video player temporarily disabled for debugging</p>
-                            {roomData?.embedUrl && (
-                                <p className="text-gray-500 text-sm mt-2">embedUrl: {roomData.embedUrl.substring(0, 50)}...</p>
-                            )}
-                        </div>
-                        {/* )} */}
+                        ) : (
+                            <div className="text-center">
+                                <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
+                                <p className="text-gray-400">Loading video player...</p>
+                            </div>
+                        )}
 
                         {/* Floating Video Grid - Shows all participants with active video */}
-                        <div className="absolute top-4 right-4 z-20 space-y-2 max-w-xs">
+                        <div className="absolute top-20 right-4 z-10 space-y-2 max-w-xs">
                             {/* Your Video */}
                             {isVideoEnabled && (
                                 <div className="bg-gray-900/90 backdrop-blur-sm rounded-lg overflow-hidden shadow-2xl border border-gray-700">
@@ -732,18 +812,6 @@ function WatchTogetherContent() {
                                     </div>
                                 ))}
                         </div>
-
-                        {/* Fullscreen Toggle */}
-                        <button
-                            onClick={toggleFullscreen}
-                            className="absolute bottom-4 right-4 p-3 bg-gray-900/80 hover:bg-gray-800 rounded-full transition-colors z-10"
-                        >
-                            {isFullscreen ? (
-                                <Minimize className="w-5 h-5 text-white" />
-                            ) : (
-                                <Maximize className="w-5 h-5 text-white" />
-                            )}
-                        </button>
                     </div>
 
                     {/* Video Call Controls */}
