@@ -1,12 +1,12 @@
 // StreamFlix Database Schema
-// SQLite database for persistent user data and preferences
+// PostgreSQL database for persistent user data and preferences
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

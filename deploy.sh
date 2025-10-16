@@ -16,7 +16,6 @@ NC='\033[0m' # No Color
 
 # Configuration
 DEPLOY_DIR="$HOME/streamflix"
-DATA_DIR="$HOME/streamflix/data"  # Persistent data directory
 IMAGE_NAME="${IMAGE_NAME:-ghcr.io/bibektimilsina00/stream-flix:deploy}"
 CONTAINER_GREEN="streamflix-green"
 CONTAINER_BLUE="streamflix-blue"
@@ -203,8 +202,8 @@ start_blue_container() {
     
     if ! docker run -d \
         --name "$CONTAINER_BLUE" \
+        --network app-network \
         -p "$PORT_BLUE:8000" \
-        -v "$DATA_DIR:/app/data" \
         --env-file "$DEPLOY_DIR/.env" \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
@@ -233,8 +232,8 @@ deploy_green_container() {
     
     if ! docker run -d \
         --name "$CONTAINER_GREEN" \
+        --network app-network \
         -p "$PORT_GREEN:8000" \
-        -v "$DATA_DIR:/app/data" \
         --env-file "$DEPLOY_DIR/.env" \
         --restart unless-stopped \
         "$IMAGE_NAME"; then

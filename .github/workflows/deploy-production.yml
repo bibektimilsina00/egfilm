@@ -63,8 +63,8 @@ jobs:
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
           
-          # Database (will be overridden at runtime)
-          DATABASE_URL=file:/app/data/production.db
+          # Database - PostgreSQL
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
           
           # TMDb API (Public - used at build time and runtime)
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
@@ -163,10 +163,9 @@ jobs:
             
             # Create/update .env file
             mkdir -p ~/streamflix
-            mkdir -p ~/streamflix/data
             cat > ~/streamflix/.env << 'EOF'
             NODE_ENV=production
-            DATABASE_URL=file:/app/data/production.db
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
             AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}

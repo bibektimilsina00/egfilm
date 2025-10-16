@@ -1,22 +1,45 @@
-# Docker Compose for StreamFlix Production
+# Docker Compose for StreamFlix Production with PostgreSQL
 
 services:
+  # PostgreSQL Database
+  database:
+    image: postgres:16-alpine
+    container_name: streamflix-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-movieuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-moviepass}
+      - POSTGRES_DB=${POSTGRES_DB:-moviedb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-movieuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # StreamFlix Application
   streamflix:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: streamflix-app
+    depends_on:
+      database:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:/app/data/prod.db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-movieuser}:${POSTGRES_PASSWORD:-moviepass}@database:5432/${POSTGRES_DB:-moviedb}
       - NEXT_PUBLIC_TMDB_API_KEY=${NEXT_PUBLIC_TMDB_API_KEY}
       - NEXT_PUBLIC_TMDB_BASE_URL=${NEXT_PUBLIC_TMDB_BASE_URL:-https://api.themoviedb.org/3}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:8000}
-    volumes:
-      - streamflix-data:/app/data
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_URL=${AUTH_URL:-http://localhost:8000}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/"]
@@ -24,7 +47,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
-  streamflix-data:
+  postgres_data:
     driver: local

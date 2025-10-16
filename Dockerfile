@@ -40,9 +40,6 @@ RUN adduser --system --uid 1001 nextjs
 # Install Prisma CLI globally for migrations
 RUN npm install -g prisma
 
-# Create data directory for database
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
-
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma

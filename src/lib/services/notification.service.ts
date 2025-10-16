@@ -225,7 +225,7 @@ export async function sendWatchInvite(
 
 /**
  * Search users for invites (exclude self)
- * Note: SQLite doesn't support mode: 'insensitive', so we fetch all users and filter in JS
+ * PostgreSQL supports case-insensitive search with mode: 'insensitive'
  * @param currentUserEmail - Email of the current user (from session)
  */
 export async function searchUsersForInvite(query: string, currentUserEmail: string) {
@@ -240,24 +240,32 @@ export async function searchUsersForInvite(query: string, currentUserEmail: stri
             throw new Error('Current user not found');
         }
 
-        // Fetch all users except current user
-        const allUsers = await prisma.user.findMany({
+        // Use PostgreSQL case-insensitive search
+        const users = await prisma.user.findMany({
             where: {
                 id: { not: currentUser.id }, // Exclude current user by ID
+                OR: [
+                    {
+                        name: {
+                            contains: query,
+                            mode: 'insensitive', // PostgreSQL case-insensitive search
+                        },
+                    },
+                    {
+                        email: {
+                            contains: query,
+                            mode: 'insensitive', // PostgreSQL case-insensitive search
+                        },
+                    },
+                ],
             },
             select: {
                 id: true,
                 name: true,
                 email: true,
             },
+            take: 10, // Limit to 10 results at database level
         });
-
-        // Filter case-insensitively in JavaScript
-        const lowerQuery = query.toLowerCase();
-        const users = allUsers.filter((user: { id: string; name: string | null; email: string }) =>
-            user.name?.toLowerCase().includes(lowerQuery) ||
-            user.email.toLowerCase().includes(lowerQuery)
-        ).slice(0, 10); // Take first 10 matches
 
         return users;
     } catch (error) {
