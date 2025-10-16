@@ -63,14 +63,16 @@ jobs:
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
           
+          # Database (will be overridden at runtime)
+          DATABASE_URL=file:/app/data/production.db
+          
           # TMDb API (Public - used at build time and runtime)
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
           NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
           
-          # NextAuth (Server-side only)
-          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-          DATABASE_URL=${{ vars.DATABASE_URL }}
+          # NextAuth v5 (Server-side only)
+          AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          AUTH_URL=${{ secrets.NEXTAUTH_URL }}
           EOF
           
           echo "✅ Environment file generated"
@@ -161,13 +163,14 @@ jobs:
             
             # Create/update .env file
             mkdir -p ~/streamflix
+            mkdir -p ~/streamflix/data
             cat > ~/streamflix/.env << 'EOF'
             NODE_ENV=production
+            DATABASE_URL=file:/app/data/production.db
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
-            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            DATABASE_URL=${{ vars.DATABASE_URL }}
+            AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            AUTH_URL=${{ secrets.NEXTAUTH_URL }}
             EOF
             
             # Run deployment script

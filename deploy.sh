@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 DEPLOY_DIR="$HOME/streamflix"
+DATA_DIR="$HOME/streamflix/data"  # Persistent data directory
 IMAGE_NAME="${IMAGE_NAME:-ghcr.io/bibektimilsina00/stream-flix:deploy}"
 CONTAINER_GREEN="streamflix-green"
 CONTAINER_BLUE="streamflix-blue"
@@ -85,14 +86,22 @@ check_env_file() {
         
         cat > "$DEPLOY_DIR/.env" << 'EOF'
 # StreamFlix Environment Configuration
+DATABASE_URL=file:/app/data/production.db
 NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://your-server-ip:8000
+AUTH_SECRET=your_nextauth_secret_here
+AUTH_URL=http://your-server-ip:8000
 NODE_ENV=production
 EOF
         
         log_warning "Please edit $DEPLOY_DIR/.env with actual values"
         log_info "Continuing with existing .env (if container was running)..."
+    fi
+    
+    # Create data directory if it doesn't exist
+    if [ ! -d "$DATA_DIR" ]; then
+        log_step "Creating data directory for database"
+        mkdir -p "$DATA_DIR"
+        log_success "Data directory created at $DATA_DIR"
     fi
 }
 
@@ -143,6 +152,7 @@ start_blue_container() {
     if ! docker run -d \
         --name "$CONTAINER_BLUE" \
         -p "$PORT_BLUE:8000" \
+        -v "$DATA_DIR:/app/data" \
         --env-file "$DEPLOY_DIR/.env" \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
@@ -172,6 +182,7 @@ deploy_green_container() {
     if ! docker run -d \
         --name "$CONTAINER_GREEN" \
         -p "$PORT_GREEN:8000" \
+        -v "$DATA_DIR:/app/data" \
         --env-file "$DEPLOY_DIR/.env" \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
