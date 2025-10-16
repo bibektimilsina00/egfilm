@@ -316,20 +316,40 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
             // Watch Together - Update media status
             socket.on('update-media-status', ({ roomCode, hasVideo, hasAudio }) => {
+                console.log(`🎬 [MEDIA UPDATE] Socket: ${socket.id}, Room: ${roomCode}, Video: ${hasVideo}, Audio: ${hasAudio}`);
+                
                 const room = watchTogetherRooms.get(roomCode);
-                if (!room) return;
+                if (!room) {
+                    console.error(`❌ [MEDIA ERROR] Room not found: ${roomCode}`);
+                    return;
+                }
 
                 const participant = room.participants.get(socket.id);
                 if (participant) {
+                    const oldVideo = participant.hasVideo;
+                    const oldAudio = participant.hasAudio;
+                    
                     participant.hasVideo = hasVideo;
                     participant.hasAudio = hasAudio;
 
+                    console.log(`✅ [MEDIA UPDATED] ${participant.username}: Video ${oldVideo}→${hasVideo}, Audio ${oldAudio}→${hasAudio}`);
+                    console.log(`📊 [ROOM STATE] Room: ${roomCode}, Total participants: ${room.participants.size}`);
+                    
+                    // Log all participants' media status
+                    room.participants.forEach((p, socketId) => {
+                        console.log(`  - ${p.username} (${socketId.substring(0, 8)}...): Video=${p.hasVideo}, Audio=${p.hasAudio}`);
+                    });
+
                     // Notify others
+                    console.log(`📤 [BROADCAST] Notifying other participants about ${participant.username}'s media update`);
                     socket.to(roomCode).emit('participant-updated', {
                         participantId: socket.id,
                         hasVideo,
-                        hasAudio
+                        hasAudio,
+                        username: participant.username
                     });
+                } else {
+                    console.error(`❌ [MEDIA ERROR] Participant not found in room: ${roomCode}`);
                 }
             });
 
@@ -344,6 +364,8 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
             // Watch Together - WebRTC Signaling
             socket.on('webrtc-offer', ({ roomCode, to, offer }) => {
+                console.log(`🎥 [WEBRTC OFFER] From: ${socket.id.substring(0, 8)}... → To: ${to.substring(0, 8)}... (Room: ${roomCode})`);
+                console.log(`   Offer type: ${offer.type}, SDP length: ${offer.sdp?.length || 0}`);
                 socket.to(to).emit('webrtc-offer', {
                     from: socket.id,
                     offer
@@ -351,6 +373,8 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             });
 
             socket.on('webrtc-answer', ({ roomCode, to, answer }) => {
+                console.log(`🎤 [WEBRTC ANSWER] From: ${socket.id.substring(0, 8)}... → To: ${to.substring(0, 8)}... (Room: ${roomCode})`);
+                console.log(`   Answer type: ${answer.type}, SDP length: ${answer.sdp?.length || 0}`);
                 socket.to(to).emit('webrtc-answer', {
                     from: socket.id,
                     answer
@@ -358,6 +382,8 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             });
 
             socket.on('webrtc-ice-candidate', ({ roomCode, to, candidate }) => {
+                console.log(`❄️ [ICE CANDIDATE] From: ${socket.id.substring(0, 8)}... → To: ${to.substring(0, 8)}... (Room: ${roomCode})`);
+                console.log(`   Candidate: ${candidate.candidate?.substring(0, 50)}...`);
                 socket.to(to).emit('webrtc-ice-candidate', {
                     from: socket.id,
                     candidate

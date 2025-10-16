@@ -248,13 +248,18 @@ function WatchTogetherContent() {
 
     const setupLocalMedia = async () => {
         try {
+            console.log('📡 [SETUP MEDIA] Starting local media setup...');
+            
             // Check if mediaDevices is available
             if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 const errorMsg = '⚠️ Camera/microphone access is not available in your browser';
+                console.error('📡 [SETUP MEDIA ERROR]', errorMsg);
                 addSystemMessage(errorMsg);
                 localStreamRef.current = null;
                 return;
             }
+
+            console.log('📡 [SETUP MEDIA] mediaDevices available, requesting permissions...');
 
             // Request BOTH camera and microphone permissions upfront
             // This shows the browser permission dialog
@@ -263,39 +268,68 @@ function WatchTogetherContent() {
                 audio: true   // Always request audio permission
             };
 
+            console.log('📡 [SETUP MEDIA] Constraints:', constraints);
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log('✅ [SETUP MEDIA] Stream obtained successfully');
+            
             localStreamRef.current = stream;
+
+            // Log stream tracks
+            const videoTracks = stream.getVideoTracks();
+            const audioTracks = stream.getAudioTracks();
+            console.log(`📡 [STREAM TRACKS] Video: ${videoTracks.length}, Audio: ${audioTracks.length}`);
+            
+            if (videoTracks.length > 0) {
+                console.log(`📹 [VIDEO TRACK] Device: ${videoTracks[0].label}, Ready: ${videoTracks[0].readyState}`);
+            }
+            if (audioTracks.length > 0) {
+                console.log(`🎤 [AUDIO TRACK] Device: ${audioTracks[0].label}, Ready: ${audioTracks[0].readyState}`);
+            }
 
             // Set initial states (video OFF, audio ON by default)
             const videoTrack = stream.getVideoTracks()[0];
             if (videoTrack) {
                 videoTrack.enabled = false; // Start with video OFF
+                console.log('📹 [VIDEO TRACK] Set to disabled (OFF)');
             }
 
             const audioTrack = stream.getAudioTracks()[0];
             if (audioTrack) {
                 audioTrack.enabled = true; // Start with audio ON
+                console.log('🎤 [AUDIO TRACK] Set to enabled (ON)');
             }
 
             // Update UI states to match
             setIsVideoEnabled(false);
             setIsAudioEnabled(true);
+            console.log('✅ [UI STATE] Video: OFF, Audio: ON');
 
             // Set local video element but don't show video initially
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
+                console.log('📹 [VIDEO ELEMENT] srcObject set successfully');
+            } else {
+                console.warn('⚠️ [VIDEO ELEMENT] localVideoRef not available');
             }
 
-            addSystemMessage('✅ Camera and microphone permissions granted');
+            const successMsg = '✅ Camera and microphone permissions granted';
+            console.log('📡 [SETUP MEDIA]', successMsg);
+            addSystemMessage(successMsg);
         } catch (error: any) {
+            console.error('📡 [SETUP MEDIA ERROR]', error);
             localStreamRef.current = null;
+            
+            let errorMsg = '';
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                addSystemMessage('❌ Camera/microphone access denied. Please allow permissions in your browser.');
+                errorMsg = '❌ Camera/microphone access denied. Please allow permissions in your browser.';
             } else if (error.name === 'NotFoundError') {
-                addSystemMessage('❌ No camera or microphone found on your device.');
+                errorMsg = '❌ No camera or microphone found on your device.';
             } else {
-                addSystemMessage('❌ Failed to access camera/microphone: ' + error.message);
+                errorMsg = '❌ Failed to access camera/microphone: ' + error.message;
             }
+            
+            console.error('📡 [SETUP MEDIA ERROR MESSAGE]', errorMsg);
+            addSystemMessage(errorMsg);
         }
     };
 
@@ -360,52 +394,92 @@ function WatchTogetherContent() {
     };
 
     const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
-        if (!peerConnections[from]) {
-            await initializePeerConnection(from);
+        try {
+            console.log(`🎥 [WEBRTC OFFER RECEIVED] From: ${from.substring(0, 8)}..., Type: ${offer.type}`);
+            
+            if (!peerConnections[from]) {
+                console.log(`🎥 [WEBRTC] Creating new peer connection for ${from.substring(0, 8)}...`);
+                await initializePeerConnection(from);
+            }
+
+            const peerConnection = peerConnections[from];
+            console.log(`🎥 [WEBRTC] Setting remote description (offer) for ${from.substring(0, 8)}...`);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+            console.log(`🎥 [WEBRTC] Creating answer for ${from.substring(0, 8)}...`);
+            const answer = await peerConnection.createAnswer();
+            console.log(`✅ [WEBRTC ANSWER CREATED] Type: ${answer.type}, SDP length: ${answer.sdp?.length || 0}`);
+            
+            await peerConnection.setLocalDescription(answer);
+
+            console.log(`📤 [WEBRTC] Sending answer to ${from.substring(0, 8)}...`);
+            socket.emit('webrtc-answer', {
+                roomCode,
+                to: from,
+                answer
+            });
+        } catch (err: any) {
+            console.error(`❌ [WEBRTC OFFER ERROR]`, err);
         }
-
-        const peerConnection = peerConnections[from];
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-
-        socket.emit('webrtc-answer', {
-            roomCode,
-            to: from,
-            answer
-        });
     };
 
     const handleAnswer = async (from: string, answer: RTCSessionDescriptionInit) => {
-        const peerConnection = peerConnections[from];
-        if (peerConnection) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        try {
+            console.log(`🎤 [WEBRTC ANSWER RECEIVED] From: ${from.substring(0, 8)}..., Type: ${answer.type}`);
+            
+            const peerConnection = peerConnections[from];
+            if (peerConnection) {
+                console.log(`🎤 [WEBRTC] Setting remote description (answer) for ${from.substring(0, 8)}...`);
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                console.log(`✅ [WEBRTC ANSWER ACCEPTED] Connection state: ${peerConnection.connectionState}`);
+            } else {
+                console.error(`❌ [WEBRTC ANSWER ERROR] No peer connection found for ${from.substring(0, 8)}...`);
+            }
+        } catch (err: any) {
+            console.error(`❌ [WEBRTC ANSWER ERROR]`, err);
         }
     };
 
     const handleIceCandidate = async (from: string, candidate: RTCIceCandidateInit) => {
-        const peerConnection = peerConnections[from];
-        if (peerConnection) {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        try {
+            console.log(`❄️ [ICE CANDIDATE RECEIVED] From: ${from.substring(0, 8)}..., Candidate: ${candidate.candidate?.substring(0, 40)}...`);
+            
+            const peerConnection = peerConnections[from];
+            if (peerConnection) {
+                console.log(`❄️ [ICE] Adding candidate to peer connection ${from.substring(0, 8)}...`);
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                console.log(`✅ [ICE CANDIDATE ADDED] Connection state: ${peerConnection.connectionState}`);
+            } else {
+                console.error(`❌ [ICE ERROR] No peer connection found for ${from.substring(0, 8)}...`);
+            }
+        } catch (err: any) {
+            console.error(`❌ [ICE CANDIDATE ERROR]`, err);
         }
     };
 
     const toggleVideo = async () => {
         try {
+            console.log('🎬 [TOGGLE VIDEO] Starting video toggle...');
+            
             if (!socket || !socket.connected) {
-                addSystemMessage('❌ Not connected to room. Please reload the page.');
+                const msg = '❌ Not connected to room. Please reload the page.';
+                console.error('🎬 [TOGGLE VIDEO ERROR]', msg);
+                addSystemMessage(msg);
                 return;
             }
 
             if (!localStreamRef.current) {
-                addSystemMessage('❌ No media stream available. Please reload the page.');
+                const msg = '❌ No media stream available. Please reload the page.';
+                console.error('🎬 [TOGGLE VIDEO ERROR]', msg);
+                addSystemMessage(msg);
                 return;
             }
 
             const videoTrack = localStreamRef.current.getVideoTracks()[0];
             if (!videoTrack) {
-                addSystemMessage('❌ No camera track found. Please reload the page.');
+                const msg = '❌ No camera track found. Please reload the page.';
+                console.error('🎬 [TOGGLE VIDEO ERROR]', msg);
+                addSystemMessage(msg);
                 return;
             }
 
@@ -414,36 +488,51 @@ function WatchTogetherContent() {
             const newVideoState = videoTrack.enabled;
             setIsVideoEnabled(newVideoState);
 
-            console.log('📹 Video toggled:', newVideoState, 'localVideoRef:', !!localVideoRef.current, 'srcObject:', !!localVideoRef.current?.srcObject);
+            console.log(`✅ [VIDEO STATE] Enabled: ${newVideoState}`);
+            console.log(`📹 [VIDEO TRACK] Status: ${videoTrack.enabled ? 'ACTIVE' : 'INACTIVE'}`);
+            console.log(`📹 [LOCAL VIDEO] Ref available: ${!!localVideoRef.current}, SrcObject: ${!!localVideoRef.current?.srcObject}`);
+            console.log(`📹 [STREAM TRACKS] Video: ${localStreamRef.current.getVideoTracks().length}, Audio: ${localStreamRef.current.getAudioTracks().length}`);
 
             // Notify other participants
+            console.log(`📤 [MEDIA BROADCAST] Sending update: video=${newVideoState}, audio=${isAudioEnabled}`);
             socket.emit('update-media-status', {
                 roomCode,
                 hasVideo: newVideoState,
                 hasAudio: isAudioEnabled
             });
 
-            addSystemMessage(newVideoState ? '📹 Camera enabled' : '📹 Camera disabled');
+            const statusMsg = newVideoState ? '📹 Camera enabled' : '📹 Camera disabled';
+            console.log(`✅ [VIDEO NOTIFICATION] ${statusMsg}`);
+            addSystemMessage(statusMsg);
         } catch (err: any) {
+            console.error('🎬 [TOGGLE VIDEO ERROR]', err);
             addSystemMessage('❌ Could not toggle camera: ' + err.message);
         }
     };
 
     const toggleAudio = () => {
         try {
+            console.log('🎤 [TOGGLE AUDIO] Starting audio toggle...');
+            
             if (!socket || !socket.connected) {
-                addSystemMessage('❌ Not connected to room. Please reload the page.');
+                const msg = '❌ Not connected to room. Please reload the page.';
+                console.error('🎤 [TOGGLE AUDIO ERROR]', msg);
+                addSystemMessage(msg);
                 return;
             }
 
             if (!localStreamRef.current) {
-                addSystemMessage('❌ No media stream available. Please reload the page.');
+                const msg = '❌ No media stream available. Please reload the page.';
+                console.error('🎤 [TOGGLE AUDIO ERROR]', msg);
+                addSystemMessage(msg);
                 return;
             }
 
             const audioTrack = localStreamRef.current.getAudioTracks()[0];
             if (!audioTrack) {
-                addSystemMessage('❌ No microphone track found. Please reload the page.');
+                const msg = '❌ No microphone track found. Please reload the page.';
+                console.error('🎤 [TOGGLE AUDIO ERROR]', msg);
+                addSystemMessage(msg);
                 return;
             }
 
@@ -452,15 +541,23 @@ function WatchTogetherContent() {
             const newAudioState = audioTrack.enabled;
             setIsAudioEnabled(newAudioState);
 
+            console.log(`✅ [AUDIO STATE] Enabled: ${newAudioState}`);
+            console.log(`🎤 [AUDIO TRACK] Status: ${audioTrack.enabled ? 'ACTIVE' : 'MUTED'}`);
+            console.log(`🎤 [STREAM TRACKS] Video: ${localStreamRef.current.getVideoTracks().length}, Audio: ${localStreamRef.current.getAudioTracks().length}`);
+
             // Notify other participants
+            console.log(`📤 [MEDIA BROADCAST] Sending update: video=${isVideoEnabled}, audio=${newAudioState}`);
             socket.emit('update-media-status', {
                 roomCode,
                 hasVideo: isVideoEnabled,
                 hasAudio: newAudioState
             });
 
-            addSystemMessage(newAudioState ? '🎤 Microphone enabled' : '🎤 Microphone muted');
+            const statusMsg = newAudioState ? '🎤 Microphone enabled' : '🎤 Microphone muted';
+            console.log(`✅ [AUDIO NOTIFICATION] ${statusMsg}`);
+            addSystemMessage(statusMsg);
         } catch (err: any) {
+            console.error('🎤 [TOGGLE AUDIO ERROR]', err);
             addSystemMessage('❌ Could not toggle microphone: ' + err.message);
         }
     };
