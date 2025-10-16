@@ -10,34 +10,28 @@ export interface VideoSource {
 }
 
 /**
- * Popular video source providers
- * These are common embed patterns used by streaming sites
+ * Popular video source providers - UPDATED 2025
+ * These are the latest working embed patterns used by streaming sites
  */
 export const VIDEO_SOURCES: VideoSource[] = [
     {
-        name: 'VidSrc',
-        quality: 'HD',
+        name: 'VidLink Pro',
+        quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
+            // VidLink.pro - Biggest streaming API with 99K+ movies, 69K+ shows
+            // Supports customization, watch progress tracking, player events
             if (type === 'tv' && season && episode) {
-                return `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`;
+                return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
             }
-            return `https://vidsrc.xyz/embed/movie/${tmdbId}`;
-        }
-    },
-    {
-        name: 'VidSrc Pro',
-        quality: 'HD',
-        embed: (tmdbId, type, season, episode) => {
-            if (type === 'tv' && season && episode) {
-                return `https://vidsrc.pro/embed/tv/${tmdbId}/${season}/${episode}`;
-            }
-            return `https://vidsrc.pro/embed/movie/${tmdbId}`;
+            return `https://vidlink.pro/movie/${tmdbId}`;
         }
     },
     {
         name: 'VidSrc.to',
-        quality: 'HD',
+        quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
+            // VidSrc.to - Next generation streaming API, still active
+            // Auto-update links, responsive, high quality
             if (type === 'tv' && season && episode) {
                 return `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`;
             }
@@ -45,23 +39,51 @@ export const VIDEO_SOURCES: VideoSource[] = [
         }
     },
     {
-        name: '2Embed',
-        quality: 'HD',
+        name: 'AutoEmbed',
+        quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
+            // AutoEmbed.cc - Supports both IMDB and TMDB IDs
+            // Can select default server with ?server=2 parameter
             if (type === 'tv' && season && episode) {
-                return `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`;
+                return `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`;
             }
-            return `https://www.2embed.cc/embed/${tmdbId}`;
+            return `https://player.autoembed.cc/embed/movie/${tmdbId}`;
         }
     },
     {
-        name: 'SuperEmbed',
-        quality: 'HD',
+        name: 'VidSrc ICU',
+        quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
+            // VidSrc.icu - Minimal ads, supports anime
+            // Also provides movie/tv lists API
             if (type === 'tv' && season && episode) {
-                return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`;
+                return `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`;
             }
-            return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+            return `https://vidsrc.icu/embed/movie/${tmdbId}`;
+        }
+    },
+    {
+        name: 'VidSrc.cc',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // VidSrc.cc - Latest generation v2 player
+            // Supports custom subtitles and player events
+            if (type === 'tv' && season && episode) {
+                return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
+            }
+            return `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
+        }
+    },
+    {
+        name: 'VidSrc NEW',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // VidSrc new official domain (vidsrcme.ru)
+            // Replaces old vidsrc.me, vidsrc.xyz, vidsrc.net
+            if (type === 'tv' && season && episode) {
+                return `https://vidsrcme.ru/embed/tv/${tmdbId}/${season}/${episode}`;
+            }
+            return `https://vidsrcme.ru/embed/movie/${tmdbId}`;
         }
     }
 ];
