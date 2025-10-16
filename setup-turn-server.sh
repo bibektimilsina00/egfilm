@@ -23,9 +23,25 @@ echo ""
 
 # Install coturn
 echo "📦 Installing coturn..."
-apt-get update > /dev/null 2>&1
-apt-get install -y coturn > /dev/null 2>&1
+apt-get update
+apt-get install -y coturn
 echo "✅ coturn installed"
+
+# Verify installation
+if ! command -v turnserver &> /dev/null; then
+    echo "❌ coturn installation failed - turnserver command not found"
+    apt-get install -y coturn || true
+    if ! command -v turnserver &> /dev/null; then
+        echo "❌ Cannot install coturn. Try manually:"
+        echo "   apt-get update && apt-get install -y coturn"
+        exit 1
+    fi
+fi
+echo ""
+
+# Create directory if it doesn't exist
+mkdir -p /etc/coturn
+echo "✅ /etc/coturn directory ready"
 echo ""
 
 # Create TURN config
@@ -73,7 +89,18 @@ chmod 755 /var/log/coturn
 echo "🔄 Starting TURN server..."
 systemctl restart coturn
 systemctl enable coturn
-echo "✅ TURN server started and enabled"
+
+# Wait a moment and check status
+sleep 2
+if systemctl is-active --quiet coturn; then
+    echo "✅ TURN server started and enabled"
+else
+    echo "❌ TURN server failed to start"
+    echo "Checking logs:"
+    systemctl status coturn --no-pager
+    journalctl -u coturn -n 20 --no-pager
+    exit 1
+fi
 echo ""
 
 # Verify it's running
