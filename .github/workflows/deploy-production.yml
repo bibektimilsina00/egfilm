@@ -65,14 +65,22 @@ jobs:
           
           # Database - PostgreSQL
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}
           
           # TMDb API (Public - used at build time and runtime)
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-          NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+          NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
           
           # NextAuth v5 (Server-side only)
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           AUTH_URL=${{ secrets.NEXTAUTH_URL }}
+          
+          # App Configuration
+          NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'StreamFlix' }}
+          NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
           EOF
           
           echo "✅ Environment file generated"
@@ -164,12 +172,31 @@ jobs:
             # Create/update .env file
             mkdir -p ~/streamflix
             cat > ~/streamflix/.env << 'EOF'
+            # Node Environment
             NODE_ENV=production
+            
+            # Database Configuration
             DATABASE_URL=${{ secrets.DATABASE_URL }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}
+            
+            # TMDb API Configuration
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-            NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+            NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
+            
+            # Authentication (NextAuth v5)
             AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             AUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            
+            # App Configuration
+            NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'StreamFlix' }}
+            NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
+            
+            # GitHub Container Registry (for pulling images)
+            GHCR_USER=${{ github.actor }}
+            GHCR_TOKEN=${{ secrets.REGISTRY_TOKEN }}
             EOF
             
             # Run deployment script
