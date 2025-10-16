@@ -673,8 +673,8 @@ function WatchTogetherContent() {
                                                 key={index}
                                                 onClick={() => changeVideoSource(index)}
                                                 className={`w-full text-left px-3 py-2 rounded transition-colors ${currentSourceIndex === index
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'text-gray-300 hover:bg-gray-800'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-300 hover:bg-gray-800'
                                                     }`}
                                             >
                                                 <div className="flex items-center justify-between">
@@ -706,7 +706,8 @@ function WatchTogetherContent() {
 
                     {/* Video Player */}
                     <div className="flex-1 flex items-center justify-center relative">
-                        {currentEmbedUrl ? (
+                        {/* Temporarily commented out for debugging */}
+                        {/* {currentEmbedUrl ? (
                             <iframe
                                 key={currentEmbedUrl}
                                 src={currentEmbedUrl}
@@ -716,12 +717,15 @@ function WatchTogetherContent() {
                                 allowFullScreen
                                 title={roomData?.movieTitle}
                             />
-                        ) : (
-                            <div className="text-center">
-                                <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
-                                <p className="text-gray-400">Loading video player...</p>
-                            </div>
-                        )}
+                        ) : ( */}
+                        <div className="text-center">
+                            <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-400">Video player temporarily disabled for debugging</p>
+                            {currentEmbedUrl && (
+                                <p className="text-gray-500 text-sm mt-2">Source: {VIDEO_SOURCES[currentSourceIndex].name}</p>
+                            )}
+                        </div>
+                        {/* )} */}
 
                         {/* Floating Video Grid - Shows all participants with active video */}
                         <div className="absolute top-20 right-4 z-10 space-y-2 max-w-xs">
