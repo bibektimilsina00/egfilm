@@ -101,13 +101,13 @@ function WatchTogetherContent() {
             console.log(`   Ref exists: ${!!localVideoRef.current}`);
             console.log(`   Stream exists: ${!!localStreamRef.current}`);
             console.log(`   SrcObject: ${!!localVideoRef.current?.srcObject}`);
-            
+
             // Make sure srcObject is still set
             if (!localVideoRef.current.srcObject && localStreamRef.current) {
                 localVideoRef.current.srcObject = localStreamRef.current;
                 console.log('🎥 [VIDEO EFFECT] Re-setting srcObject');
             }
-            
+
             localVideoRef.current.play().then(() => {
                 console.log('✅ [VIDEO EFFECT] Video playback started');
             }).catch(err => {
@@ -625,7 +625,7 @@ function WatchTogetherContent() {
             console.log(`📹 [VIDEO TRACK] Status: ${videoTrack.enabled ? 'ACTIVE' : 'INACTIVE'}`);
             console.log(`📹 [LOCAL VIDEO] Ref available: ${!!localVideoRef.current}, SrcObject: ${!!localVideoRef.current?.srcObject}`);
             console.log(`📹 [STREAM TRACKS] Video: ${localStreamRef.current.getVideoTracks().length}, Audio: ${localStreamRef.current.getAudioTracks().length}`);
-            
+
             // Debug: If video is now enabled, ensure stream is connected
             if (newVideoState && localVideoRef.current && localStreamRef.current) {
                 console.log('🎥 [TOGGLE VIDEO] Video enabled - checking stream...');
