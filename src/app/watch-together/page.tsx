@@ -336,8 +336,21 @@ function WatchTogetherContent() {
     const initializePeerConnection = async (peerId: string, shouldCreateOffer: boolean = false) => {
         const configuration: RTCConfiguration = {
             iceServers: [
+                // Primary STUN servers (Google)
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                // Fallback STUN servers (Twilio/other providers)
+                { urls: 'stun:stun.services.mozilla.com:3478' },
+                { urls: 'stun:stun.stunprotocol.org:3478' },
+                // Free TURN server fallback (for restrictive NAT/firewalls)
+                {
+                    urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
+                    username: 'openrelay',
+                    credential: 'openrelay'
+                }
             ]
         };
 
@@ -375,7 +388,7 @@ function WatchTogetherContent() {
         peerConnection.onconnectionstatechange = () => {
             const state = peerConnection.connectionState;
             console.log(`🔌 [CONNECTION STATE] ${peerId.substring(0, 8)}... → ${state}`);
-
+            
             if (state === 'connected') {
                 console.log(`✅ [PEER CONNECTION ESTABLISHED] Video/audio should now flow`);
             } else if (state === 'failed') {
@@ -388,14 +401,27 @@ function WatchTogetherContent() {
         // Handle ICE connection state
         peerConnection.oniceconnectionstatechange = () => {
             const state = peerConnection.iceConnectionState;
-            console.log(`❄️ [ICE STATE] ${peerId.substring(0, 8)}... → ${state}`);
-
+            const connectionState = peerConnection.connectionState;
+            console.log(`❄️ [ICE STATE] ${peerId.substring(0, 8)}... → ${state} (connection: ${connectionState})`);
+            
             if (state === 'connected' || state === 'completed') {
                 console.log(`✅ [ICE CONNECTED] P2P connection established`);
             } else if (state === 'failed') {
-                console.error(`❌ [ICE FAILED] ${peerId.substring(0, 8)}... - check firewall/NAT`);
+                console.error(`❌ [ICE FAILED] ${peerId.substring(0, 8)}... - trying to reconnect`);
+                // Attempt to restart ICE
+                console.log(`🔄 [ICE RESTART] Attempting to restart ICE gathering...`);
+                peerConnection.restartIce?.();
             } else if (state === 'checking') {
                 console.log(`🔍 [ICE CHECKING] Finding candidates...`);
+            } else if (state === 'disconnected') {
+                console.warn(`⚠️ [ICE DISCONNECTED] ${peerId.substring(0, 8)}... - connection may have stalled`);
+                // Wait a moment and check if it recovers
+                setTimeout(() => {
+                    if (peerConnection.iceConnectionState === 'disconnected') {
+                        console.error(`❌ [ICE STILL DISCONNECTED] After 3 seconds, attempting restart`);
+                        peerConnection.restartIce?.();
+                    }
+                }, 3000);
             }
         };
 
@@ -405,16 +431,23 @@ function WatchTogetherContent() {
             if (gatheringState === 'complete') {
                 console.log(`✅ [ICE GATHERING] Complete for ${peerId.substring(0, 8)}...`);
             }
-
+            
             if (event.candidate) {
-                console.log(`📤 [ICE CANDIDATE LOCAL] Generated: ${event.candidate.candidate?.substring(0, 40)}...`);
+                const candidateStr = event.candidate.candidate || '';
+                let candidateType = 'unknown';
+                if (candidateStr.includes('host')) candidateType = 'host';
+                else if (candidateStr.includes('srflx')) candidateType = 'srflx (STUN)';
+                else if (candidateStr.includes('relay')) candidateType = 'relay (TURN)';
+                else if (candidateStr.includes('prflx')) candidateType = 'prflx (peer reflexive)';
+                
+                console.log(`📤 [ICE CANDIDATE LOCAL] Type: ${candidateType}, Candidate: ${candidateStr.substring(0, 50)}...`);
                 socket.emit('webrtc-ice-candidate', {
                     roomCode,
                     to: peerId,
                     candidate: event.candidate
                 });
             } else {
-                console.log(`✅ [ICE GATHERING COMPLETE] All local candidates gathered`);
+                console.log(`✅ [ICE GATHERING COMPLETE] All local candidates gathered (host, STUN, or TURN)`);
             }
         };
 
@@ -434,9 +467,7 @@ function WatchTogetherContent() {
             });
             console.log(`📤 [OFFER SENT] To ${peerId.substring(0, 8)}...`);
         }
-    };
-
-    const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
+    };    const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
         try {
             console.log(`🎥 [WEBRTC OFFER RECEIVED] From: ${from.substring(0, 8)}..., Type: ${offer.type}`);
 
@@ -485,13 +516,20 @@ function WatchTogetherContent() {
 
     const handleIceCandidate = async (from: string, candidate: RTCIceCandidateInit) => {
         try {
-            console.log(`❄️ [ICE CANDIDATE RECEIVED] From: ${from.substring(0, 8)}..., Candidate: ${candidate.candidate?.substring(0, 40)}...`);
+            const candidateStr = candidate.candidate || '';
+            let candidateType = 'unknown';
+            if (candidateStr.includes('host')) candidateType = 'host';
+            else if (candidateStr.includes('srflx')) candidateType = 'srflx (STUN)';
+            else if (candidateStr.includes('relay')) candidateType = 'relay (TURN)';
+            else if (candidateStr.includes('prflx')) candidateType = 'prflx (peer reflexive)';
+            
+            console.log(`❄️ [ICE CANDIDATE RECEIVED] From: ${from.substring(0, 8)}..., Type: ${candidateType}, Candidate: ${candidateStr.substring(0, 50)}...`);
 
             const peerConnection = peerConnections[from];
             if (peerConnection) {
                 console.log(`❄️ [ICE] Adding candidate to peer connection ${from.substring(0, 8)}...`);
                 await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-                console.log(`✅ [ICE CANDIDATE ADDED] Connection state: ${peerConnection.connectionState}`);
+                console.log(`✅ [ICE CANDIDATE ADDED] Connection state: ${peerConnection.connectionState}, ICE state: ${peerConnection.iceConnectionState}`);
             } else {
                 console.error(`❌ [ICE ERROR] No peer connection found for ${from.substring(0, 8)}...`);
             }
