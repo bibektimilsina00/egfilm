@@ -11,26 +11,39 @@ export interface VideoSource {
 
 /**
  * Popular video source providers - UPDATED 2025
+ * Ordered by ad experience: Minimal ads first, then standard
  * These are the latest working embed patterns used by streaming sites
  */
 export const VIDEO_SOURCES: VideoSource[] = [
     {
-        name: 'VidLink Pro',
+        name: 'VidSrc ICU',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidLink.pro - Biggest streaming API with 99K+ movies, 69K+ shows
-            // Supports customization, watch progress tracking, player events
+            // VidSrc.icu - MINIMAL ADS ✨
+            // Best user experience, also supports anime
             if (type === 'tv' && season && episode) {
-                return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
+                return `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`;
             }
-            return `https://vidlink.pro/movie/${tmdbId}`;
+            return `https://vidsrc.icu/embed/movie/${tmdbId}`;
+        }
+    },
+    {
+        name: 'VidSrc.cc',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // VidSrc.cc - Latest generation v2 player
+            // Clean interface, supports custom subtitles and player events
+            if (type === 'tv' && season && episode) {
+                return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
+            }
+            return `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
         }
     },
     {
         name: 'VidSrc.to',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidSrc.to - Next generation streaming API, still active
+            // VidSrc.to - Next generation streaming API
             // Auto-update links, responsive, high quality
             if (type === 'tv' && season && episode) {
                 return `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`;
@@ -51,27 +64,15 @@ export const VIDEO_SOURCES: VideoSource[] = [
         }
     },
     {
-        name: 'VidSrc ICU',
+        name: 'VidLink Pro',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidSrc.icu - Minimal ads, supports anime
-            // Also provides movie/tv lists API
+            // VidLink.pro - Biggest streaming API with 99K+ movies, 69K+ shows
+            // Supports customization, watch progress tracking, player events
             if (type === 'tv' && season && episode) {
-                return `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`;
+                return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
             }
-            return `https://vidsrc.icu/embed/movie/${tmdbId}`;
-        }
-    },
-    {
-        name: 'VidSrc.cc',
-        quality: '1080p',
-        embed: (tmdbId, type, season, episode) => {
-            // VidSrc.cc - Latest generation v2 player
-            // Supports custom subtitles and player events
-            if (type === 'tv' && season && episode) {
-                return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
-            }
-            return `https://vidsrc.cc/v2/embed/movie/${tmdbId}`;
+            return `https://vidlink.pro/movie/${tmdbId}`;
         }
     },
     {
