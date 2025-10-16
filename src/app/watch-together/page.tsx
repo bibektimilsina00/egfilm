@@ -249,7 +249,7 @@ function WatchTogetherContent() {
     const setupLocalMedia = async () => {
         try {
             console.log('📡 [SETUP MEDIA] Starting local media setup...');
-            
+
             // Check if mediaDevices is available
             if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 const errorMsg = '⚠️ Camera/microphone access is not available in your browser';
@@ -271,14 +271,14 @@ function WatchTogetherContent() {
             console.log('📡 [SETUP MEDIA] Constraints:', constraints);
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             console.log('✅ [SETUP MEDIA] Stream obtained successfully');
-            
+
             localStreamRef.current = stream;
 
             // Log stream tracks
             const videoTracks = stream.getVideoTracks();
             const audioTracks = stream.getAudioTracks();
             console.log(`📡 [STREAM TRACKS] Video: ${videoTracks.length}, Audio: ${audioTracks.length}`);
-            
+
             if (videoTracks.length > 0) {
                 console.log(`📹 [VIDEO TRACK] Device: ${videoTracks[0].label}, Ready: ${videoTracks[0].readyState}`);
             }
@@ -318,7 +318,7 @@ function WatchTogetherContent() {
         } catch (error: any) {
             console.error('📡 [SETUP MEDIA ERROR]', error);
             localStreamRef.current = null;
-            
+
             let errorMsg = '';
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 errorMsg = '❌ Camera/microphone access denied. Please allow permissions in your browser.';
@@ -327,7 +327,7 @@ function WatchTogetherContent() {
             } else {
                 errorMsg = '❌ Failed to access camera/microphone: ' + error.message;
             }
-            
+
             console.error('📡 [SETUP MEDIA ERROR MESSAGE]', errorMsg);
             addSystemMessage(errorMsg);
         }
@@ -396,7 +396,7 @@ function WatchTogetherContent() {
     const handleOffer = async (from: string, offer: RTCSessionDescriptionInit) => {
         try {
             console.log(`🎥 [WEBRTC OFFER RECEIVED] From: ${from.substring(0, 8)}..., Type: ${offer.type}`);
-            
+
             if (!peerConnections[from]) {
                 console.log(`🎥 [WEBRTC] Creating new peer connection for ${from.substring(0, 8)}...`);
                 await initializePeerConnection(from);
@@ -409,7 +409,7 @@ function WatchTogetherContent() {
             console.log(`🎥 [WEBRTC] Creating answer for ${from.substring(0, 8)}...`);
             const answer = await peerConnection.createAnswer();
             console.log(`✅ [WEBRTC ANSWER CREATED] Type: ${answer.type}, SDP length: ${answer.sdp?.length || 0}`);
-            
+
             await peerConnection.setLocalDescription(answer);
 
             console.log(`📤 [WEBRTC] Sending answer to ${from.substring(0, 8)}...`);
@@ -426,7 +426,7 @@ function WatchTogetherContent() {
     const handleAnswer = async (from: string, answer: RTCSessionDescriptionInit) => {
         try {
             console.log(`🎤 [WEBRTC ANSWER RECEIVED] From: ${from.substring(0, 8)}..., Type: ${answer.type}`);
-            
+
             const peerConnection = peerConnections[from];
             if (peerConnection) {
                 console.log(`🎤 [WEBRTC] Setting remote description (answer) for ${from.substring(0, 8)}...`);
@@ -443,7 +443,7 @@ function WatchTogetherContent() {
     const handleIceCandidate = async (from: string, candidate: RTCIceCandidateInit) => {
         try {
             console.log(`❄️ [ICE CANDIDATE RECEIVED] From: ${from.substring(0, 8)}..., Candidate: ${candidate.candidate?.substring(0, 40)}...`);
-            
+
             const peerConnection = peerConnections[from];
             if (peerConnection) {
                 console.log(`❄️ [ICE] Adding candidate to peer connection ${from.substring(0, 8)}...`);
@@ -460,7 +460,7 @@ function WatchTogetherContent() {
     const toggleVideo = async () => {
         try {
             console.log('🎬 [TOGGLE VIDEO] Starting video toggle...');
-            
+
             if (!socket || !socket.connected) {
                 const msg = '❌ Not connected to room. Please reload the page.';
                 console.error('🎬 [TOGGLE VIDEO ERROR]', msg);
@@ -513,7 +513,7 @@ function WatchTogetherContent() {
     const toggleAudio = () => {
         try {
             console.log('🎤 [TOGGLE AUDIO] Starting audio toggle...');
-            
+
             if (!socket || !socket.connected) {
                 const msg = '❌ Not connected to room. Please reload the page.';
                 console.error('🎤 [TOGGLE AUDIO ERROR]', msg);

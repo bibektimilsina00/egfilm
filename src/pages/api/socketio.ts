@@ -317,7 +317,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             // Watch Together - Update media status
             socket.on('update-media-status', ({ roomCode, hasVideo, hasAudio }) => {
                 console.log(`🎬 [MEDIA UPDATE] Socket: ${socket.id}, Room: ${roomCode}, Video: ${hasVideo}, Audio: ${hasAudio}`);
-                
+
                 const room = watchTogetherRooms.get(roomCode);
                 if (!room) {
                     console.error(`❌ [MEDIA ERROR] Room not found: ${roomCode}`);
@@ -328,13 +328,13 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
                 if (participant) {
                     const oldVideo = participant.hasVideo;
                     const oldAudio = participant.hasAudio;
-                    
+
                     participant.hasVideo = hasVideo;
                     participant.hasAudio = hasAudio;
 
                     console.log(`✅ [MEDIA UPDATED] ${participant.username}: Video ${oldVideo}→${hasVideo}, Audio ${oldAudio}→${hasAudio}`);
                     console.log(`📊 [ROOM STATE] Room: ${roomCode}, Total participants: ${room.participants.size}`);
-                    
+
                     // Log all participants' media status
                     room.participants.forEach((p, socketId) => {
                         console.log(`  - ${p.username} (${socketId.substring(0, 8)}...): Video=${p.hasVideo}, Audio=${p.hasAudio}`);
