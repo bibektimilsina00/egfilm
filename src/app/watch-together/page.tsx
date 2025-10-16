@@ -97,8 +97,21 @@ function WatchTogetherContent() {
     // Ensure local video element plays when video is enabled
     useEffect(() => {
         if (localVideoRef.current && localStreamRef.current && isVideoEnabled) {
-            localVideoRef.current.play().catch(err => {
-                console.warn('⚠️ [LOCAL VIDEO AUTOPLAY] Failed to play:', err);
+            console.log('🎥 [VIDEO EFFECT] Video enabled, ensuring playback...');
+            console.log(`   Ref exists: ${!!localVideoRef.current}`);
+            console.log(`   Stream exists: ${!!localStreamRef.current}`);
+            console.log(`   SrcObject: ${!!localVideoRef.current?.srcObject}`);
+            
+            // Make sure srcObject is still set
+            if (!localVideoRef.current.srcObject && localStreamRef.current) {
+                localVideoRef.current.srcObject = localStreamRef.current;
+                console.log('🎥 [VIDEO EFFECT] Re-setting srcObject');
+            }
+            
+            localVideoRef.current.play().then(() => {
+                console.log('✅ [VIDEO EFFECT] Video playback started');
+            }).catch(err => {
+                console.warn('⚠️ [VIDEO EFFECT] Playback failed:', err.message);
             });
         }
     }, [isVideoEnabled]);
@@ -612,9 +625,21 @@ function WatchTogetherContent() {
             console.log(`📹 [VIDEO TRACK] Status: ${videoTrack.enabled ? 'ACTIVE' : 'INACTIVE'}`);
             console.log(`📹 [LOCAL VIDEO] Ref available: ${!!localVideoRef.current}, SrcObject: ${!!localVideoRef.current?.srcObject}`);
             console.log(`📹 [STREAM TRACKS] Video: ${localStreamRef.current.getVideoTracks().length}, Audio: ${localStreamRef.current.getAudioTracks().length}`);
-
-            // Notify other participants
-            console.log(`📤 [MEDIA BROADCAST] Sending update: video=${newVideoState}, audio=${isAudioEnabled}`);
+            
+            // Debug: If video is now enabled, ensure stream is connected
+            if (newVideoState && localVideoRef.current && localStreamRef.current) {
+                console.log('🎥 [TOGGLE VIDEO] Video enabled - checking stream...');
+                if (!localVideoRef.current.srcObject) {
+                    console.log('🎥 [TOGGLE VIDEO] Setting srcObject to video element');
+                    localVideoRef.current.srcObject = localStreamRef.current;
+                }
+                // Force play
+                setTimeout(() => {
+                    localVideoRef.current?.play().catch(e => {
+                        console.warn('⚠️ [TOGGLE VIDEO] Play failed:', e.message);
+                    });
+                }, 100);
+            }
             socket.emit('update-media-status', {
                 roomCode,
                 hasVideo: newVideoState,
@@ -958,8 +983,11 @@ function WatchTogetherContent() {
                                             className="w-48 h-36 object-cover bg-black"
                                             style={{
                                                 transform: 'scaleX(-1)',
-                                                WebkitTransform: 'scaleX(-1)'
+                                                WebkitTransform: 'scaleX(-1)',
+                                                minHeight: '144px',
+                                                display: 'block'
                                             }}
+                                            data-testid="local-video"
                                         />
                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                                             <div className="flex items-center justify-between">
