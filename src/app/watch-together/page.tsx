@@ -94,6 +94,15 @@ function WatchTogetherContent() {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [chatMessages]);
 
+    // Ensure local video element plays when video is enabled
+    useEffect(() => {
+        if (localVideoRef.current && localStreamRef.current && isVideoEnabled) {
+            localVideoRef.current.play().catch(err => {
+                console.warn('⚠️ [LOCAL VIDEO AUTOPLAY] Failed to play:', err);
+            });
+        }
+    }, [isVideoEnabled]);
+
     // Reset unread count when chat is opened
     useEffect(() => {
         if (showChat && !showParticipants) {
@@ -308,6 +317,11 @@ function WatchTogetherContent() {
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
                 console.log('📹 [VIDEO ELEMENT] srcObject set successfully');
+                
+                // Ensure video plays
+                localVideoRef.current.play().catch(err => {
+                    console.warn('⚠️ [VIDEO ELEMENT] Could not autoplay:', err);
+                });
             } else {
                 console.warn('⚠️ [VIDEO ELEMENT] localVideoRef not available');
             }
@@ -938,10 +952,14 @@ function WatchTogetherContent() {
                                     <div className="relative">
                                         <video
                                             ref={localVideoRef}
-                                            autoPlay
-                                            muted
-                                            playsInline
-                                            className="w-48 h-36 object-cover"
+                                            autoPlay={true}
+                                            muted={true}
+                                            playsInline={true}
+                                            className="w-48 h-36 object-cover bg-black"
+                                            style={{ 
+                                                transform: 'scaleX(-1)',
+                                                WebkitTransform: 'scaleX(-1)'
+                                            }}
                                         />
                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                                             <div className="flex items-center justify-between">
