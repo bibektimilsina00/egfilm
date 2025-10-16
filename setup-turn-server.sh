@@ -39,9 +39,11 @@ if ! command -v turnserver &> /dev/null; then
 fi
 echo ""
 
-# Create directory if it doesn't exist
+# Create directory if it doesn't exist - MUST be before config creation
 mkdir -p /etc/coturn
-echo "✅ /etc/coturn directory ready"
+mkdir -p /var/lib/coturn
+mkdir -p /var/log/coturn
+echo "✅ Required directories created"
 echo ""
 
 # Create TURN config
@@ -80,9 +82,8 @@ EOF
 echo "✅ Configuration created at /etc/coturn/turnserver.conf"
 echo ""
 
-# Create log directory
-mkdir -p /var/log/coturn
-chown coturn:coturn /var/log/coturn
+# Set proper permissions on log directory (already created above)
+chown coturn:coturn /var/log/coturn 2>/dev/null || true
 chmod 755 /var/log/coturn
 
 # Start TURN server
