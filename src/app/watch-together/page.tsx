@@ -344,52 +344,95 @@ function WatchTogetherContent() {
         const peerConnection = new RTCPeerConnection(configuration);
         peerConnections[peerId] = peerConnection;
 
+        console.log(`🔗 [PEER CONNECTION] Initialized for ${peerId.substring(0, 8)}...`);
+        console.log(`📡 [PEER CONFIG] STUN servers configured, ICE gathering state: ${peerConnection.iceGatheringState}`);
+
         // Add local stream tracks
         if (localStreamRef.current) {
             const tracks = localStreamRef.current.getTracks();
-            tracks.forEach(track => {
+            console.log(`📤 [ADDING TRACKS] Total tracks: ${tracks.length}`);
+            tracks.forEach((track, index) => {
+                console.log(`   [${index}] ${track.kind.toUpperCase()}: ${track.label}`);
                 peerConnection.addTrack(track, localStreamRef.current!);
             });
+            console.log(`✅ [TRACKS ADDED] All tracks added to peer connection`);
+        } else {
+            console.warn(`⚠️ [ADDING TRACKS] No local stream available!`);
         }
 
         // Handle incoming streams
         peerConnection.ontrack = (event) => {
+            console.log(`🎬 [REMOTE TRACK RECEIVED] From: ${peerId.substring(0, 8)}..., Track: ${event.track.kind}`);
+            console.log(`   Stream ID: ${event.streams[0]?.id}, Track enabled: ${event.track.enabled}`);
             const [remoteStream] = event.streams;
             setParticipants(prev => prev.map(p =>
                 p.id === peerId ? { ...p, stream: remoteStream } : p
             ));
+            console.log(`✅ [PARTICIPANT UPDATED] Stream assigned to ${peerId.substring(0, 8)}...`);
         };
 
         // Handle connection state changes
         peerConnection.onconnectionstatechange = () => {
-            // Connection state tracking
+            const state = peerConnection.connectionState;
+            console.log(`🔌 [CONNECTION STATE] ${peerId.substring(0, 8)}... → ${state}`);
+            
+            if (state === 'connected') {
+                console.log(`✅ [PEER CONNECTION ESTABLISHED] Video/audio should now flow`);
+            } else if (state === 'failed') {
+                console.error(`❌ [CONNECTION FAILED] ${peerId.substring(0, 8)}... - may be firewall/NAT issue`);
+            } else if (state === 'disconnected') {
+                console.warn(`⚠️ [CONNECTION DISCONNECTED] ${peerId.substring(0, 8)}...`);
+            }
         };
 
         // Handle ICE connection state
         peerConnection.oniceconnectionstatechange = () => {
-            // ICE state tracking
+            const state = peerConnection.iceConnectionState;
+            console.log(`❄️ [ICE STATE] ${peerId.substring(0, 8)}... → ${state}`);
+            
+            if (state === 'connected' || state === 'completed') {
+                console.log(`✅ [ICE CONNECTED] P2P connection established`);
+            } else if (state === 'failed') {
+                console.error(`❌ [ICE FAILED] ${peerId.substring(0, 8)}... - check firewall/NAT`);
+            } else if (state === 'checking') {
+                console.log(`🔍 [ICE CHECKING] Finding candidates...`);
+            }
         };
 
         // Handle ICE candidates
         peerConnection.onicecandidate = (event) => {
+            const gatheringState = peerConnection.iceGatheringState;
+            if (gatheringState === 'complete') {
+                console.log(`✅ [ICE GATHERING] Complete for ${peerId.substring(0, 8)}...`);
+            }
+            
             if (event.candidate) {
+                console.log(`📤 [ICE CANDIDATE LOCAL] Generated: ${event.candidate.candidate?.substring(0, 40)}...`);
                 socket.emit('webrtc-ice-candidate', {
                     roomCode,
                     to: peerId,
                     candidate: event.candidate
                 });
+            } else {
+                console.log(`✅ [ICE GATHERING COMPLETE] All local candidates gathered`);
             }
         };
 
+        console.log(`🎯 [PEER SETUP] Ready. shouldCreateOffer: ${shouldCreateOffer}`);
+
         // Only create and send offer if explicitly requested
         if (shouldCreateOffer) {
+            console.log(`📝 [CREATING OFFER] For ${peerId.substring(0, 8)}...`);
             const offer = await peerConnection.createOffer();
+            console.log(`✅ [OFFER CREATED] SDP length: ${offer.sdp?.length}`);
             await peerConnection.setLocalDescription(offer);
+            console.log(`✅ [LOCAL DESCRIPTION SET] Type: ${peerConnection.localDescription?.type}`);
             socket.emit('webrtc-offer', {
                 roomCode,
                 to: peerId,
                 offer
             });
+            console.log(`📤 [OFFER SENT] To ${peerId.substring(0, 8)}...`);
         }
     };
 
