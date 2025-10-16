@@ -141,6 +141,58 @@ remove_container() {
     fi
 }
 
+
+
+# Function to setup PostgreSQL database
+setup_postgres() {
+    log_header "DATABASE SETUP"
+
+    # Create Docker network if not exists
+    if ! docker network inspect app-network >/dev/null 2>&1; then
+        log_step "Creating Docker network: app-network"
+        docker network create app-network
+        log_success "Docker network created"
+    else
+        log_success "Docker network already exists"
+    fi
+
+    # Start PostgreSQL container if not running
+    if ! docker ps | grep -q database; then
+        log_step "Starting PostgreSQL container..."
+
+        docker run -d \
+            --name database \
+            --restart unless-stopped \
+            --network app-network \
+            -p "${POSTGRES_PORT:-5432}:5432" \
+            -v postgres_data:/var/lib/postgresql/data \
+            -e POSTGRES_USER="${POSTGRES_USER:-movieuser}" \
+            -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-moviepass}" \
+            -e POSTGRES_DB="${POSTGRES_DB:-moviedb}" \
+            --health-cmd="pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-movieuser}" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=5 \
+            postgres:16-alpine > /dev/null
+
+        log_success "Database container started"
+    else
+        log_success "Database container already running"
+    fi
+
+    # Wait for the database container to be healthy
+    log_progress_start "Waiting for database to be ready..."
+    i=0
+    CHARS="/-\|"
+    until docker inspect --format "{{.State.Health.Status}}" database 2>/dev/null | grep -q "healthy"; do
+        i=$(( (i+1) % ${#CHARS} ))
+        echo -ne "${CHARS:$i:1} "
+        sleep 0.2
+    done
+    log_progress_done "Database ready!"
+}
+
+
 # Start blue container (staging)
 start_blue_container() {
     log_header "Starting Blue Container (Staging)"
@@ -249,19 +301,22 @@ main() {
     check_deploy_dir
     check_env_file
     
-    # Step 2: Pull latest image
+    # Step 2: Setup PostgreSQL database
+    setup_postgres
+    
+    # Step 3: Pull latest image
     pull_image
     
-    # Step 3: Deploy to blue (staging)
+    # Step 4: Deploy to blue (staging)
     start_blue_container
     
-    # Step 4: Deploy to green (production)
+    # Step 5: Deploy to green (production)
     deploy_green_container
     
-    # Step 5: Cleanup
+    # Step 6: Cleanup
     cleanup_blue
     
-    # Step 6: Summary
+    # Step 7: Summary
     deployment_summary
     
     echo ""
