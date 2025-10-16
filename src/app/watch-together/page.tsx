@@ -317,7 +317,7 @@ function WatchTogetherContent() {
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
                 console.log('📹 [VIDEO ELEMENT] srcObject set successfully');
-                
+
                 // Ensure video plays
                 localVideoRef.current.play().catch(err => {
                     console.warn('⚠️ [VIDEO ELEMENT] Could not autoplay:', err);
@@ -956,7 +956,7 @@ function WatchTogetherContent() {
                                             muted={true}
                                             playsInline={true}
                                             className="w-48 h-36 object-cover bg-black"
-                                            style={{ 
+                                            style={{
                                                 transform: 'scaleX(-1)',
                                                 WebkitTransform: 'scaleX(-1)'
                                             }}
