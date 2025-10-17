@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Block access to API routes
+Disallow: /api/
+
+# Block access to admin areas (if any)
+Disallow: /admin/
+
+# Allow crawling of all content pages
+Allow: /movie/
+Allow: /tv/
+Allow: /search
+
+# Sitemap
+Sitemap: https://yourdomain.com/sitemap.xml

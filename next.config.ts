@@ -11,10 +11,21 @@ const nextConfig: NextConfig = {
         pathname: '/t/p/**',
       },
     ],
+    // Optimize images for better performance
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Enable standalone output for Docker
   output: 'standalone',
-  // Add headers to suppress Permissions-Policy warnings
+  // Performance optimizations
+  experimental: {
+    optimizeCss: true,
+    scrollRestoration: true,
+  },
+  // Compression and optimization
+  compress: true,
+  // Add headers to suppress Permissions-Policy warnings and optimize performance
   async headers() {
     return [
       {
@@ -23,6 +34,44 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'interest-cohort=(), browsing-topics=()',
+          },
+          // Security headers
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          // Performance headers
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+        ],
+      },
+      // Cache static assets
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Cache images
+      {
+        source: '/api/og',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=3600',
           },
         ],
       },

@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import { UmamiTracker } from "@/components/UmamiTracker";
+import PerformanceMonitor from "@/components/PerformanceMonitor";
+import ServiceWorker from "@/components/ServiceWorker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,9 +16,89 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#000000',
+}
+
 export const metadata: Metadata = {
-  title: "StreamFlix - Movies & TV Shows",
-  description: "Browse and discover movies and TV shows. Watch trailers, manage your watchlist, and enjoy content with friends.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'),
+  title: {
+    default: "StreamFlix - Discover Movies & TV Shows",
+    template: "%s | StreamFlix"
+  },
+  description: "Browse and discover the latest movies and TV shows. Watch trailers, manage your watchlist, and enjoy streaming content with friends. Find your next favorite show today.",
+  keywords: [
+    "free movies",
+    "watch movies online free",
+    "free TV shows",
+    "web series",
+    "watch together",
+    "group watch",
+    "free streaming",
+    "watchlist",
+    "trailers",
+    "entertainment",
+    "movie database",
+    "no signup"
+  ],
+  authors: [{ name: "StreamFlix Team" }],
+  creator: "StreamFlix",
+  publisher: "StreamFlix",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  category: "entertainment",
+  classification: "Entertainment & Streaming",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    title: "StreamFlix — Watch Movies & TV Shows Online Free",
+    description: "StreamFlix offers free movies, TV shows and web series. Invite friends to 'Watch Together' (group audio/video), create watchlists, and stream instantly — no signup required.",
+    siteName: "StreamFlix",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "StreamFlix — Free Movies, TV Shows & Watch Together",
+      },
+    ],
+    videos: [],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StreamFlix — Free Movies & Watch Together",
+    description: "Free streaming of movies, web series and TV shows. Watch together with friends via audio/video calls. No signup needed.",
+    images: ["/og-image.jpg"],
+    creator: "@streamflix",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      noimageindex: false,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    yandex: process.env.YANDEX_VERIFICATION,
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
@@ -24,15 +106,43 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'
+
+  const siteJsonLD = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'StreamFlix',
+    url: baseUrl,
+    description: 'StreamFlix - Watch movies, TV shows and web series online for free. Use Watch Together to invite friends and enjoy group audio/video streaming.',
+    publisher: {
+      '@type': 'Organization',
+      name: 'StreamFlix',
+      url: baseUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${baseUrl}/og-image.jpg`,
+      },
+    },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${baseUrl}/search?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  })
+
   return (
     <html lang="en">
       <head>
         <UmamiTracker />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLD }} />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
+          <PerformanceMonitor />
+          <ServiceWorker />
           {children}
         </SessionProvider>
       </body>
