@@ -5,8 +5,19 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Movie, TVShow, getImageUrl } from '@/lib/api/tmdb';
 
+// Simplified interface for what MediaCard actually needs
+interface SimpleMediaItem {
+    id: number;
+    title?: string;
+    name?: string;
+    poster_path: string | null;
+    vote_average: number;
+    release_date?: string;
+    first_air_date?: string;
+}
+
 interface MediaCardProps {
-    item: Movie | TVShow;
+    item: Movie | TVShow | SimpleMediaItem;
     type: 'movie' | 'tv';
 }
 

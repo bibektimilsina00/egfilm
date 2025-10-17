@@ -15,7 +15,7 @@ interface WatchlistItem {
  * Hook to manage watchlist with database sync
  */
 export function useWatchlist() {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
     const [loading, setLoading] = useState(true);
 

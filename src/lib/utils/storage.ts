@@ -58,7 +58,7 @@ export const storage = {
     },
 
     // Cache
-    async setCacheItem(key: string, value: any, ttl = 3600000) {
+    async setCacheItem(key: string, value: unknown, ttl = 3600000) {
         const item = {
             data: value,
             expires: Date.now() + ttl,
@@ -67,7 +67,7 @@ export const storage = {
     },
 
     async getCacheItem(key: string) {
-        const item: any = await cacheStore.getItem(key);
+        const item: { data: unknown; expires: number } | null = await cacheStore.getItem(key);
         if (!item) return null;
 
         if (Date.now() > item.expires) {
@@ -81,7 +81,7 @@ export const storage = {
     async clearExpiredCache() {
         const keys = await cacheStore.keys();
         for (const key of keys) {
-            const item: any = await cacheStore.getItem(key);
+            const item: { data: unknown; expires: number } | null = await cacheStore.getItem(key);
             if (item && Date.now() > item.expires) {
                 await cacheStore.removeItem(key);
             }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, Users, Search, Copy, Check, Video, Mic, MicOff, VideoOff, Phone } from 'lucide-react';
+import { X, Users, Search, Copy, Check, Video, Mic, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface WatchTogetherModalProps {
@@ -64,7 +64,7 @@ export default function WatchTogetherModal({
                 }
             }
         }
-    }, [isOpen]);
+    }, [isOpen, session?.user?.email, session?.user?.name]);
 
     const generateRoomCode = () => {
         return Math.random().toString(36).substring(2, 8).toUpperCase();

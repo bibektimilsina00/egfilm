@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState, useCallback } from 'react';
 import { Tv, TrendingUp, Star, Calendar } from 'lucide-react';
 import { getPopular, getTopRated, getTrending, getGenres } from '@/lib/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { Button } from '@/components/ui/button';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { TVShow } from '@/lib/api/tmdb';
 
 export default function TVShowsPage() {
-    const [shows, setShows] = useState<any[]>([]);
+    const [shows, setShows] = useState<TVShow[]>([]);
     const [genres, setGenres] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'popular' | 'top_rated' | 'trending'>('popular');
@@ -35,21 +35,20 @@ export default function TVShowsPage() {
         }
     }
 
-    async function loadShows() {
+    const loadShows = useCallback(async () => {
         try {
             setLoading(true);
-            let data: any;
 
             if (filter === 'trending') {
-                data = await getTrending('tv', 'week');
+                const data = await getTrending('tv', 'week');
                 setShows(prev => page === 1 ? data : [...prev, ...data]);
                 setHasMore(false);
             } else if (filter === 'popular') {
-                data = await getPopular('tv', page);
+                const data = await getPopular('tv', page);
                 setShows(prev => page === 1 ? data.results : [...prev, ...data.results]);
                 setHasMore(data.page < data.total_pages);
             } else {
-                data = await getTopRated('tv', page);
+                const data = await getTopRated('tv', page);
                 setShows(prev => page === 1 ? data.results : [...prev, ...data.results]);
                 setHasMore(data.page < data.total_pages);
             }
@@ -58,7 +57,11 @@ export default function TVShowsPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [filter, page]);
+
+    useEffect(() => {
+        loadShows();
+    }, [loadShows]);
 
     const filteredShows = selectedGenre
         ? shows.filter((show) => show.genre_ids?.includes(selectedGenre))

@@ -1,9 +1,26 @@
 // Watchlist management
-export const addToWatchlist = (item: any, type: 'movie' | 'tv') => {
+import { MediaItem } from './tmdb';
+
+type WatchlistItem = {
+    id: number;
+    title?: string;
+    name?: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview: string;
+    release_date?: string;
+    first_air_date?: string;
+    vote_average: number;
+    genre_ids: number[];
+    media_type: 'movie' | 'tv';
+    addedAt: number;
+};
+
+export const addToWatchlist = (item: MediaItem, type: 'movie' | 'tv') => {
     if (typeof window === 'undefined') return;
 
     const watchlist = getWatchlist();
-    const newItem = { ...item, media_type: type, addedAt: Date.now() };
+    const newItem: WatchlistItem = { ...item, media_type: type, addedAt: Date.now() };
 
     // Check if already exists
     const exists = watchlist.some(
@@ -33,7 +50,7 @@ export const isInWatchlist = (id: number, type: 'movie' | 'tv'): boolean => {
     return watchlist.some((item) => item.id === id && item.media_type === type);
 };
 
-export const getWatchlist = (): any[] => {
+export const getWatchlist = (): WatchlistItem[] => {
     if (typeof window === 'undefined') return [];
 
     try {
@@ -46,7 +63,7 @@ export const getWatchlist = (): any[] => {
 
 // Continue Watching management
 export const addToContinueWatching = (
-    item: any,
+    item: MediaItem,
     type: 'movie' | 'tv',
     progress: number = 0
 ) => {
@@ -84,7 +101,23 @@ export const removeFromContinueWatching = (id: number, type: 'movie' | 'tv') => 
     localStorage.setItem('streamflix_continue', JSON.stringify(filtered));
 };
 
-export const getContinueWatching = (): any[] => {
+type ContinueWatchingItem = {
+    id: number;
+    title?: string;
+    name?: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview: string;
+    release_date?: string;
+    first_air_date?: string;
+    vote_average: number;
+    genre_ids: number[];
+    media_type: 'movie' | 'tv';
+    progress: number;
+    lastWatched: number;
+};
+
+export const getContinueWatching = (): ContinueWatchingItem[] => {
     if (typeof window === 'undefined') return [];
 
     try {
@@ -95,8 +128,23 @@ export const getContinueWatching = (): any[] => {
     }
 };
 
+type HistoryItem = {
+    id: number;
+    title?: string;
+    name?: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview: string;
+    release_date?: string;
+    first_air_date?: string;
+    vote_average: number;
+    genre_ids: number[];
+    media_type: 'movie' | 'tv';
+    viewedAt: number;
+};
+
 // Viewing history
-export const addToHistory = (item: any, type: 'movie' | 'tv') => {
+export const addToHistory = (item: MediaItem, type: 'movie' | 'tv') => {
     if (typeof window === 'undefined') return;
 
     const history = getHistory();
@@ -116,7 +164,7 @@ export const addToHistory = (item: any, type: 'movie' | 'tv') => {
     localStorage.setItem('streamflix_history', JSON.stringify(limited));
 };
 
-export const getHistory = (): any[] => {
+export const getHistory = (): HistoryItem[] => {
     if (typeof window === 'undefined') return [];
 
     try {

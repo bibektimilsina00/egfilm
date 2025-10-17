@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Trash2, Calendar } from 'lucide-react';
+import { Heart, Trash2 } from 'lucide-react';
 import MediaCard from '@/components/catalog/MediaCard';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { getWatchlist, removeFromWatchlist } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
+import { MediaItem } from '@/lib/tmdb';
 
 export default function WatchlistPage() {
-    const [watchlist, setWatchlist] = useState<any[]>([]);
+    const [watchlist, setWatchlist] = useState<MediaItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -19,7 +20,21 @@ export default function WatchlistPage() {
     const loadWatchlist = () => {
         setLoading(true);
         const data = getWatchlist();
-        setWatchlist(data);
+        // Convert WatchlistItem[] to MediaItem[]
+        const mediaItems: MediaItem[] = data.map(item => ({
+            id: item.id,
+            title: item.title || '',
+            name: item.name || '',
+            poster_path: item.poster_path,
+            backdrop_path: item.backdrop_path,
+            overview: item.overview,
+            release_date: item.release_date || '',
+            first_air_date: item.first_air_date || '',
+            vote_average: item.vote_average,
+            genre_ids: item.genre_ids,
+            media_type: item.media_type,
+        }));
+        setWatchlist(mediaItems);
         setLoading(false);
     };
 
@@ -57,11 +72,11 @@ export default function WatchlistPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-in scale-in">
                         {watchlist.map((item) => (
                             <div key={`${item.media_type}-${item.id}`} className="relative group">
-                                <MediaCard item={item} type={item.media_type} />
+                                <MediaCard item={item} type={item.media_type!} />
 
                                 {/* Remove Button */}
                                 <button
-                                    onClick={() => handleRemove(item.id, item.media_type)}
+                                    onClick={() => handleRemove(item.id, item.media_type!)}
                                     className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg z-10"
                                     title="Remove from watchlist"
                                 >

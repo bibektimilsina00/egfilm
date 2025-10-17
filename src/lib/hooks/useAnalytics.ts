@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
-
 /**
  * Comprehensive Umami Analytics Hook
  * Tracks page views, events, video quality, WebRTC connections, and Watch Together activity
- * 
+ *
  * Umami window object reference: window.umami
  * Send events: umami.track('event_name', { property: value })
  */
@@ -14,11 +12,22 @@ interface UmamiProperties {
     [key: string]: string | number | boolean | undefined;
 }
 
+interface UmamiAnalytics {
+    track: (event: string, properties?: UmamiProperties) => void;
+}
+
+// Extend window interface for Umami
+declare global {
+    interface Window {
+        umami?: UmamiAnalytics;
+    }
+}
+
 export function useAnalytics() {
     // Ensure Umami is available
     const getUmami = () => {
-        if (typeof window !== 'undefined' && (window as any).umami) {
-            return (window as any).umami;
+        if (typeof window !== 'undefined' && window.umami) {
+            return window.umami;
         }
         return null;
     };

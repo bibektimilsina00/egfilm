@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useInView } from 'react-intersection-observer';
 import MediaCard from './MediaCard';
 import { Movie, TVShow } from '@/lib/api/tmdb';
@@ -21,13 +21,7 @@ export default function MediaGrid({ initialItems, type, fetchMore }: MediaGridPr
         threshold: 0.1,
     });
 
-    useEffect(() => {
-        if (inView && !loading && hasMore) {
-            loadMore();
-        }
-    }, [inView]);
-
-    const loadMore = async () => {
+    const loadMore = useCallback(async () => {
         setLoading(true);
         try {
             const nextPage = page + 1;
@@ -45,7 +39,13 @@ export default function MediaGrid({ initialItems, type, fetchMore }: MediaGridPr
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, fetchMore]);
+
+    useEffect(() => {
+        if (inView && !loading && hasMore) {
+            loadMore();
+        }
+    }, [inView, loading, hasMore, loadMore]);
 
     return (
         <div className="space-y-8">
@@ -90,7 +90,7 @@ export default function MediaGrid({ initialItems, type, fetchMore }: MediaGridPr
 
             {!hasMore && items.length > 0 && (
                 <div className="text-center text-gray-500 py-8">
-                    You've reached the end!
+                    You&apos;ve reached the end!
                 </div>
             )}
         </div>

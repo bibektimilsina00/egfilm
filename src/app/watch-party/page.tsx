@@ -55,7 +55,7 @@ export default function WatchPartyPage() {
                                     </div>
                                     <div>
                                         <p className="text-gray-300">
-                                            <span className="font-semibold text-white">Click the "Watch Together" button</span> on the movie/TV page
+                                            <span className="font-semibold text-white">Click the &ldquo;Watch Together&rdquo; button</span> on the movie/TV page
                                         </p>
                                     </div>
                                 </div>

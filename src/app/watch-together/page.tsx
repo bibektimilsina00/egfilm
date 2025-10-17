@@ -40,7 +40,6 @@ function WatchTogetherContent() {
         trackConnectionEvent,
         trackDeviceToggle,
         trackMessage,
-        trackPerformance,
         trackError,
     } = useAnalytics();
 
@@ -99,6 +98,7 @@ function WatchTogetherContent() {
             // Don't cleanup during Strict Mode development double-mount
             // The cleanup will happen when user explicitly leaves the room
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [roomCode, username]);
 
     useEffect(() => {
@@ -166,7 +166,7 @@ function WatchTogetherContent() {
                         const userData = await userResponse.json();
                         userId = userData.id;
                     }
-                } catch (error) {
+                } catch (_error) {
                     // Failed to fetch user ID, will join as guest
                 }
             }

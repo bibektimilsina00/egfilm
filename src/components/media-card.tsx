@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Star, Play } from 'lucide-react';
 import { MediaItem, getImageUrl } from '@/lib/tmdb';
-import { cn, formatVoteAverage } from '@/lib/utils';
+import { formatVoteAverage } from '@/lib/utils';
 import { useState } from 'react';
 
 interface MediaCardProps {
