@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_NO_WARNINGS=1 NEXT_DEV_TURBOPACK=1 next dev --port 8000",
+    "dev": "NODE_NO_WARNINGS=1 next dev --port 8000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
