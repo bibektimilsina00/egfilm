@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 8000",
+    "dev": "NODE_NO_WARNINGS=1 NEXT_DEV_TURBOPACK=1 next dev --port 8000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
+    "@sentry/nextjs": "^10.20.0",
+    "@sentry/tracing": "^7.120.4",
     "@tanstack/react-query": "^5.90.2",
     "@types/bcryptjs": "^2.4.6",
     "axios": "^1.12.2",

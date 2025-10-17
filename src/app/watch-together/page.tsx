@@ -7,6 +7,7 @@ import { Video, VideoOff, Mic, MicOff, Phone, MessageCircle, Users, Copy, Check,
 import { Button } from '@/components/ui/button';
 import io, { Socket } from 'socket.io-client';
 import { VIDEO_SOURCES } from '@/lib/videoSources';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 interface Participant {
     id: string;
@@ -32,6 +33,16 @@ function WatchTogetherContent() {
     const { data: session } = useSession();
     const roomCode = searchParams?.get('room');
     const username = searchParams?.get('username');
+
+    // Analytics hook
+    const {
+        trackWatchTogetherEvent,
+        trackConnectionEvent,
+        trackDeviceToggle,
+        trackMessage,
+        trackPerformance,
+        trackError,
+    } = useAnalytics();
 
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -181,6 +192,13 @@ function WatchTogetherContent() {
                 setChatMessages(data.messages || []);
                 setIsConnecting(false);
 
+                // Track room join event
+                trackWatchTogetherEvent('room_joined', {
+                    roomCode: roomCode || 'unknown',
+                    participantCount: String(data.participants.length),
+                    username: username || 'unknown',
+                });
+
                 // Initialize WebRTC connections with all existing participants
                 // Only create offers if we're the one joining (to avoid both sides sending offers)
                 data.participants.forEach((participant: Participant) => {
@@ -193,12 +211,24 @@ function WatchTogetherContent() {
             socket.on('participant-joined', (data) => {
                 setParticipants(data.participants);
                 addSystemMessage(`${data.newParticipant.username} joined the room`);
+
+                // Track participant join
+                trackWatchTogetherEvent('participant_joined', {
+                    participantUsername: data.newParticipant.username,
+                    totalParticipants: String(data.participants.length),
+                });
                 // Don't initialize connection here - the new participant will send offers
             });
 
             socket.on('participant-left', (data) => {
                 setParticipants(data.participants);
                 addSystemMessage(`${data.username} left the room`);
+
+                // Track participant left
+                trackWatchTogetherEvent('participant_left', {
+                    participantUsername: data.username,
+                    remainingParticipants: String(data.participants.length),
+                });
                 // Close peer connection
                 if (peerConnections[data.participantId]) {
                     peerConnections[data.participantId].close();
@@ -435,6 +465,11 @@ function WatchTogetherContent() {
 
             if (state === 'connected') {
                 console.log(`✅ [PEER CONNECTION ESTABLISHED] Video/audio should now flow`);
+                // Track connection established
+                trackConnectionEvent('peer_connected', {
+                    peerId: peerId.substring(0, 8),
+                    iceState,
+                });
             } else if (state === 'failed') {
                 console.error(`❌ [CONNECTION FAILED] ${peerId.substring(0, 8)}...`);
                 console.error(`   ICE State: ${iceState}`);
@@ -445,8 +480,16 @@ function WatchTogetherContent() {
                 console.error(`   • No public IP available`);
                 console.error(`   • TURN server unreachable`);
                 console.error(`   📋 Run firewall-test.sh on your VPS to diagnose`);
+                // Track connection failure
+                trackConnectionEvent('peer_connection_failed', {
+                    peerId: peerId.substring(0, 8),
+                    iceState,
+                });
             } else if (state === 'disconnected') {
                 console.warn(`⚠️ [CONNECTION DISCONNECTED] ${peerId.substring(0, 8)}...`);
+                trackConnectionEvent('peer_disconnected', {
+                    peerId: peerId.substring(0, 8),
+                });
             }
         };
 
@@ -488,11 +531,18 @@ function WatchTogetherContent() {
                 const candidateStr = event.candidate.candidate || '';
                 let candidateType = 'unknown';
                 if (candidateStr.includes('host')) candidateType = 'host';
-                else if (candidateStr.includes('srflx')) candidateType = 'srflx (STUN)';
-                else if (candidateStr.includes('relay')) candidateType = 'relay (TURN)';
-                else if (candidateStr.includes('prflx')) candidateType = 'prflx (peer reflexive)';
+                else if (candidateStr.includes('srflx')) candidateType = 'srflx';
+                else if (candidateStr.includes('relay')) candidateType = 'relay';
+                else if (candidateStr.includes('prflx')) candidateType = 'prflx';
 
                 console.log(`📤 [ICE CANDIDATE LOCAL] Type: ${candidateType}, Candidate: ${candidateStr.substring(0, 50)}...`);
+
+                // Track ICE candidate
+                trackConnectionEvent('ice_candidate_gathered', {
+                    candidateType,
+                    peerId: peerId.substring(0, 8),
+                });
+
                 socket.emit('webrtc-ice-candidate', {
                     roomCode,
                     to: peerId,
@@ -621,6 +671,9 @@ function WatchTogetherContent() {
             const newVideoState = videoTrack.enabled;
             setIsVideoEnabled(newVideoState);
 
+            // Track device toggle
+            trackDeviceToggle('camera', newVideoState);
+
             console.log(`✅ [VIDEO STATE] Enabled: ${newVideoState}`);
             console.log(`📹 [VIDEO TRACK] Status: ${videoTrack.enabled ? 'ACTIVE' : 'INACTIVE'}`);
             console.log(`📹 [LOCAL VIDEO] Ref available: ${!!localVideoRef.current}, SrcObject: ${!!localVideoRef.current?.srcObject}`);
@@ -651,6 +704,7 @@ function WatchTogetherContent() {
             addSystemMessage(statusMsg);
         } catch (err: any) {
             console.error('🎬 [TOGGLE VIDEO ERROR]', err);
+            trackError(err, { context: 'toggle_video' });
             addSystemMessage('❌ Could not toggle camera: ' + err.message);
         }
     };
@@ -686,6 +740,9 @@ function WatchTogetherContent() {
             const newAudioState = audioTrack.enabled;
             setIsAudioEnabled(newAudioState);
 
+            // Track device toggle
+            trackDeviceToggle('microphone', newAudioState);
+
             console.log(`✅ [AUDIO STATE] Enabled: ${newAudioState}`);
             console.log(`🎤 [AUDIO TRACK] Status: ${audioTrack.enabled ? 'ACTIVE' : 'MUTED'}`);
             console.log(`🎤 [STREAM TRACKS] Video: ${localStreamRef.current.getVideoTracks().length}, Audio: ${localStreamRef.current.getAudioTracks().length}`);
@@ -703,6 +760,7 @@ function WatchTogetherContent() {
             addSystemMessage(statusMsg);
         } catch (err: any) {
             console.error('🎤 [TOGGLE AUDIO ERROR]', err);
+            trackError(err, { context: 'toggle_audio' });
             addSystemMessage('❌ Could not toggle microphone: ' + err.message);
         }
     };
@@ -765,6 +823,9 @@ function WatchTogetherContent() {
             message: chatInput,
             timestamp: Date.now()
         };
+
+        // Track message sent
+        trackMessage(chatInput.length, participants.length);
 
         socket.emit('send-chat-message', { roomCode, message });
         setChatInput('');

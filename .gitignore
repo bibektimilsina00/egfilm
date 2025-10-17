@@ -49,3 +49,6 @@ next-env.d.ts
 /prisma/*.db
 /prisma/*.db-journal
 /data/
+
+# Sentry Config File
+.env.sentry-build-plugin

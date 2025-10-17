@@ -90,6 +90,14 @@ NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
 AUTH_SECRET=your_nextauth_secret_here
 AUTH_URL=http://your-server-ip:8000
 NODE_ENV=production
+
+# Sentry Error Tracking (auto-configured)
+SENTRY_DSN=https://73d62c48c64afbc5fb35441b1fb775e4@o4510202904707072.ingest.de.sentry.io/4510202941079632
+NEXT_PUBLIC_SENTRY_DSN=https://23b85080fcb3a0a10f7dda940109e093@o4510202904707072.ingest.de.sentry.io/4510202921353296
+
+# Umami Analytics (Cloud)
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=your_umami_website_id_here
+NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://cloud.umami.is/script.js
 EOF
         
         log_warning "Please edit $DEPLOY_DIR/.env with actual values"
