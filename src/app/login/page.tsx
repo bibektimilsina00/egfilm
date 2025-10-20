@@ -138,17 +138,7 @@ export default function LoginPage() {
                         </p>
                     </div>
 
-                    {/* Demo Credentials */}
-                    <div className="mt-6 p-5 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border border-blue-800/30 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                            <p className="text-sm text-blue-300 font-semibold">Demo Account</p>
-                        </div>
-                        <div className="space-y-1 text-xs">
-                            <p className="text-gray-400">Email: <span className="text-blue-300 font-mono">demo@example.com</span></p>
-                            <p className="text-gray-400">Password: <span className="text-blue-300 font-mono">demo123</span></p>
-                        </div>
-                    </div>
+                    {/* Demo credentials removed */}
                 </div>
 
                 {/* Back to Home Link */}

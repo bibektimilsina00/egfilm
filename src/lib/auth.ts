@@ -4,83 +4,40 @@ import { authConfig } from './auth.config';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 
-// Initialize database with default demo user
-async function initializeDefaultUser() {
-    try {
-        const existingUser = await prisma.user.findUnique({
-            where: { email: 'demo@example.com' }
-        });
-
-        if (!existingUser) {
-            await prisma.user.create({
-                data: {
-                    email: 'demo@example.com',
-                    password: bcrypt.hashSync('demo123', 10),
-                    name: 'Demo User',
-                }
-            });
-            console.log('✅ Default demo user created');
-        }
-    } catch (error) {
-        console.error('Error initializing default user:', error);
-    }
-}
-
-// Initialize on module load
-initializeDefaultUser();
+// NOTE: Auto-creation of demo/test users has been removed for security.
+// If you need test users in development, create them via a dedicated script or seed file.
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
     providers: [
         Credentials({
             async authorize(credentials) {
-                const email = credentials.email as string;
-                const password = credentials.password as string;
+                const email = (credentials as any)?.email as string;
+                const password = (credentials as any)?.password as string;
 
-                const user = await prisma.user.findUnique({
-                    where: { email }
-                });
+                if (!email || !password) return null;
 
-                if (!user) {
-                    return null;
-                }
+                const user = await prisma.user.findUnique({ where: { email } });
+                if (!user) return null;
 
                 const passwordsMatch = await bcrypt.compare(password, user.password);
+                if (!passwordsMatch) return null;
 
-                if (passwordsMatch) {
-                    return {
-                        id: user.id,
-                        email: user.email,
-                        name: user.name,
-                    };
-                }
-
-                return null;
+                return { id: user.id, email: user.email, name: user.name };
             },
         }),
     ],
-    session: {
-        strategy: 'jwt',
-    },
+    session: { strategy: 'jwt' },
 });
 
 // Helper function to register a new user
 export async function registerUser(email: string, password: string, name: string) {
-    const existingUser = await prisma.user.findUnique({
-        where: { email }
-    });
-
-    if (existingUser) {
-        throw new Error('User already exists');
-    }
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) throw new Error('User already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await prisma.user.create({
-        data: {
-            email,
-            password: hashedPassword,
-            name,
-        }
+        data: { email, password: hashedPassword, name },
     });
 
     return { id: newUser.id, email: newUser.email, name: newUser.name };
@@ -90,12 +47,7 @@ export async function registerUser(email: string, password: string, name: string
 export async function getUserByEmail(email: string) {
     const user = await prisma.user.findUnique({
         where: { email },
-        select: {
-            id: true,
-            email: true,
-            name: true,
-        }
+        select: { id: true, email: true, name: true },
     });
-
     return user;
 }

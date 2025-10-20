@@ -1,4 +1,4 @@
-// StreamFlix Database Schema
+// Egfilm Database Schema
 // PostgreSQL database for persistent user data and preferences
 
 generator client {

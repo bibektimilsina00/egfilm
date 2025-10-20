@@ -1,6 +1,6 @@
 {
-    "name": "StreamFlix - Movie & TV Show Discovery",
-    "short_name": "StreamFlix",
+    "name": "Egfilm - Movie & TV Show Discovery",
+    "short_name": "Egfilm",
     "description": "Browse and discover the latest movies and TV shows. Watch trailers, manage your watchlist, and enjoy streaming content with friends.",
     "start_url": "/",
     "display": "standalone",

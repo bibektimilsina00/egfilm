@@ -1,4 +1,4 @@
-# StreamFlix Deployment Quick Reference
+# Egfilm Deployment Quick Reference
 
 ## 🚀 First Time Setup
 
@@ -27,13 +27,13 @@ SSH into your server and run:
 
 ```bash
 # Method 1: Download and run setup script (Recommended)
-curl -O https://raw.githubusercontent.com/bibektimilsina00/stream-flix/main/server-setup.sh
+curl -O https://raw.githubusercontent.com/bibektimilsina00/egfilm/main/server-setup.sh
 chmod +x server-setup.sh
 ./server-setup.sh
 
 # Download deploy script
-cd ~/streamflix
-curl -O https://raw.githubusercontent.com/bibektimilsina00/stream-flix/main/deploy.sh
+cd ~/egfilm
+curl -O https://raw.githubusercontent.com/bibektimilsina00/egfilm/main/deploy.sh
 chmod +x deploy.sh
 ```
 
@@ -52,9 +52,9 @@ exit
 docker --version
 
 # Create directories and copy scripts
-mkdir -p ~/streamflix
-cd ~/streamflix
-# Copy deploy.sh to ~/streamflix/deploy.sh
+mkdir -p ~/egfilm
+cd ~/egfilm
+# Copy deploy.sh to ~/egfilm/deploy.sh
 # Copy .env file with your production values
 ```
 
@@ -107,7 +107,7 @@ git push origin v1.0.0
 ### Server Management (on server)
 
 ```bash
-cd ~/streamflix
+cd ~/egfilm
 
 # View logs
 ./logs.sh
@@ -134,12 +134,12 @@ If CI/CD fails, deploy manually:
 ./build.sh --env production --version v1.0.0 --push
 
 # On your server
-cd ~/streamflix
+cd ~/egfilm
 docker pull ghcr.io/YOUR_USERNAME/torrent-streamer:deploy
-docker stop streamflix-green || true
-docker rm streamflix-green || true
+docker stop egfilm-green || true
+docker rm egfilm-green || true
 docker run -d \
-  --name streamflix-green \
+  --name egfilm-green \
   -p 8000:8000 \
   --env-file .env \
   --restart unless-stopped \
@@ -157,8 +157,8 @@ docker run -d \
 ### Check Container Status
 ```bash
 # On server
-docker ps -a | grep streamflix
-docker logs -f streamflix-green
+docker ps -a | grep egfilm
+docker logs -f egfilm-green
 
 # Check health
 curl http://localhost:8000
@@ -166,7 +166,7 @@ curl http://localhost:8000
 
 ### View Container Stats
 ```bash
-docker stats streamflix-green
+docker stats egfilm-green
 ```
 
 ---
@@ -204,20 +204,20 @@ ssh -i ~/.ssh/your_key $SERVER_USER@$SERVER_HOST -p $SSH_PORT
 **Check container health:**
 ```bash
 # On server
-docker logs streamflix-blue
-docker logs streamflix-green
+docker logs egfilm-blue
+docker logs egfilm-green
 ```
 
 ### Container Won't Start
 
 **View logs:**
 ```bash
-docker logs streamflix-green
+docker logs egfilm-green
 ```
 
 **Common issues:**
 - Port 8000 already in use: `lsof -i :8000` or `netstat -tlnp | grep 8000`
-- Missing environment variables in ~/streamflix/.env
+- Missing environment variables in ~/egfilm/.env
 - Incorrect .env values (check NEXTAUTH_URL matches deployment URL)
 
 **Fix:**
@@ -226,18 +226,18 @@ docker logs streamflix-green
 sudo kill <PID>
 
 # Or use different port
-docker run -d --name streamflix-green -p 8080:8000 ...
+docker run -d --name egfilm-green -p 8080:8000 ...
 
 # Verify .env file
-cat ~/streamflix/.env
-nano ~/streamflix/.env  # Edit if needed
+cat ~/egfilm/.env
+nano ~/egfilm/.env  # Edit if needed
 ```
 
 ### Image Not Updating
 
 **Force pull:**
 ```bash
-cd ~/streamflix
+cd ~/egfilm
 docker pull ghcr.io/YOUR_USERNAME/torrent-streamer:deploy
 ./restart.sh
 ```
@@ -271,7 +271,7 @@ sudo apt install nginx certbot python3-certbot-nginx
 
 ### Configure Nginx
 ```bash
-sudo nano /etc/nginx/sites-available/streamflix
+sudo nano /etc/nginx/sites-available/egfilm
 
 # Add this configuration:
 server {
@@ -292,7 +292,7 @@ server {
 }
 
 # Enable site
-sudo ln -s /etc/nginx/sites-available/streamflix /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/egfilm /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -308,7 +308,7 @@ sudo certbot --nginx -d your-domain.com
 NEXTAUTH_URL=https://your-domain.com
 
 # Update on server
-nano ~/streamflix/.env
+nano ~/egfilm/.env
 # Change NEXTAUTH_URL to https://your-domain.com
 ./restart.sh
 ```
@@ -382,7 +382,7 @@ Currently uses in-memory auth. To add persistent database:
 docker ps -a
 
 # View container logs
-docker logs -f streamflix-green
+docker logs -f egfilm-green
 
 # Check port usage
 lsof -i :8000

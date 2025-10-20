@@ -1,4 +1,4 @@
-# Docker ignore file for StreamFlix
+# Docker ignore file for Egfilm
 # Prevents unnecessary files from being copied to Docker image
 
 # Dependencies

@@ -1,7 +1,7 @@
-# StreamFlix - AI Agent Instructions
+# Egfilm - AI Agent Instructions
 
 ## Project Overview
-StreamFlix is a Next.js 15 streaming platform with embedded video playback, real-time Watch Together features via WebRTC, and NextAuth authentication. Uses TMDb API for metadata, localStorage for client-side persistence, and Socket.IO for real-time sync.
+Egfilm is a Next.js 15 streaming platform with embedded video playback, real-time Watch Together features via WebRTC, and NextAuth authentication. Uses TMDb API for metadata, localStorage for client-side persistence, and Socket.IO for real-time sync.
 
 ## Architecture & Critical Patterns
 
@@ -42,7 +42,7 @@ RTCPeerConnection → createOffer/Answer → socket.emit('webrtc-offer')
 ### 4. **Authentication Pattern**
 ```typescript
 // PostgreSQL + Prisma ORM (src/lib/prisma.ts)
-// Default test user: demo@example.com / demo123 (auto-created on startup)
+// Default test user creation was removed for security. Create test users via a seed script or admin interface when needed.
 // Session strategy: JWT with NextAuth v5 beta
 // Protected routes: Check useSession() status → redirect to /login if 'unauthenticated'
 ```
@@ -80,7 +80,7 @@ npm run db:migrate   # Run migrations
 npm run dev          # Runs on port 8000 (not 3000!)
 
 # Socket.IO auto-initializes on first API call to /api/socketio
-# Default demo user created automatically: demo@example.com / demo123
+# Default demo user creation was removed for security. Create test users via a seed script or admin interface when needed.
 ```
 
 ### Docker Deployment (Production)
@@ -96,12 +96,12 @@ git push origin main
 
 # View logs on server
 ssh user@server
-docker logs -f streamflix-green
+docker logs -f egfilm-green
 ```
 
 **Deployment Script**: `deploy.sh` on server handles blue-green deployment
-- Must be placed at `~/streamflix/deploy.sh` on server
-- GitHub Actions SSHs to server and executes: `IMAGE_NAME=ghcr.io/.../stream-flix:deploy ./deploy.sh`
+- Must be placed at `~/egfilm/deploy.sh` on server
+- GitHub Actions SSHs to server and executes: `IMAGE_NAME=ghcr.io/.../egfilm:deploy ./deploy.sh`
 - Script handles: pull image → blue container → health check → green deployment → cleanup
 
 ### CI/CD Pipeline
@@ -115,7 +115,7 @@ docker logs -f streamflix-green
 ### Key Environment Variables
 ```env
 # Required
-DATABASE_URL=postgresql://user:password@localhost:5432/streamflix
+DATABASE_URL=postgresql://user:password@localhost:5432/egfilm
 NEXT_PUBLIC_TMDB_API_KEY=your_key_here
 NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
 NEXTAUTH_URL=http://localhost:8000  # Match dev port!
@@ -128,7 +128,7 @@ NEXT_PUBLIC_UMAMI_WEBSITE_ID=your_umami_id  # Analytics
 
 ### Testing Watch Together Locally
 1. Open two browser windows (or incognito + normal)
-2. Login in both (use demo@example.com / demo123)
+2. Login in both (create test users manually or via your local database seed)
 3. Window 1: Movie page → Watch Together → Create room → copy code
 4. Window 2: Same movie page → Watch Together → Join → paste code
 5. Both navigate to `/watch-together?room=CODE` with WebRTC connections

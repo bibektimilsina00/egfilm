@@ -2,7 +2,7 @@
 set -e
 
 # ════════════════════════════════════════════════
-# ║       STREAMFLIX DOCKER BUILD SCRIPT         ║
+# ║       EGFILM DOCKER BUILD SCRIPT         ║
 # ════════════════════════════════════════════════
 
 # Color definitions
@@ -43,7 +43,7 @@ ENV="production"
 APP_VERSION="latest"
 PUSH=false
 REGISTRY="ghcr.io"
-IMAGE_NAME="bibektimilsina00/stream-flix"
+IMAGE_NAME="bibektimilsina00/egfilm"
 BRANCH=""
 DEPLOY_TAG=""
 
@@ -57,7 +57,7 @@ usage() {
   echo -e "  -v, --version VERSION  Set application version"
   echo -e "  -p, --push             Push image to registry after build"
   echo -e "  -r, --registry NAME    Docker registry name (default: ghcr.io)"
-  echo -e "  -n, --name NAME        Image name (default: bibektimilsina00/stream-flix)"
+  echo -e "  -n, --name NAME        Image name (default: bibektimilsina00/egfilm)"
   echo -e "  -b, --branch BRANCH    Git branch to build from (auto-detected if not specified)"
   echo -e "  --deploy-tag TAG       Optional deploy tag to apply (example: 'deploy')"
   echo -e "  -h, --help             Show this help message"
@@ -120,7 +120,7 @@ if [[ -z "$BRANCH" ]]; then
 fi
 
 # Start build
-log_header "BUILDING STREAMFLIX DOCKER IMAGE"
+log_header "BUILDING EGFILM DOCKER IMAGE"
 
 log_info "Environment: ${BOLD}${ENV}${NC}"
 log_info "Version: ${BOLD}${APP_VERSION}${NC}"

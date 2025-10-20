@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 DEPLOY_DIR="$HOME/egfilm"
-IMAGE_NAME="${IMAGE_NAME:-ghcr.io/bibektimilsina00/stream-flix:deploy}"
+IMAGE_NAME="${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}"
 CONTAINER_GREEN="egfilm-green"
 CONTAINER_BLUE="egfilm-blue"
 PORT_GREEN=8000

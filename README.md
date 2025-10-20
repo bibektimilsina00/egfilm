@@ -62,11 +62,11 @@
 
 # 1. Clone repository
 
-git clone https://github.com/bibektimilsina00/stream-flix.git<div align="center">
+git clone https://github.com/bibektimilsina00/egfilm.git<div align="center">
 
-cd stream-flix  
+cd egfilm  
 
-  ![StreamFlix](https://img.shields.io/badge/StreamFlix-v2.0-blue?style=for-the-badge)
+  ![Egfilm](https://img.shields.io/badge/Egfilm-v2.0-blue?style=for-the-badge)
 
 # 2. Install dependencies  ![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black?style=for-the-badge&logo=next.js)
 
@@ -104,7 +104,7 @@ Visit `http://localhost:8000` to see your app!- **📺 Episode Selection** - Eas
 
 ### Default Credentials- **💝 Watchlist** - Save your favorite movies and TV shows
 
-- **Email:** demo@example.com- **📺 Continue Watching** - Pick up where you left off with progress tracking
+-- **Email:** (demo account removed for security) - **📺 Continue Watching** - Pick up where you left off with progress tracking
 
 - **Password:** demo123- **🎬 Movie Details** - Comprehensive information with cast, trailers, and similar content
 
@@ -122,7 +122,7 @@ Create `.env.local` in project root:
 
 # Database (Required)- **Trending TV Shows** - Popular series trending now
 
-DATABASE_URL=postgresql://user:password@localhost:5432/streamflix- **Popular Content** - Most viewed movies and shows
+DATABASE_URL=postgresql://user:password@localhost:5432/egfilm- **Popular Content** - Most viewed movies and shows
 
 - **Top Rated** - Highest rated content of all time
 
@@ -386,8 +386,8 @@ docker-compose up -d
 ./build.sh --env production --version v1.0.0 --push
 
 # Or manual Docker build
-docker build -t streamflix:latest .
-docker run -p 8000:8000 --env-file .env.local streamflix:latest
+docker build -t egfilm:latest .
+docker run -p 8000:8000 --env-file .env.local egfilm:latest
 ```
 
 ### CI/CD Pipeline

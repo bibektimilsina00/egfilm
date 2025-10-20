@@ -1,6 +1,6 @@
-# StreamFlix CI/CD & Deployment
+# Egfilm CI/CD & Deployment
 
-Complete CI/CD pipeline for StreamFlix using GitHub Actions, GHCR, and automated server deployment.
+Complete CI/CD pipeline for Egfilm using GitHub Actions, GHCR, and automated server deployment.
 
 ## 🏗️ Architecture
 
@@ -18,12 +18,12 @@ GitHub Push → Build Docker Image → Push to GHCR → Deploy to Server
 Go to **Settings → Secrets and variables → Actions** and add:
 
 #### Required Secrets:
-```bash
 GITHUB_TOKEN           # Auto-provided by GitHub (no action needed)
 SSH_PRIVATE_KEY        # SSH key to access your server
 TMDB_API_KEY          # Your TMDb API key
 NEXTAUTH_SECRET       # Generate: openssl rand -base64 32
-NEXTAUTH_URL          # Your production URL (e.g., https://streamflix.example.com)
+NEXTAUTH_URL          # Your production URL (e.g., https://egfilm.example.com)
+NEXTAUTH_URL          # Your production URL (e.g., https://egfilm.example.com)
 ```
 
 ### 2. GitHub Repository Variables
@@ -86,14 +86,14 @@ git push origin v1.0.0
 1. ✅ Login to GHCR
 2. ✅ Create .env file on server
 3. ✅ **Execute deploy.sh script** which handles:
-   - Pull `:deploy` image
-   - Start `streamflix-blue` on port 8001
+   - Start `egfilm-blue` on port 8001
    - Health check blue container
-   - If healthy → deploy `streamflix-green` on port 8000
+   - If healthy → deploy `egfilm-green` on port 8000
    - If green healthy → remove blue container
    - Cleanup old images
+   - Cleanup old images
 
-**Note:** The `deploy.sh` script must be placed on your server at `~/streamflix/deploy.sh`
+**Note:** The `deploy.sh` script must be placed on your server at `~/egfilm/deploy.sh`
 
 ### Blue-Green Deployment
 
@@ -141,7 +141,7 @@ Test the build locally before pushing:
   --version v1.0.0 \
   --push \
   --registry ghcr.io \
-  --name yourusername/stream-flix
+  --name yourusername/egfilm
 ```
 
 ## 🐳 Manual Deployment
@@ -155,11 +155,10 @@ ssh user@your-server
 # Login to GHCR
 echo $YOUR_GITHUB_TOKEN | docker login ghcr.io -u your-username --password-stdin
 
-# Pull latest image
-docker pull ghcr.io/bibektimilsina00/stream-flix:deploy
+docker pull ghcr.io/bibektimilsina00/egfilm:deploy
 
 # Create .env file
-cat > ~/streamflix/.env << EOF
+cat > ~/egfilm/.env << EOF
 NEXT_PUBLIC_TMDB_API_KEY=your_key
 NEXTAUTH_SECRET=your_secret
 NEXTAUTH_URL=https://your-domain.com
@@ -167,14 +166,14 @@ EOF
 
 # Run container
 docker run -d \
-  --name streamflix-green \
+  --name egfilm-green \
   --restart unless-stopped \
   -p 8000:8000 \
-  --env-file ~/streamflix/.env \
-  ghcr.io/bibektimilsina00/stream-flix:deploy
+  --env-file ~/egfilm/.env \
+  ghcr.io/bibektimilsina00/egfilm:deploy
 
 # Check logs
-docker logs -f streamflix-green
+docker logs -f egfilm-green
 ```
 
 ## 🔍 Troubleshooting
@@ -204,7 +203,7 @@ ssh -i ~/.ssh/your_key user@server
 ```bash
 # SSH into server and check logs
 ssh user@server
-docker logs streamflix-blue --tail 50
+docker logs egfilm-blue --tail 50
 
 # Common issues:
 # - Missing environment variables
@@ -218,8 +217,8 @@ docker logs streamflix-blue --tail 50
 sudo lsof -i :8000
 
 # Kill existing container
-docker stop streamflix-green
-docker rm streamflix-green
+docker stop egfilm-green
+docker rm egfilm-green
 ```
 
 ### Image Not Updating
@@ -227,10 +226,10 @@ docker rm streamflix-green
 **Issue:** Server pulls old image
 ```bash
 # Force pull new image on server
-docker pull ghcr.io/bibektimilsina00/stream-flix:deploy --no-cache
+docker pull ghcr.io/bibektimilsina00/egfilm:deploy --no-cache
 
 # Remove all local images
-docker rmi $(docker images 'ghcr.io/bibektimilsina00/stream-flix' -q)
+docker rmi $(docker images 'ghcr.io/bibektimilsina00/egfilm' -q)
 ```
 
 ## 📊 Monitoring Deployment
@@ -249,10 +248,10 @@ ssh user@server
 docker ps
 
 # Check container logs
-docker logs -f streamflix-green
+docker logs -f egfilm-green
 
 # Check container health
-docker inspect streamflix-green | grep -A 5 Health
+docker inspect egfilm-green | grep -A 5 Health
 ```
 
 ## 🔐 Security Best Practices
@@ -268,19 +267,19 @@ docker inspect streamflix-green | grep -A 5 Health
 Add Nginx for HTTPS:
 
 ```nginx
-# /etc/nginx/sites-available/streamflix
+# /etc/nginx/sites-available/egfilm
 server {
     listen 80;
-    server_name streamflix.example.com;
+  server_name egfilm.example.com;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name streamflix.example.com;
+  server_name egfilm.example.com;
 
-    ssl_certificate /etc/letsencrypt/live/streamflix.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/streamflix.example.com/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/egfilm.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/egfilm.example.com/privkey.pem;
 
     location / {
         proxy_pass http://localhost:8000;
@@ -305,7 +304,7 @@ For high traffic:
 
 If deployment fails:
 1. Check GitHub Actions logs
-2. Check server container logs: `docker logs streamflix-green`
+2. Check server container logs: `docker logs egfilm-green`
 3. Verify all secrets are set correctly
 4. Test SSH connection manually
 5. Ensure Docker is running on server
@@ -320,4 +319,4 @@ If deployment fails:
 
 ---
 
-**✨ Your StreamFlix deployment is now fully automated! ✨**
+**✨ Your Egfilm deployment is now fully automated! ✨**

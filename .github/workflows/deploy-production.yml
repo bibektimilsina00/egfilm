@@ -196,13 +196,13 @@ jobs:
             AUTH_URL=${{ secrets.NEXTAUTH_URL }}
             
             # App Configuration
-            NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'StreamFlix' }}
+            NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
             NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
             
             # WebRTC TURN Server (for production P2P connections)
             NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '128.199.195.107' }}
-            NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'streamflix' }}
-            NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'streamflixpass123' }}
+            NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'egfilm' }}
+            NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'egfilmpass123' }}
             
             # GitHub Container Registry (for pulling images)
             GHCR_USER=${{ github.actor }}
@@ -210,7 +210,7 @@ jobs:
             EOF
             
             # Run deployment script
-            cd ~/streamflix
+            cd ~/egfilm
             bash deploy.sh
 
       - name: 📊 Deployment summary
@@ -222,7 +222,7 @@ jobs:
           echo "🚀 **Environment:** ${{ needs.build-and-push.outputs.env }}" >> $GITHUB_STEP_SUMMARY
           echo "📦 **Version:** ${{ needs.build-and-push.outputs.app_version }}" >> $GITHUB_STEP_SUMMARY
           echo "🌐 **Server:** ${{ vars.SERVER_HOST }}" >> $GITHUB_STEP_SUMMARY
-          echo "🐳 **Container:** streamflix-green" >> $GITHUB_STEP_SUMMARY
+          echo "🐳 **Container:** egfilm-green" >> $GITHUB_STEP_SUMMARY
           echo "🔌 **Port:** 8000" >> $GITHUB_STEP_SUMMARY
 
       - name: ❌ Deployment failed
