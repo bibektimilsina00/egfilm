@@ -41,9 +41,9 @@ RTCPeerConnection → createOffer/Answer → socket.emit('webrtc-offer')
 
 ### 4. **Authentication Pattern**
 ```typescript
-// In-memory user store (src/lib/auth.ts) - NOT persistent across restarts
-// Default test user: demo@example.com / demo123
-// Session strategy: JWT (no database)
+// PostgreSQL + Prisma ORM (src/lib/prisma.ts)
+// Default test user: demo@example.com / demo123 (auto-created on startup)
+// Session strategy: JWT with NextAuth v5 beta
 // Protected routes: Check useSession() status → redirect to /login if 'unauthenticated'
 ```
 
@@ -54,26 +54,33 @@ else setShowWatchTogether(true);
 ```
 
 ### 5. **Data Persistence Strategy**
+- **PostgreSQL + Prisma**: Users, watchlist, continue watching, watch rooms, notifications
 - **TMDb API**: Movie/TV metadata (read-only, public key in .env.local)
-- **localStorage**: Watchlist, continue watching, room codes, usernames
-- **Socket.IO in-memory Maps**: Active rooms/participants (lost on restart)
-- **No backend database** - intentional architecture choice
+- **Socket.IO in-memory Maps**: Active WebRTC connections (lost on restart)
+- **Services**: `/src/lib/services/` - watchlist, continueWatching, watchRoom, notification
 
 ### 6. **State Management Patterns**
 ```typescript
-// No Redux/Zustand - uses React hooks + localStorage
-// Watchlist: lib/storage.ts → addToWatchlist/removeFromWatchlist
-// Continue watching: saveContinueWatching() updates progress %
-// Room state: Socket.IO broadcasts to io.to(roomCode)
+// No Redux/Zustand - uses React hooks + Prisma services
+// Watchlist: lib/services/watchlist.service.ts → addToWatchlist/removeFromWatchlist
+// Continue watching: lib/services/continueWatching.service.ts → saves progress to DB
+// Room state: Socket.IO broadcasts + Prisma watchRoom.service.ts for persistence
+// Notifications: lib/services/notification.service.ts
 ```
 
 ## Development Workflows
 
 ### Running the App
 ```bash
+# Setup database first
+npm run db:generate  # Generate Prisma client
+npm run db:migrate   # Run migrations
+
+# Start dev server
 npm run dev          # Runs on port 8000 (not 3000!)
+
 # Socket.IO auto-initializes on first API call to /api/socketio
-# TMDb API key required: NEXT_PUBLIC_TMDB_API_KEY in .env.local
+# Default demo user created automatically: demo@example.com / demo123
 ```
 
 ### Docker Deployment (Production)
@@ -107,10 +114,16 @@ docker logs -f streamflix-green
 
 ### Key Environment Variables
 ```env
+# Required
+DATABASE_URL=postgresql://user:password@localhost:5432/streamflix
 NEXT_PUBLIC_TMDB_API_KEY=your_key_here
-NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3  # Optional, has default
 NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
 NEXTAUTH_URL=http://localhost:8000  # Match dev port!
+
+# Optional
+NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3  # Has default
+SENTRY_DSN=your_sentry_dsn  # For error tracking
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=your_umami_id  # Analytics
 ```
 
 ### Testing Watch Together Locally
@@ -123,12 +136,12 @@ NEXTAUTH_URL=http://localhost:8000  # Match dev port!
 ## Critical Don'ts
 
 ### ❌ Never Do This:
-1. **Don't add video.js or custom players** - embedded iframes only
+1. **Don't add video.js or custom players** - embedded iframes only (already removed)
 2. **Don't move socketio.ts to App Router** - Socket.IO requires Pages Router
-3. **Don't add database migrations** - in-memory auth is intentional
-4. **Don't remove localStorage fallbacks** - critical for username/watchlist persistence
+3. **Don't skip database migrations** - use `npm run db:migrate` for schema changes
+4. **Don't bypass Prisma services** - always use service layer for DB operations
 5. **Don't create new Watch Together flows** - two systems already exist (keep separate)
-6. **Don't create .md documentation files** - No GUIDE.md, SETUP.md, SUMMARY.md, or similar docs
+6. **Don't create excessive .md docs** - keep docs minimal (CICD, DEPLOYMENT, IFRAME_LIMITATIONS only)
 
 ### ❌ Common Anti-Patterns:
 ```typescript
@@ -233,9 +246,9 @@ useEffect(() => {
 
 ## Known Limitations (Document, Don't Fix)
 1. Embedded video ads/redirects - third-party provider behavior
-2. Room codes lost on server restart - in-memory storage
+2. Active WebRTC connections lost on server restart - Socket.IO in-memory
 3. WebRTC requires STUN/TURN for complex NAT - may fail on restricted networks
-4. User registration not persistent - in-memory auth store
+4. Room persistence requires database - historical rooms stored in Prisma
 
 ## Quick Reference
 
@@ -249,11 +262,12 @@ Default: `8000` (set in package.json: `next dev --port 8000`)
 - `lucide-react` - Icon library
 - `tailwindcss@^4` - Styling (v4, not v3!)
 
-### Useful localStorage Keys
-- `watchlist` - JSON array of saved content
-- `continueWatching` - JSON array with progress %
-- `room_{CODE}` - Room metadata for Watch Together
-- `watchTogether_username` - Cached username
+### Database Schema (Prisma)
+- `User` - Auth, email, name, password hash
+- `Watchlist` - User's saved movies/shows
+- `ContinueWatching` - Playback progress per user
+- `WatchRoom` - Watch Together rooms with metadata
+- `Notification` - User notifications system
 
 ### Common Socket.IO Events
 **Watch Together:**
