@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Local Development Setup Script for StreamFlix
+# Local Development Setup Script for Egfilm
 # This script sets up PostgreSQL with Docker and configures your local environment
 
 set -e
 
-echo "🎬 StreamFlix Local Development Setup"
+echo "🎬 Egfilm Local Development Setup"
 echo "========================================"
 echo ""
 
@@ -71,11 +71,11 @@ sleep 5
 RETRIES=0
 MAX_RETRIES=30
 
-while ! docker exec streamflix-postgres pg_isready -U movieuser -d moviedb &> /dev/null; do
+while ! docker exec egfilm-postgres pg_isready -U movieuser -d moviedb &> /dev/null; do
     RETRIES=$((RETRIES + 1))
     if [ $RETRIES -eq $MAX_RETRIES ]; then
         echo -e "${RED}❌ PostgreSQL failed to start${NC}"
-        echo "Check logs with: docker logs streamflix-postgres"
+    echo "Check logs with: docker logs egfilm-postgres"
         exit 1
     fi
     echo -n "."
@@ -116,7 +116,7 @@ echo ""
 echo "🛠️  Useful Commands:"
 echo "  • View database: npx prisma studio"
 echo "  • Stop database: docker-compose down"
-echo "  • View logs: docker logs streamflix-postgres"
+echo "  • View logs: docker logs egfilm-postgres"
 echo "  • Reset database: npm run db:reset"
 echo ""
 

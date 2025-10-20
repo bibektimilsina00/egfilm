@@ -56,7 +56,7 @@ export default function LoginPage() {
                             <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
                         </div>
                         <span className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-                            StreamFlix
+                            Egfilm
                         </span>
                     </Link>
                     <div className="flex items-center justify-center gap-2 text-gray-400 text-lg">

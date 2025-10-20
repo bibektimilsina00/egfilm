@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# StreamFlix WebRTC Firewall Diagnostic Script
+# Egfilm WebRTC Firewall Diagnostic Script
 # Run this on your VPS to test network connectivity
 
-echo "🔍 StreamFlix WebRTC Firewall & Network Diagnostics"
+echo "🔍 Egfilm WebRTC Firewall & Network Diagnostics"
 echo "=================================================="
 echo ""
 
@@ -166,7 +166,7 @@ echo "  • Allow UDP 19302,3478 (STUN servers)"
 echo "  • Allow TCP 443 (TURN fallback)"
 echo ""
 echo "To add UFW rules:"
-echo "  sudo ufw allow 8000/tcp                  # StreamFlix app"
+echo "  sudo ufw allow 8000/tcp                  # Egfilm app"
 echo "  sudo ufw allow out 19302/udp             # STUN"
 echo "  sudo ufw allow out 3478/udp              # STUN"
 echo "  sudo ufw allow out 443/tcp               # TURN (usually already open)"

@@ -82,7 +82,7 @@ function SearchContent() {
                         <div className="flex items-center justify-center gap-2 mb-4">
                             <Sparkles className="w-8 h-8 text-blue-400" />
                             <h1 className="text-3xl md:text-4xl font-bold text-white">
-                                Search StreamFlix
+                                Search Egfilm
                             </h1>
                         </div>
                         <p className="text-gray-400 mb-6">

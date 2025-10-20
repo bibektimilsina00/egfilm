@@ -1,4 +1,4 @@
-# 🎬 StreamFlix -## ✨ Features
+# 🎬 Egfilm -## ✨ Features
 
 ### 🎯 Core Features
 - **🎥 Embedded Video Player** - Stream movies and TV shows with multiple server options

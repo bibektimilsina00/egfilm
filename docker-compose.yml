@@ -1,10 +1,10 @@
-# Docker Compose for StreamFlix Production with PostgreSQL
+# Docker Compose for Egfilm Production with PostgreSQL
 
 services:
   # PostgreSQL Database
   database:
     image: postgres:16-alpine
-    container_name: streamflix-postgres
+  container_name: egfilm-postgres
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -22,12 +22,12 @@ services:
     networks:
       - app-network
 
-  # StreamFlix Application
-  streamflix:
+  # Egfilm Application
+  egfilm:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: streamflix-app
+  container_name: egfilm-app
     depends_on:
       database:
         condition: service_healthy

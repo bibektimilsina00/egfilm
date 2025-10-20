@@ -4,7 +4,7 @@ export const runtime = 'edge'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
-    const title = searchParams.get('title') || 'StreamFlix'
+    const title = searchParams.get('title') || 'Egfilm'
     const subtitle = searchParams.get('subtitle') || 'Discover Movies & TV Shows'
 
     return new ImageResponse(
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
                         color: '#6b7280',
                     }}
                 >
-                    StreamFlix
+                    Egfilm
                 </div>
             </div>
         ),

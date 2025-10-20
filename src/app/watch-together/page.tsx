@@ -393,8 +393,8 @@ function WatchTogetherContent() {
     const initializePeerConnection = async (peerId: string, shouldCreateOffer: boolean = false) => {
         // Get TURN server from environment or use default
         const turnServer = process.env.NEXT_PUBLIC_TURN_SERVER || '128.199.195.107';
-        const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME || 'streamflix';
-        const turnPassword = process.env.NEXT_PUBLIC_TURN_PASSWORD || 'streamflixpass123';
+        const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME || 'egfilm';
+        const turnPassword = process.env.NEXT_PUBLIC_TURN_PASSWORD || 'egfilmpass123';
 
         const configuration: RTCConfiguration = {
             iceServers: [

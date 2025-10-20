@@ -2,12 +2,12 @@ import localforage from 'localforage';
 
 // Configure localforage
 const watchProgressStore = localforage.createInstance({
-    name: 'streamflix',
+    name: 'egfilm',
     storeName: 'watch_progress',
 });
 
 const cacheStore = localforage.createInstance({
-    name: 'streamflix',
+    name: 'egfilm',
     storeName: 'cache_media',
 });
 

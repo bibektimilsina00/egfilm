@@ -79,20 +79,20 @@ jobs:
           AUTH_URL=${{ secrets.NEXTAUTH_URL }}
           
           # App Configuration
-          NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'StreamFlix' }}
+          NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
           NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
           
           # WebRTC TURN Server (for production P2P connections)
           NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '128.199.195.107' }}
-          NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'streamflix' }}
-          NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'streamflixpass123' }}
+          NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'egfilm' }}
+          NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'egfilmpass123' }}
           EOF
           
           echo "✅ Environment file generated"
 
       - name: 🏗️ Build Docker image
         run: |
-          echo "🔨 Building StreamFlix Docker image..."
+          echo "🔨 Building Egfilm Docker image..."
           
           # Normalize repo name (replace hyphens with underscores for GHCR)
           REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
@@ -175,8 +175,8 @@ jobs:
             echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Create/update .env file
-            mkdir -p ~/streamflix
-            cat > ~/streamflix/.env << 'EOF'
+            mkdir -p ~/egfilm
+            cat > ~/egfilm/.env << 'EOF'
             # Node Environment
             NODE_ENV=production
             

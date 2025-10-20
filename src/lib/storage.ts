@@ -29,7 +29,7 @@ export const addToWatchlist = (item: MediaItem, type: 'movie' | 'tv') => {
 
     if (!exists) {
         watchlist.unshift(newItem);
-        localStorage.setItem('streamflix_watchlist', JSON.stringify(watchlist));
+        localStorage.setItem('egfilm_watchlist', JSON.stringify(watchlist));
     }
 };
 
@@ -40,7 +40,7 @@ export const removeFromWatchlist = (id: number, type: 'movie' | 'tv') => {
     const filtered = watchlist.filter(
         (item) => !(item.id === id && item.media_type === type)
     );
-    localStorage.setItem('streamflix_watchlist', JSON.stringify(filtered));
+    localStorage.setItem('egfilm_watchlist', JSON.stringify(filtered));
 };
 
 export const isInWatchlist = (id: number, type: 'movie' | 'tv'): boolean => {
@@ -54,7 +54,7 @@ export const getWatchlist = (): WatchlistItem[] => {
     if (typeof window === 'undefined') return [];
 
     try {
-        const data = localStorage.getItem('streamflix_watchlist');
+        const data = localStorage.getItem('egfilm_watchlist');
         return data ? JSON.parse(data) : [];
     } catch {
         return [];
@@ -88,7 +88,7 @@ export const addToContinueWatching = (
     // Keep only last 20 items
     const limited = filtered.slice(0, 20);
 
-    localStorage.setItem('streamflix_continue', JSON.stringify(limited));
+    localStorage.setItem('egfilm_continue', JSON.stringify(limited));
 };
 
 export const removeFromContinueWatching = (id: number, type: 'movie' | 'tv') => {
@@ -98,7 +98,7 @@ export const removeFromContinueWatching = (id: number, type: 'movie' | 'tv') => 
     const filtered = continueWatching.filter(
         (item) => !(item.id === id && item.media_type === type)
     );
-    localStorage.setItem('streamflix_continue', JSON.stringify(filtered));
+    localStorage.setItem('egfilm_continue', JSON.stringify(filtered));
 };
 
 type ContinueWatchingItem = {
@@ -121,7 +121,7 @@ export const getContinueWatching = (): ContinueWatchingItem[] => {
     if (typeof window === 'undefined') return [];
 
     try {
-        const data = localStorage.getItem('streamflix_continue');
+        const data = localStorage.getItem('egfilm_continue');
         return data ? JSON.parse(data) : [];
     } catch {
         return [];
@@ -161,14 +161,14 @@ export const addToHistory = (item: MediaItem, type: 'movie' | 'tv') => {
     // Keep only last 50 items
     const limited = filtered.slice(0, 50);
 
-    localStorage.setItem('streamflix_history', JSON.stringify(limited));
+    localStorage.setItem('egfilm_history', JSON.stringify(limited));
 };
 
 export const getHistory = (): HistoryItem[] => {
     if (typeof window === 'undefined') return [];
 
     try {
-        const data = localStorage.getItem('streamflix_history');
+        const data = localStorage.getItem('egfilm_history');
         return data ? JSON.parse(data) : [];
     } catch {
         return [];
@@ -177,5 +177,5 @@ export const getHistory = (): HistoryItem[] => {
 
 export const clearHistory = () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem('streamflix_history');
+    localStorage.removeItem('egfilm_history');
 };

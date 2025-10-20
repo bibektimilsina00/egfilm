@@ -39,7 +39,7 @@ export async function generateMovieMetadata(id: string): Promise<Metadata> {
                     },
                 ],
                 locale: 'en_US',
-                siteName: 'StreamFlix',
+                siteName: 'Egfilm',
             },
             twitter: {
                 card: 'summary_large_image',
@@ -56,7 +56,7 @@ export async function generateMovieMetadata(id: string): Promise<Metadata> {
         }
     } catch (error) {
         return {
-            title: 'Movie Not Found | StreamFlix',
+            title: 'Movie Not Found | Egfilm',
             description: 'The requested movie could not be found.',
         }
     }
@@ -101,7 +101,7 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
                     },
                 ],
                 locale: 'en_US',
-                siteName: 'StreamFlix',
+                siteName: 'Egfilm',
             },
             twitter: {
                 card: 'summary_large_image',
@@ -117,7 +117,7 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
         }
     } catch (error) {
         return {
-            title: 'TV Show Not Found | StreamFlix',
+            title: 'TV Show Not Found | Egfilm',
             description: 'The requested TV show could not be found.',
         }
     }

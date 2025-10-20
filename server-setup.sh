@@ -1,5 +1,5 @@
 #!/bin/bash
-# StreamFlix Server Setup Script
+# Egfilm Server Setup Script
 # Run this on your server for first-time setup
 
 set -e
@@ -11,7 +11,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}════════════════════════════════════════${NC}"
-echo -e "${BLUE}   StreamFlix Server Setup              ${NC}"
+echo -e "${BLUE}   Egfilm Server Setup              ${NC}"
 echo -e "${BLUE}════════════════════════════════════════${NC}\n"
 
 # Check if running as root
@@ -41,15 +41,15 @@ fi
 DOCKER_VERSION=$(docker --version)
 echo -e "${BLUE}Docker version: ${DOCKER_VERSION}${NC}"
 
-# Create streamflix directory
-echo -e "\n${BLUE}Creating StreamFlix directory...${NC}"
-mkdir -p ~/streamflix
-cd ~/streamflix
+ # Create egfilm directory
+echo -e "\n${BLUE}Creating Egfilm directory...${NC}"
+mkdir -p ~/egfilm
+cd ~/egfilm
 
 # Create .env template
 echo -e "${BLUE}Creating .env template...${NC}"
 cat > .env << 'EOF'
-# StreamFlix Production Environment
+# Egfilm Production Environment
 # Replace these values with your actual credentials
 
 # TMDb API (Get from https://www.themoviedb.org/settings/api)
@@ -63,18 +63,18 @@ NEXTAUTH_SECRET=your_nextauth_secret_here
 NEXTAUTH_URL=http://localhost:8000
 EOF
 
-echo -e "${GREEN}✅ Environment template created at: ~/streamflix/.env${NC}"
-echo -e "${YELLOW}⚠️  Please edit ~/streamflix/.env with your actual values!${NC}"
+echo -e "${GREEN}✅ Environment template created at: ~/egfilm/.env${NC}"
+echo -e "${YELLOW}⚠️  Please edit ~/egfilm/.env with your actual values!${NC}"
 
 # Test Docker
 echo -e "\n${BLUE}Testing Docker...${NC}"
 docker run --rm hello-world > /dev/null 2>&1
 echo -e "${GREEN}✅ Docker is working correctly${NC}"
 
-# Pull StreamFlix image (if credentials provided)
-read -p "Do you want to pull the StreamFlix image now? (y/n): " PULL_IMAGE
+# Pull Egfilm image (if credentials provided)
+read -p "Do you want to pull the Egfilm image now? (y/n): " PULL_IMAGE
 if [ "$PULL_IMAGE" = "y" ] || [ "$PULL_IMAGE" = "Y" ]; then
-  echo -e "\n${BLUE}Pulling StreamFlix image from GHCR...${NC}"
+  echo -e "\n${BLUE}Pulling Egfilm image from GHCR...${NC}"
   
   read -p "GitHub Username: " GH_USER
   read -sp "GitHub Token (or Personal Access Token): " GH_TOKEN
@@ -83,59 +83,59 @@ if [ "$PULL_IMAGE" = "y" ] || [ "$PULL_IMAGE" = "Y" ]; then
   echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
   
   docker pull ghcr.io/bibektimilsina00/stream-flix:deploy
-  echo -e "${GREEN}✅ StreamFlix image pulled successfully${NC}"
+  echo -e "${GREEN}✅ Egfilm image pulled successfully${NC}"
 fi
 
 # Create helper scripts
 echo -e "\n${BLUE}Creating helper scripts...${NC}"
 
 # Start script
-cat > ~/streamflix/start.sh << 'EOF'
+cat > ~/egfilm/start.sh << 'EOF'
 #!/bin/bash
-# Start StreamFlix container
+# Start Egfilm container
 
 docker run -d \
-  --name streamflix-green \
+  --name egfilm-green \
   --restart unless-stopped \
   -p 8000:8000 \
-  --env-file ~/streamflix/.env \
+  --env-file ~/egfilm/.env \
   ghcr.io/bibektimilsina00/stream-flix:deploy
 
-echo "✅ StreamFlix started on port 8000"
+echo "✅ Egfilm started on port 8000"
 echo "Access at: http://$(curl -s ifconfig.me):8000"
 EOF
 
 # Stop script
-cat > ~/streamflix/stop.sh << 'EOF'
+cat > ~/egfilm/stop.sh << 'EOF'
 #!/bin/bash
-# Stop StreamFlix container
+# Stop Egfilm container
 
-docker stop streamflix-green 2>/dev/null || true
-docker rm streamflix-green 2>/dev/null || true
-echo "✅ StreamFlix stopped"
+docker stop egfilm-green 2>/dev/null || true
+docker rm egfilm-green 2>/dev/null || true
+echo "✅ Egfilm stopped"
 EOF
 
 # Logs script
-cat > ~/streamflix/logs.sh << 'EOF'
+cat > ~/egfilm/logs.sh << 'EOF'
 #!/bin/bash
-# View StreamFlix logs
+# View Egfilm logs
 
-docker logs -f streamflix-green
+docker logs -f egfilm-green
 EOF
 
 # Restart script
-cat > ~/streamflix/restart.sh << 'EOF'
+cat > ~/egfilm/restart.sh << 'EOF'
 #!/bin/bash
-# Restart StreamFlix
+# Restart Egfilm
 
 ./stop.sh
 ./start.sh
 EOF
 
 # Update script
-cat > ~/streamflix/update.sh << 'EOF'
+cat > ~/egfilm/update.sh << 'EOF'
 #!/bin/bash
-# Update to latest StreamFlix version
+# Update to latest Egfilm version
 
 echo "🔄 Pulling latest image..."
 docker pull ghcr.io/bibektimilsina00/stream-flix:deploy
@@ -144,14 +144,14 @@ echo "🔄 Restarting container..."
 ./stop.sh
 ./start.sh
 
-echo "✅ StreamFlix updated to latest version"
+echo "✅ Egfilm updated to latest version"
 EOF
 
-chmod +x ~/streamflix/*.sh
+chmod +x ~/egfilm/*.sh
 
 echo -e "${GREEN}✅ Helper scripts created:${NC}"
-echo -e "  - start.sh     : Start StreamFlix"
-echo -e "  - stop.sh      : Stop StreamFlix"
+echo -e "  - start.sh     : Start Egfilm"
+echo -e "  - stop.sh      : Stop Egfilm"
 echo -e "  - logs.sh      : View logs"
 echo -e "  - restart.sh   : Restart container"
 echo -e "  - update.sh    : Pull and deploy latest version"
@@ -172,20 +172,20 @@ fi
 
 # Summary
 echo -e "\n${BLUE}════════════════════════════════════════${NC}"
-echo -e "${GREEN}✨ StreamFlix Server Setup Complete! ✨${NC}"
+echo -e "${GREEN}✨ Egfilm Server Setup Complete! ✨${NC}"
 echo -e "${BLUE}════════════════════════════════════════${NC}\n"
 
 echo -e "${GREEN}Next steps:${NC}"
 echo -e "1. Edit your environment file:"
-echo -e "   ${YELLOW}nano ~/streamflix/.env${NC}"
+echo -e "   ${YELLOW}nano ~/egfilm/.env${NC}"
 echo -e ""
-echo -e "2. Start StreamFlix:"
-echo -e "   ${YELLOW}cd ~/streamflix && ./start.sh${NC}"
+echo -e "2. Start Egfilm:"
+echo -e "   ${YELLOW}cd ~/egfilm && ./start.sh${NC}"
 echo -e ""
 echo -e "3. View logs:"
 echo -e "   ${YELLOW}./logs.sh${NC}"
 echo -e ""
-echo -e "4. Access StreamFlix:"
+echo -e "4. Access Egfilm:"
 echo -e "   ${YELLOW}http://your-server-ip:8000${NC}"
 echo -e ""
 echo -e "${BLUE}For CI/CD setup, configure GitHub Actions as described in CICD_SETUP.md${NC}"

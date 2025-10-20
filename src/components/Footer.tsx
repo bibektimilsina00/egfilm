@@ -11,7 +11,7 @@ export default function Footer() {
                         <Link href="/" className="flex items-center gap-2">
                             <Play className="w-8 h-8 text-blue-500" fill="currentColor" />
                             <span className="text-white text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                                StreamFlix
+                                Egfilm
                             </span>
                         </Link>
                         <p className="text-gray-400 text-sm">
@@ -97,7 +97,7 @@ export default function Footer() {
                 {/* Bottom */}
                 <div className="mt-12 pt-8 border-t border-gray-800 text-center">
                     <p className="text-gray-500 text-sm">
-                        © {new Date().getFullYear()} StreamFlix. Built with Next.js and TMDb API.
+                        © {new Date().getFullYear()} Egfilm. Built with Next.js and TMDb API.
                     </p>
                 </div>
             </div>

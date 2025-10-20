@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###########################################
-# StreamFlix Deployment Script
+# Egfilm Deployment Script
 # Blue-Green Deployment with Health Checks
 ###########################################
 
@@ -15,10 +15,10 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-DEPLOY_DIR="$HOME/streamflix"
+DEPLOY_DIR="$HOME/egfilm"
 IMAGE_NAME="${IMAGE_NAME:-ghcr.io/bibektimilsina00/stream-flix:deploy}"
-CONTAINER_GREEN="streamflix-green"
-CONTAINER_BLUE="streamflix-blue"
+CONTAINER_GREEN="egfilm-green"
+CONTAINER_BLUE="egfilm-blue"
 PORT_GREEN=8000
 PORT_BLUE=8001
 MAX_HEALTH_RETRIES=30
@@ -84,7 +84,7 @@ check_env_file() {
         log_info "Creating .env template..."
         
         cat > "$DEPLOY_DIR/.env" << 'EOF'
-# StreamFlix Environment Configuration
+# Egfilm Environment Configuration
 DATABASE_URL=file:/app/data/production.db
 NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
 AUTH_SECRET=your_nextauth_secret_here
@@ -284,7 +284,7 @@ deployment_summary() {
     echo -e "${GREEN}✔ Deployment successful!${NC}"
     echo ""
     echo -e "${CYAN}Container Status:${NC}"
-    docker ps --filter "name=streamflix" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    docker ps --filter "name=egfilm" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo ""
     echo -e "${CYAN}Image:${NC} $IMAGE_NAME"
     echo -e "${CYAN}Production URL:${NC} http://localhost:$PORT_GREEN"
@@ -297,7 +297,7 @@ deployment_summary() {
 
 # Main deployment flow
 main() {
-    log_header "StreamFlix Blue-Green Deployment"
+    log_header "Egfilm Blue-Green Deployment"
     
     echo -e "${BLUE}Started at: $(date)${NC}"
     echo -e "${BLUE}Image: $IMAGE_NAME${NC}"

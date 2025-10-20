@@ -58,7 +58,7 @@ export default function Navigation() {
                             <div className="absolute inset-0 bg-blue-500 blur-xl opacity-0 group-hover:opacity-30 transition-opacity" />
                         </div>
                         <span className="text-white text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                            StreamFlix
+                            Egfilm
                         </span>
                     </Link>
 

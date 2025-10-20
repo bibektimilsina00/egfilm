@@ -73,7 +73,7 @@ export default function RegisterPage() {
                             <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
                         </div>
                         <span className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-blue-500 to-blue-400 bg-clip-text text-transparent">
-                            StreamFlix
+                            Egfilm
                         </span>
                     </Link>
                     <div className="flex items-center justify-center gap-2 text-gray-400 text-lg">
@@ -191,7 +191,7 @@ export default function RegisterPage() {
 
                     {/* Features List */}
                     <div className="mt-6 p-5 bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-xl border border-purple-800/30 backdrop-blur-sm space-y-2">
-                        <p className="text-sm text-purple-300 font-semibold mb-3">Why Join StreamFlix?</p>
+                        <p className="text-sm text-purple-300 font-semibold mb-3">Why Join Egfilm?</p>
                         <div className="space-y-2 text-xs text-gray-400">
                             <p className="flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4 text-purple-400" />
