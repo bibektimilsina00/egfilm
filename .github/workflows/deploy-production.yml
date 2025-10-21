@@ -58,37 +58,26 @@ jobs:
 
       - name: 📝 Generate .env file for build
         run: |
-          cat <<EOF > .env.production
-          # Next.js Build Environment
-          NODE_ENV=production
-          NEXT_TELEMETRY_DISABLED=1
-          
-          # Database - PostgreSQL
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-          POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}
-          
-          # TMDb API (Public - used at build time and runtime)
-          NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-          NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
-          
-          # NextAuth v5 (Server-side only)
-          AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-          AUTH_URL=${{ secrets.NEXTAUTH_URL }}
-          
-          # App Configuration
-          NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
-          NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
-          
-          # WebRTC TURN Server (for production P2P connections)
-          NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '128.199.195.107' }}
-          NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'egfilm' }}
-          NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'egfilmpass123' }}
-          EOF
-          
-          echo "✅ Environment file generated"
+          {
+            echo "NODE_ENV=production"
+            echo "NEXT_TELEMETRY_DISABLED=1"
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
+            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}"
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}"
+            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"
+            echo "POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}"
+            echo "NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}"
+            echo "NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}"
+            echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+            echo "AUTH_URL=${{ secrets.NEXTAUTH_URL }}"
+            echo "NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}"
+            echo "NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}"
+            echo "NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '128.199.195.107' }}"
+            echo "NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'egfilm' }}"
+            echo "NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'egfilmpass123' }}"
+          } > .env.production
+          sed -i '/^[[:space:]]*$/d' .env.production
+          echo "✅ Environment file generated ($(wc -l < .env.production) lines)"
 
       - name: 🏗️ Build Docker image
         run: |
@@ -166,63 +155,37 @@ jobs:
           script_stop: true
           script: |
             set -e
-            
-            # Normalize repository name and set image
             REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export IMAGE_NAME="ghcr.io/${REPO_NORMALIZED}:deploy"
-            
-            # Login to GHCR
             echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Create/update .env file
             mkdir -p ~/egfilm
-            cat > ~/egfilm/.env << EOF
-            # Node Environment
-            NODE_ENV=production
-            
-            # Database Configuration
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}
-            
-            # TMDb API Configuration
-            NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-            NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
-            
-            # Authentication (NextAuth v5)
-            AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            AUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            
-            # App Configuration
-            NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
-            NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
-            
-            # WebRTC TURN Server (for production P2P connections)
-            NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '128.199.195.107' }}
-            NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'egfilm' }}
-            NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'egfilmpass123' }}
-            
-            # GitHub Container Registry (for pulling images)
-            GHCR_USER=${{ github.actor }}
-            GHCR_TOKEN=${{ secrets.REGISTRY_TOKEN }}
-            EOF
-            
-            # Log .env file verification (masked for security)
-            echo "▶ Verifying .env file..." | tee -a /tmp/deployment.log
-            if grep -q "DATABASE_URL" ~/egfilm/.env; then
-              echo "✅ DATABASE_URL found in .env" | tee -a /tmp/deployment.log
-              echo "▶ Configuration keys set:" | tee -a /tmp/deployment.log
-              grep -E "^(DATABASE_URL|NODE_ENV|AUTH_URL|NEXT_PUBLIC_APP_NAME)=" ~/egfilm/.env | sed 's/=.*/=***MASKED***/g' | tee -a /tmp/deployment.log
+            {
+              echo "NODE_ENV=production"
+              echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
+              echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}"
+              echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}"
+              echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"
+              echo "POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}"
+              echo "NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}"
+              echo "NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}"
+              echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+              echo "AUTH_URL=${{ secrets.NEXTAUTH_URL }}"
+              echo "NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}"
+              echo "NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}"
+              echo "NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '128.199.195.107' }}"
+              echo "NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || 'egfilm' }}"
+              echo "NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || 'egfilmpass123' }}"
+              echo "GHCR_USER=${{ github.actor }}"
+              echo "GHCR_TOKEN=${{ secrets.REGISTRY_TOKEN }}"
+            } > ~/egfilm/.env
+            sed -i '/^DRONE_SSH/d; /^[[:space:]]*$/d' ~/egfilm/.env
+            if grep -q "^DATABASE_URL=postgresql://" ~/egfilm/.env; then
+              echo "✅ .env configured successfully"
+              cd ~/egfilm && bash deploy.sh
             else
-              echo "❌ DATABASE_URL not found in .env - deployment will fail" | tee -a /tmp/deployment.log
+              echo "ERROR: DATABASE_URL not configured"
               exit 1
             fi
-            
-            # Run deployment script
-            cd ~/egfilm
-            bash deploy.sh
 
       - name: 📊 Deployment summary
         if: success()

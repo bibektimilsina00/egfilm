@@ -188,7 +188,7 @@ setup_postgres() {
     fi
 
     # Wait for the database container to be healthy
-    log_progress_start "Waiting for database to be ready..."
+    log_step "Waiting for database to be ready..."
     i=0
     CHARS="/-\|"
     until docker inspect --format "{{.State.Health.Status}}" database 2>/dev/null | grep -q "healthy"; do
@@ -196,7 +196,7 @@ setup_postgres() {
         echo -ne "${CHARS:$i:1} "
         sleep 0.2
     done
-    log_progress_done "Database ready!"
+    log_success "Database ready!"
 }
 
 
