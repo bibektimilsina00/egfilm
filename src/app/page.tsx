@@ -5,21 +5,33 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Info, TrendingUp, Star, Tv, Film, Clock } from 'lucide-react';
 
-import { getTrending, getPopular, getTopRated, MediaItem } from '@/lib/tmdb';
-import { getImageUrl } from '@/lib/tmdb';
-import { formatVoteAverage } from '@/lib/utils';
+import {
+  useTrending,
+  usePopular,
+  useTopRated
+} from '@/lib/hooks/useTMDb';
+import { getImageUrl, formatVoteAverage } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { Button } from '@/components/ui/button';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { getContinueWatching } from '@/lib/storage';
+import { HomePageSkeleton, MediaGridSkeleton } from '@/components/ui/loading-skeletons';
+import { ErrorState } from '@/components/ui/error-states';
+import type { MediaItem } from '@/lib/api/tmdb';
 
-// --- Types (adapt if your project defines them elsewhere) ---
-type Movie = any;
-type TVShow = any;
-
-// --- Small Section helper component ---
-function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
+/**
+ * Reusable section component with icon and title
+ */
+function Section({
+  title,
+  icon,
+  children
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section>
       <div className="flex items-center gap-3 mb-6">
@@ -31,204 +43,237 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
   );
 }
 
-// --- Main page component ---
+/**
+ * Hero section component with trending content
+ */
+function HeroSection({ media }: { media: MediaItem | undefined }) {
+  if (!media) return null;
+
+  const heroTitle = 'title' in media ? media.title : media.name;
+  const heroType = media.media_type || ('title' in media ? 'movie' : 'tv');
+
+  return (
+    <section className="relative h-[70vh] md:h-[80vh] flex items-end">
+      <div className="absolute inset-0">
+        <Image
+          src={getImageUrl(media.backdrop_path || media.poster_path, 'original')}
+          alt={heroTitle || 'Hero'}
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-transparent to-transparent" />
+      </div>
+
+      <div className="relative container mx-auto px-4 pb-16 md:pb-24 z-10">
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-blue-500" />
+            <span className="text-blue-400 font-semibold uppercase text-sm">Trending Now</span>
+          </div>
+
+          <h1 className="mb-4 max-w-2xl text-5xl font-bold text-white md:text-6xl">{heroTitle}</h1>
+          <p className="mb-6 max-w-2xl text-lg text-gray-200 line-clamp-3">{media.overview}</p>
+
+          <div className="flex flex-wrap gap-4">
+            <Link href={`/${heroType}/${media.id}`}>
+              <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                <Play className="w-5 h-5 fill-white" />
+                Play Now
+              </Button>
+            </Link>
+
+            <Link href={`/${heroType}/${media.id}`}>
+              <Button variant="outline" className="gap-2 text-white border-white hover:bg-white/10">
+                <Info className="w-5 h-5" />
+                More Info
+              </Button>
+            </Link>
+
+            {media.vote_average > 0 && (
+              <div className="ml-4 inline-flex items-center gap-2 bg-yellow-500/20 px-3 py-1 rounded-full">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-400 font-semibold">{formatVoteAverage(media.vote_average)}</span>
+                <span className="text-gray-300 text-sm uppercase">{heroType === 'movie' ? 'Movie' : 'TV Show'}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Media grid component with error handling and loading states
+ */
+function MediaGrid({
+  data,
+  isLoading,
+  error,
+  title,
+  icon,
+  type,
+  onRetry
+}: {
+  data: MediaItem[] | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  title: string;
+  icon: React.ReactNode;
+  type: 'movie' | 'tv';
+  onRetry: () => void;
+}) {
+  if (isLoading) {
+    return <MediaGridSkeleton title={title} />;
+  }
+
+  if (error) {
+    return (
+      <Section title={title} icon={icon}>
+        <ErrorState
+          title="Failed to load content"
+          message="We couldn't load this section. Please try again."
+          onRetry={onRetry}
+        />
+      </Section>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Section title={title} icon={icon}>
+        <div className="text-center py-12">
+          <p className="text-gray-400">No content available</p>
+        </div>
+      </Section>
+    );
+  }
+
+  return (
+    <Section title={title} icon={icon}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {data.slice(0, 12).map((media) => (
+          <MediaCard key={media.id} item={media as any} type={type} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Main homepage component with React Query integration
+ */
 export default function HomePage() {
-  // Content state
-  const [heroMedia, setHeroMedia] = useState<MediaItem | null>(null);
-  const [trendingMovies, setTrendingMovies] = useState<MediaItem[]>([]);
-  const [trendingTV, setTrendingTV] = useState<MediaItem[]>([]);
-  const [popularMovies, setPopularMovies] = useState<MediaItem[]>([]);
-  const [topRatedMovies, setTopRatedMovies] = useState<MediaItem[]>([]);
+  // Continue watching state (local storage)
   const [continueWatching, setContinueWatching] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch content (trending/popular/top rated)
+  // React Query hooks for different content sections
+  const trendingAll = useTrending('all', 'day');
+  const trendingMovies = useTrending('movie', 'week');
+  const trendingTV = useTrending('tv', 'week');
+  const popularMovies = usePopular('movie', 1);
+  const topRatedMovies = useTopRated('movie', 1);
+
+  // Load continue watching from localStorage
   useEffect(() => {
-    let cancelled = false;
-    const loadContent = async () => {
-      setLoading(true);
-      try {
-        // Load continue watching from localStorage
-        const continueData = getContinueWatching();
-        setContinueWatching(continueData);
-
-        // Fetch several endpoints in parallel
-        const [trendingAll, trendingMoviesResp, trendingTVResp, popularMoviesResp, topRatedResp] = await Promise.all([
-          getTrending('all', 'day'),
-          getTrending('movie', 'week'),
-          getTrending('tv', 'week'),
-          getPopular('movie', 1),
-          getTopRated('movie', 1),
-        ]);
-
-        if (cancelled) return;
-
-        // getTrending returns array directly, getPopular/getTopRated return objects with results
-        if (trendingAll && trendingAll.length > 0) {
-          setHeroMedia(trendingAll[0]);
-        }
-
-        setTrendingMovies(trendingMoviesResp || []);
-        setTrendingTV(trendingTVResp || []);
-        setPopularMovies((popularMoviesResp && popularMoviesResp.results) || []);
-        setTopRatedMovies((topRatedResp && topRatedResp.results) || []);
-      } catch (err) {
-        // Keep console error for debugging
-         
-        console.error('Error loading content:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadContent();
-    return () => {
-      cancelled = true;
-    };
+    const continueData = getContinueWatching();
+    setContinueWatching(continueData);
   }, []);
 
-  // Render loading state early
-  if (loading) {
+  // Show initial loading state when all critical data is loading
+  const isInitialLoading = trendingAll.isLoading && trendingMovies.isLoading && trendingTV.isLoading;
+
+  if (isInitialLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <svg className="mx-auto h-16 w-16 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p className="mt-4 text-gray-400">Loading amazing content...</p>
-        </div>
+      <div className="min-h-screen bg-gray-950">
+        <Navigation />
+        <HomePageSkeleton />
+        <Footer />
       </div>
     );
   }
 
-  // helper for hero titles
-  const heroTitle = heroMedia ? ('title' in heroMedia ? heroMedia.title : heroMedia.name) : null;
-  const heroType = heroMedia ? (heroMedia.media_type || ('title' in heroMedia ? 'movie' : 'tv')) : 'movie';
+  const heroMedia = trendingAll.data?.[0];
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-950">
-        {/* Navigation */}
-        <Navigation />
+    <div className="min-h-screen bg-gray-950">
+      <Navigation />
 
-        {/* Hero */}
-        {heroMedia && (
-          <section className="relative h-[70vh] md:h-[80vh] flex items-end">
-            <div className="absolute inset-0">
-              <Image
-                src={getImageUrl(heroMedia.backdrop_path || heroMedia.poster_path, 'original')}
-                alt={heroTitle || 'Hero'}
-                fill
-                className="object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-transparent to-transparent" />
-            </div>
+      {/* Hero Section */}
+      <HeroSection media={heroMedia} />
 
-            <div className="relative container mx-auto px-4 pb-16 md:pb-24 z-10">
-              <div className="max-w-2xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-blue-500" />
-                  <span className="text-blue-400 font-semibold uppercase text-sm">Trending Now</span>
-                </div>
-
-                <h1 className="mb-4 max-w-2xl text-5xl font-bold text-white md:text-6xl">{heroTitle}</h1>
-                <p className="mb-6 max-w-2xl text-lg text-gray-200 line-clamp-3">{heroMedia.overview}</p>
-
-                <div className="flex flex-wrap gap-4">
-                  <Link href={`/${heroType}/${heroMedia.id}`}>
-                    <Button variant="primary" size="lg" className="gap-2">
-                      <Play className="w-5 h-5 fill-white" />
-                      Play Now
-                    </Button>
-                  </Link>
-
-                  <Link href={`/${heroType}/${heroMedia.id}`}>
-                    <Button variant="outline" size="lg" className="gap-2 text-white border-white hover:bg-white/10">
-                      <Info className="w-5 h-5" />
-                      More Info
-                    </Button>
-                  </Link>
-
-                  {heroMedia.vote_average > 0 && (
-                    <div className="ml-4 inline-flex items-center gap-2 bg-yellow-500/20 px-3 py-1 rounded-full">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="text-yellow-400 font-semibold">{formatVoteAverage(heroMedia.vote_average)}</span>
-                      <span className="text-gray-300 text-sm uppercase">{heroType === 'movie' ? 'Movie' : 'TV Show'}</span>
+      {/* Content Sections */}
+      <main className="container mx-auto px-4 py-12 space-y-12">
+        {/* Continue Watching */}
+        {continueWatching.length > 0 && (
+          <Section title="Continue Watching" icon={<Clock className="w-6 h-6" />}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {continueWatching.slice(0, 10).map((item) => (
+                <div key={`${item.media_type}-${item.id}`} className="relative">
+                  <MediaCard item={item} type={item.media_type} />
+                  {/* Progress Bar */}
+                  {item.progress > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
+                      <div
+                        className="h-full bg-blue-500"
+                        style={{ width: `${item.progress}%` }}
+                      />
                     </div>
                   )}
                 </div>
-              </div>
+              ))}
             </div>
-          </section>
+          </Section>
         )}
 
-        {/* Content */}
-        <main className="container mx-auto px-4 py-12 space-y-12">
-          {/* Continue Watching */}
-          {continueWatching.length > 0 && (
-            <Section title="Continue Watching" icon={<Clock className="w-6 h-6" />}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {continueWatching.slice(0, 10).map((item) => (
-                  <div key={`${item.media_type}-${item.id}`} className="relative">
-                    <MediaCard item={item} type={item.media_type} />
-                    {/* Progress Bar */}
-                    {item.progress > 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
-                        <div
-                          className="h-full bg-blue-500"
-                          style={{ width: `${item.progress}%` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )}
+        {/* Trending Movies */}
+        <MediaGrid
+          data={trendingMovies.data}
+          isLoading={trendingMovies.isLoading}
+          error={trendingMovies.error}
+          title="Trending Movies"
+          icon={<TrendingUp className="w-6 h-6" />}
+          type="movie"
+          onRetry={() => trendingMovies.refetch()}
+        />
 
-          {/* Trending Movies */}
-          <Section title="Trending Movies" icon={<TrendingUp className="w-6 h-6" />}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {trendingMovies.slice(0, 12).map((media) => (
-                <MediaCard key={media.id} item={media as any} type="movie" />
-              ))}
-            </div>
-          </Section>
+        {/* Trending TV Shows */}
+        <MediaGrid
+          data={trendingTV.data}
+          isLoading={trendingTV.isLoading}
+          error={trendingTV.error}
+          title="Trending TV Shows"
+          icon={<Tv className="w-6 h-6" />}
+          type="tv"
+          onRetry={() => trendingTV.refetch()}
+        />
 
-          {/* Trending TV */}
-          <Section title="Trending TV Shows" icon={<Tv className="w-6 h-6" />}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {trendingTV.slice(0, 12).map((media) => (
-                <MediaCard key={media.id} item={media as any} type="tv" />
-              ))}
-            </div>
-          </Section>
+        {/* Popular Movies */}
+        <MediaGrid
+          data={popularMovies.data?.results}
+          isLoading={popularMovies.isLoading}
+          error={popularMovies.error}
+          title="Popular Movies"
+          icon={<Film className="w-6 h-6" />}
+          type="movie"
+          onRetry={() => popularMovies.refetch()}
+        />
 
-          {/* Popular Movies */}
-          <Section title="Popular Movies" icon={<Film className="w-6 h-6" />}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {popularMovies.slice(0, 12).map((media) => (
-                <MediaCard key={media.id} item={media as any} type="movie" />
-              ))}
-            </div>
-          </Section>
+        {/* Top Rated Movies */}
+        <MediaGrid
+          data={topRatedMovies.data?.results}
+          isLoading={topRatedMovies.isLoading}
+          error={topRatedMovies.error}
+          title="Top Rated Movies"
+          icon={<Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />}
+          type="movie"
+          onRetry={() => topRatedMovies.refetch()}
+        />
+      </main>
 
-          {/* Top Rated */}
-          <Section title="Top Rated Movies" icon={<Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {topRatedMovies.slice(0, 12).map((media) => (
-                <MediaCard key={media.id} item={media as any} type="movie" />
-              ))}
-            </div>
-          </Section>
-        </main>
-
-        {/* Footer */}
-        <Footer />
-      </div>
-    </>
+      <Footer />
+    </div>
   );
 }
