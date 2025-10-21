@@ -5,6 +5,7 @@ import SessionProvider from "@/components/SessionProvider";
 import { UmamiTracker } from "@/components/UmamiTracker";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import ServiceWorker from "@/components/ServiceWorker";
+import { QueryProvider } from "@/lib/providers/QueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -141,9 +142,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <PerformanceMonitor />
-          <ServiceWorker />
-          {children}
+          <QueryProvider>
+            <PerformanceMonitor />
+            <ServiceWorker />
+            {children}
+          </QueryProvider>
         </SessionProvider>
       </body>
     </html>

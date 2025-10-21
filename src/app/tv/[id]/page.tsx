@@ -8,10 +8,9 @@ import Link from 'next/link';
 import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Plus, Check, Users } from 'lucide-react';
 import { getTVDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
-import { formatVoteAverage, formatDate } from '@/lib/utils';
+import { formatVoteAverage } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
-import EmbeddedPlayer from '@/components/EmbeddedPlayer';
 import { getTVEmbedUrl } from '@/lib/videoSources';
 import WatchTogetherModal from '@/components/WatchTogetherModal';
 
@@ -24,7 +23,6 @@ export default function TVDetailPage() {
     const [tv, setTv] = useState<MediaDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showPlayer, setShowPlayer] = useState(false);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [selectedSeason, setSelectedSeason] = useState(1);
     const [selectedEpisode, setSelectedEpisode] = useState(1);
@@ -81,7 +79,7 @@ export default function TVDetailPage() {
             <div className="min-h-screen bg-gray-950 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-white mb-4">TV Show Not Found</h1>
-                    <Button onClick={() => router.push('/')} variant="primary">
+                    <Button onClick={() => router.push('/')} variant="default">
                         Go Home
                     </Button>
                 </div>
@@ -215,10 +213,9 @@ export default function TVDetailPage() {
 
                                 <div className="flex flex-wrap gap-4">
                                     <Button
-                                        onClick={() => setShowPlayer(true)}
-                                        variant="primary"
+                                        onClick={() => router.push(`/tv/${tvId}/watch?season=${selectedSeason}&episode=${selectedEpisode}`)}
                                         size="lg"
-                                        className="gap-2"
+                                        className="gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600"
                                     >
                                         <Play className="w-5 h-5 fill-white" />
                                         Watch Now
@@ -232,7 +229,6 @@ export default function TVDetailPage() {
                                                 setShowWatchTogether(true);
                                             }
                                         }}
-                                        variant="primary"
                                         size="lg"
                                         className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
                                     >
@@ -337,19 +333,6 @@ export default function TVDetailPage() {
                     </section>
                 )}
             </div>
-
-            {/* Embedded Video Player */}
-            {showPlayer && tv && (
-                <EmbeddedPlayer
-                    title={`${(tv as any).name} - S${selectedSeason}E${selectedEpisode}`}
-                    embedUrl={getTVEmbedUrl(Number(tvId), selectedSeason, selectedEpisode)}
-                    onClose={() => setShowPlayer(false)}
-                    type="tv"
-                    tmdbId={Number(tvId)}
-                    season={selectedSeason}
-                    episode={selectedEpisode}
-                />
-            )}
 
             {/* Watch Together Modal */}
             {showWatchTogether && tv && (
