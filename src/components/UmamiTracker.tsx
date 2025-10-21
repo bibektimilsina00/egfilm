@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import { useEffect } from 'react';
 
 /**
  * Umami Analytics Tracker Component
@@ -8,37 +9,47 @@ import Script from 'next/script';
  * Loads the Umami tracking script into your Next.js app
  * Configured for Umami Cloud with website ID: ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53
  *
- * SEO Optimized: This site is 100% free to watch movies, web series, and TV shows online. Enjoy features like watch together (group audio/video calls), instant streaming, trending content, and more. No registration required!
- *
- * Features:
- * - Watch movies, web series, and TV shows for free
- * - No signup or payment required
- * - Watch Together: Join friends for group audio/video calls while streaming
- * - Discover trending, popular, and new releases
- * - Add to watchlist, continue watching, and more
- * - Fast, secure, and privacy-friendly (no ads, no tracking)
- *
- * This component helps track site usage for analytics, but does not affect SEO negatively. For best SEO, ensure your layout.tsx and metadata include rich descriptions, keywords, and Open Graph tags highlighting free streaming and watch together features.
+ * Provides comprehensive analytics tracking for all pages and user interactions
  */
 
 export function UmamiTracker() {
-    // Use the provided Umami Cloud configuration
-    const websiteId = "ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53";
-    const scriptUrl = "https://cloud.umami.is/script.js";
+    const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || "ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53";
+    const scriptUrl = process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || "https://cloud.umami.is/script.js";
+
+    useEffect(() => {
+        // Verify Umami is loaded and tracking
+        if (typeof window !== 'undefined' && (window as any).umami) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('✅ [UMAMI] Tracker initialized and ready');
+            }
+        }
+    }, []);
+
+    // Only load if both website ID and script URL are configured
+    if (!websiteId || !scriptUrl) {
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ [UMAMI] Configuration incomplete - tracking disabled');
+        }
+        return null;
+    }
 
     return (
-        <Script
-            src={scriptUrl}
-            data-website-id={websiteId}
-            strategy="afterInteractive"
-            onLoad={() => {
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('✅ [UMAMI] Tracking script loaded');
-                }
-            }}
-            onError={() => {
-                console.error('❌ [UMAMI] Failed to load tracking script');
-            }}
-        />
+        <>
+            <Script
+                src={scriptUrl}
+                data-website-id={websiteId}
+                strategy="afterInteractive"
+                async
+                defer
+                onLoad={() => {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('✅ [UMAMI] Tracking script loaded successfully');
+                    }
+                }}
+                onError={(error) => {
+                    console.error('❌ [UMAMI] Failed to load tracking script:', error);
+                }}
+            />
+        </>
     );
 }
