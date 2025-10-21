@@ -209,6 +209,17 @@ jobs:
             GHCR_TOKEN=${{ secrets.REGISTRY_TOKEN }}
             EOF
             
+            # Log .env file verification (masked for security)
+            echo "▶ Verifying .env file..." | tee -a /tmp/deployment.log
+            if grep -q "DATABASE_URL" ~/egfilm/.env; then
+              echo "✅ DATABASE_URL found in .env" | tee -a /tmp/deployment.log
+              echo "▶ Configuration keys set:" | tee -a /tmp/deployment.log
+              grep -E "^(DATABASE_URL|NODE_ENV|AUTH_URL|NEXT_PUBLIC_APP_NAME)=" ~/egfilm/.env | sed 's/=.*/=***MASKED***/g' | tee -a /tmp/deployment.log
+            else
+              echo "❌ DATABASE_URL not found in .env - deployment will fail" | tee -a /tmp/deployment.log
+              exit 1
+            fi
+            
             # Run deployment script
             cd ~/egfilm
             bash deploy.sh
