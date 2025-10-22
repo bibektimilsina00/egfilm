@@ -38,7 +38,13 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Install Prisma CLI and tsx globally for migrations and worker
-RUN npm install -g prisma tsx
+# Use retries and increase timeout for network issues
+RUN npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retries 5 && \
+    npm install -g prisma@6.17.1 tsx || \
+    npm install -g prisma@6.17.1 tsx || \
+    npm install -g prisma@6.17.1 tsx
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
