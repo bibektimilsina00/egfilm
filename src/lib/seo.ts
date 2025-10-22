@@ -1,28 +1,251 @@
 import { Metadata } from 'next'
 import { getMovieDetails, getTVDetails, getImageUrl } from '@/lib/tmdb'
 
+// Site Configuration
+export const siteConfig = {
+    name: 'Egfilm',
+    url: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000',
+    description: 'Watch movies and TV shows online free. Stream unlimited content, discover trending releases, and enjoy HD quality entertainment with Egfilm. No subscription required.',
+    links: {
+        twitter: 'https://twitter.com/egfilm',
+        github: 'https://github.com/egfilm',
+    },
+    creator: 'Egfilm Team',
+    publisher: 'Egfilm',
+}
+
+// SEO Keywords Taxonomy
+export const seoKeywords = {
+    primary: [
+        'watch movies online free',
+        'free movie streaming',
+        'watch tv shows free',
+        'free online movies',
+        'stream movies free',
+        'free tv series',
+        'watch movies no subscription',
+        'free streaming platform',
+        'watch movies online without paying',
+        'free hd movies',
+    ],
+    secondary: [
+        'trending movies free',
+        'popular tv shows free',
+        'new releases free',
+        'top rated movies free',
+        'free movie database',
+        'watch together free',
+        'free movie collection',
+        'stream tv series free',
+        'no signup required',
+        'unlimited free streaming',
+    ],
+    genres: [
+        'free action movies',
+        'free comedy series',
+        'free drama shows',
+        'free thriller movies',
+        'free horror films',
+        'free sci-fi series',
+        'free romance movies',
+        'free documentary films',
+        'free animation movies',
+        'free crime series',
+    ],
+    blog: [
+        'movie reviews',
+        'tv show reviews',
+        'entertainment news',
+        'movie recommendations',
+        'tv series guides',
+        'streaming tips',
+        'movie analysis',
+        'tv show recaps',
+        'cinema news',
+        'entertainment blog',
+    ],
+}
+
+// Structured Data Schemas
+export const structuredData = {
+    // Organization Schema
+    organization: {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: siteConfig.name,
+        url: siteConfig.url,
+        logo: `${siteConfig.url}/logo.png`,
+        description: siteConfig.description,
+        sameAs: [
+            siteConfig.links.twitter,
+            siteConfig.links.github,
+        ],
+        contactPoint: {
+            '@type': 'ContactPoint',
+            contactType: 'Customer Support',
+            email: 'support@egfilm.com',
+        },
+    },
+
+    // Website Schema (for homepage)
+    website: {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: siteConfig.name,
+        url: siteConfig.url,
+        description: siteConfig.description,
+        publisher: {
+            '@type': 'Organization',
+            name: siteConfig.publisher,
+        },
+        potentialAction: {
+            '@type': 'SearchAction',
+            target: {
+                '@type': 'EntryPoint',
+                urlTemplate: `${siteConfig.url}/search?query={search_term_string}`,
+            },
+            'query-input': 'required name=search_term_string',
+        },
+    },
+
+    // Item List Schema Generator
+    itemList: (items: any[], listType: 'trending' | 'popular' | 'top-rated') => ({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: `${listType === 'trending' ? 'Trending' : listType === 'popular' ? 'Popular' : 'Top Rated'} Movies & TV Shows`,
+        description: `Browse ${listType} content on Egfilm`,
+        itemListElement: items.slice(0, 10).map((item, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+                '@type': item.media_type === 'movie' ? 'Movie' : 'TVSeries',
+                name: item.title || item.name,
+                url: `${siteConfig.url}/${item.media_type}/${item.id}`,
+                image: getImageUrl(item.poster_path, 'w500'),
+                datePublished: item.release_date || item.first_air_date,
+            },
+        })),
+    }),
+
+    // FAQ Schema Generator
+    faq: (questions: Array<{ question: string; answer: string }>) => ({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: questions.map(({ question, answer }) => ({
+            '@type': 'Question',
+            name: question,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: answer,
+            },
+        })),
+    }),
+
+    // Breadcrumb Schema Generator
+    breadcrumbList: (items: Array<{ name: string; url: string }>) => ({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: items.map((item, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: item.name,
+            item: `${siteConfig.url}${item.url}`,
+        })),
+    }),
+
+    // Person Schema Generator (for actors, directors, crew)
+    person: (person: any) => ({
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: person.name,
+        url: `https://www.themoviedb.org/person/${person.id}`,
+        image: person.profile_path ? getImageUrl(person.profile_path, 'w500') : undefined,
+        jobTitle: person.known_for_department,
+        sameAs: `https://www.themoviedb.org/person/${person.id}`,
+    }),
+
+    // Blog Post Schema Generator
+    blogPost: (post: any) => ({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description: post.description || post.excerpt,
+        image: post.imageUrl || post.featuredImage,
+        datePublished: post.publishedAt || post.createdAt,
+        dateModified: post.updatedAt || post.publishedAt || post.createdAt,
+        author: {
+            '@type': 'Person',
+            name: post.author || 'Egfilm Editorial Team',
+            url: post.authorUrl || siteConfig.url,
+        },
+        publisher: {
+            '@type': 'Organization',
+            name: siteConfig.publisher,
+            logo: {
+                '@type': 'ImageObject',
+                url: `${siteConfig.url}/logo.png`,
+            },
+        },
+        mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': `${siteConfig.url}/blog/${post.slug}`,
+        },
+        keywords: post.tags?.join(', ') || post.keywords,
+        articleSection: post.category || 'Entertainment',
+        wordCount: post.content?.split(' ').length || 0,
+    }),
+
+    // Review Schema Generator (for movie/TV reviews in blog)
+    review: (review: any) => ({
+        '@context': 'https://schema.org',
+        '@type': 'Review',
+        itemReviewed: {
+            '@type': review.mediaType === 'movie' ? 'Movie' : 'TVSeries',
+            name: review.mediaTitle,
+            image: review.mediaImage,
+            sameAs: review.mediaUrl,
+        },
+        reviewRating: review.rating ? {
+            '@type': 'Rating',
+            ratingValue: review.rating,
+            bestRating: 10,
+            worstRating: 1,
+        } : undefined,
+        author: {
+            '@type': 'Person',
+            name: review.author || 'Egfilm Editorial Team',
+        },
+        reviewBody: review.content,
+        datePublished: review.publishedAt,
+        publisher: {
+            '@type': 'Organization',
+            name: siteConfig.publisher,
+        },
+    }),
+}
+
 export async function generateMovieMetadata(id: string): Promise<Metadata> {
     try {
         const movie = await getMovieDetails(parseInt(id))
 
-        const title = `${movie.title} (${new Date(movie.release_date).getFullYear()})`
-        const description = movie.overview.length > 160
-            ? `${movie.overview.substring(0, 157)}...`
-            : movie.overview
+        const title = `Watch ${movie.title} (${new Date(movie.release_date).getFullYear()}) Free Online`
+        const description = `Watch ${movie.title} free online in HD. ${movie.overview.length > 120 ? `${movie.overview.substring(0, 117)}...` : movie.overview} Stream now without subscription.`
 
         const imageUrl = getImageUrl(movie.backdrop_path || movie.poster_path, 'w1280')
-        const ogImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'}/og?title=${encodeURIComponent(movie.title)}&subtitle=${encodeURIComponent(`Movie • ${new Date(movie.release_date).getFullYear()} • ⭐ ${movie.vote_average.toFixed(1)}`)}`
+        const ogImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'}/og?title=${encodeURIComponent(movie.title)}&subtitle=${encodeURIComponent(`Watch Free • ${new Date(movie.release_date).getFullYear()} • ⭐ ${movie.vote_average.toFixed(1)}`)}`
 
         return {
             title,
-            description,
+            description: truncateDescription(description, 160),
             keywords: [
-                movie.title,
-                'movie',
-                'film',
-                'streaming',
-                'watch online',
-                ...movie.genres.map((g: any) => g.name),
+                `watch ${movie.title} free`,
+                `${movie.title} online free`,
+                `stream ${movie.title}`,
+                'watch movie free',
+                'free movie streaming',
+                'hd movie free',
+                'no subscription',
+                ...movie.genres.map((g: any) => `free ${g.name.toLowerCase()} movies`),
                 ...movie.credits?.cast.slice(0, 3).map((actor: any) => actor.name) || [],
                 movie.credits?.crew.find((c: any) => c.job === 'Director')?.name || '',
             ].filter(Boolean),
@@ -66,38 +289,38 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
     try {
         const show = await getTVDetails(parseInt(id))
 
-        const title = `${show.name} (${new Date(show.first_air_date).getFullYear()}) - TV Series`
-        const description = show.overview.length > 160
-            ? `${show.overview.substring(0, 157)}...`
-            : show.overview
+        const title = `Watch ${show.name} (${new Date(show.first_air_date).getFullYear()}) Free Online - TV Series`
+        const description = `Watch ${show.name} free online in HD. ${show.overview.length > 100 ? `${show.overview.substring(0, 97)}...` : show.overview} Stream all ${show.number_of_seasons} season${show.number_of_seasons !== 1 ? 's' : ''} without subscription.`
 
         const imageUrl = getImageUrl(show.backdrop_path || show.poster_path, 'w1280')
-        const ogImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'}/og?title=${encodeURIComponent(show.name)}&subtitle=${encodeURIComponent(`TV Series • ${new Date(show.first_air_date).getFullYear()} • ⭐ ${show.vote_average.toFixed(1)} • ${show.number_of_seasons} Season${show.number_of_seasons !== 1 ? 's' : ''}`)}`
+        const ogImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'}/og?title=${encodeURIComponent(show.name)}&subtitle=${encodeURIComponent(`Watch Free • TV Series • ⭐ ${show.vote_average.toFixed(1)} • ${show.number_of_seasons} Season${show.number_of_seasons !== 1 ? 's' : ''}`)}`
 
         return {
             title,
-            description,
+            description: truncateDescription(description, 160),
             keywords: [
-                show.name,
-                'tv show',
-                'series',
-                'television',
-                'streaming',
-                'watch online',
-                ...show.genres.map((g: any) => g.name),
+                `watch ${show.name} free`,
+                `${show.name} online free`,
+                `stream ${show.name}`,
+                'watch tv show free',
+                'free tv series streaming',
+                'free series online',
+                'hd tv shows free',
+                'no subscription',
+                ...show.genres.map((g: any) => `free ${g.name.toLowerCase()} series`),
                 ...show.credits?.cast.slice(0, 3).map((actor: any) => actor.name) || [],
                 show.created_by?.[0]?.name || '',
             ].filter(Boolean),
             openGraph: {
                 type: 'video.tv_show',
-                title,
-                description,
+                title: `Watch ${show.name} Free Online`,
+                description: truncateDescription(description, 200),
                 images: [
                     {
                         url: ogImageUrl,
                         width: 1200,
                         height: 630,
-                        alt: `${show.name} poster`,
+                        alt: `${show.name} - Watch free online`,
                     },
                 ],
                 locale: 'en_US',
@@ -105,8 +328,8 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
             },
             twitter: {
                 card: 'summary_large_image',
-                title,
-                description,
+                title: `Watch ${show.name} Free`,
+                description: truncateDescription(description, 200),
                 images: [ogImageUrl],
             },
             other: {
@@ -191,4 +414,288 @@ export async function generateTVJSONLD(id: string) {
     } catch (error) {
         return null
     }
+}
+
+// Generate Blog Post Metadata
+export function generateBlogMetadata(post: {
+    title: string
+    description?: string
+    excerpt?: string
+    imageUrl?: string
+    featuredImage?: string
+    publishedAt?: string
+    createdAt?: string
+    updatedAt?: string
+    author?: string
+    slug: string
+    tags?: string[]
+    category?: string
+}): Metadata {
+    const description = post.description || post.excerpt || `Read ${post.title} on Egfilm blog - Free movie and TV show reviews, news, and streaming guides.`
+    const imageUrl = post.imageUrl || post.featuredImage || `${siteConfig.url}/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('Egfilm Blog')}`
+    const publishDate = post.publishedAt || post.createdAt || new Date().toISOString()
+
+    return {
+        title: `${post.title} | Egfilm Blog`,
+        description: truncateDescription(description, 160),
+        keywords: [
+            post.title,
+            'egfilm blog',
+            'free movie streaming',
+            'watch movies free',
+            'movie reviews',
+            'tv show guides',
+            'entertainment blog',
+            ...(post.tags || []),
+            ...(post.category ? [post.category] : []),
+            ...seoKeywords.blog,
+        ],
+        authors: [{ name: post.author || 'Egfilm Editorial Team' }],
+        category: post.category || 'Entertainment',
+        openGraph: {
+            type: 'article',
+            title: post.title,
+            description,
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: post.title,
+                },
+            ],
+            publishedTime: publishDate,
+            modifiedTime: post.updatedAt || publishDate,
+            authors: [post.author || 'Egfilm Editorial Team'],
+            section: post.category || 'Entertainment',
+            tags: post.tags,
+            locale: 'en_US',
+            siteName: siteConfig.name,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: post.title,
+            description: truncateDescription(description, 200),
+            images: [imageUrl],
+            creator: '@egfilm',
+        },
+        alternates: {
+            canonical: `${siteConfig.url}/blog/${post.slug}`,
+        },
+    }
+}
+
+// Generate Blog List/Archive Metadata
+export function generateBlogListMetadata(
+    page: number = 1,
+    category?: string,
+    tag?: string
+): Metadata {
+    let title = 'Blog - Free Movie & TV Show Reviews, News & Guides | Egfilm'
+    let description = 'Discover the latest movie reviews, TV show guides, streaming tips, and entertainment news. Learn how to watch movies and TV series free on Egfilm.'
+
+    if (category) {
+        title = `${category} - Egfilm Blog`
+        description = `Browse ${category.toLowerCase()} articles about free movie streaming, reviews, and guides on Egfilm.`
+    }
+
+    if (tag) {
+        title = `${tag} Articles - Egfilm Blog`
+        description = `All articles tagged with ${tag}. Movie reviews, TV guides, and streaming tips.`
+    }
+
+    if (page > 1) {
+        title = `${title} - Page ${page}`
+    }
+
+    return {
+        title,
+        description: truncateDescription(description, 160),
+        keywords: [
+            'movie blog',
+            'tv show blog',
+            'free streaming blog',
+            'movie reviews',
+            'tv show guides',
+            'entertainment news',
+            ...(category ? [category] : []),
+            ...(tag ? [tag] : []),
+            ...seoKeywords.blog,
+        ],
+        openGraph: {
+            type: 'website',
+            title,
+            description,
+            locale: 'en_US',
+            siteName: siteConfig.name,
+        },
+        alternates: {
+            canonical: `${siteConfig.url}/blog${page > 1 ? `?page=${page}` : ''}`,
+        },
+        robots: {
+            index: true,
+            follow: true,
+        },
+    }
+}
+
+// Generate Search Page Metadata
+export function generateSearchMetadata(query?: string): Metadata {
+    const title = query
+        ? `Watch "${query}" Free Online - Search Results | Egfilm`
+        : 'Search Free Movies & TV Shows | Egfilm'
+
+    const description = query
+        ? `Find and watch "${query}" free online. Browse movies and TV shows matching your search on Egfilm - no subscription required.`
+        : 'Search through thousands of free movies and TV shows. Find your next favorite content to watch online without subscription.'
+
+    return {
+        title,
+        description: truncateDescription(description, 160),
+        keywords: [
+            'search free movies',
+            'search free tv shows',
+            'find movies online',
+            'movie search free',
+            'tv show search free',
+            'watch movies search',
+            ...(query ? [
+                query,
+                `watch ${query} free`,
+                `${query} online free`,
+            ] : []),
+        ],
+        openGraph: {
+            title,
+            description,
+            type: 'website',
+            locale: 'en_US',
+            siteName: siteConfig.name,
+        },
+        robots: {
+            index: !!query, // Don't index empty search page
+            follow: true,
+        },
+    }
+}
+
+// Generate Watchlist Metadata
+export function generateWatchlistMetadata(): Metadata {
+    return {
+        title: 'My Watchlist | Egfilm',
+        description: 'Manage your watchlist and keep track of movies and TV shows you want to watch.',
+        keywords: [
+            'watchlist',
+            'saved movies',
+            'saved tv shows',
+            'movie collection',
+            'tv show collection',
+            'watch later',
+        ],
+        openGraph: {
+            title: 'My Watchlist',
+            description: 'Your personal collection of movies and TV shows on Egfilm',
+            type: 'website',
+            locale: 'en_US',
+            siteName: siteConfig.name,
+        },
+        robots: {
+            index: false, // Don't index user-specific pages
+            follow: true,
+        },
+    }
+}
+
+// Generate Category/Genre Metadata
+export function generateCategoryMetadata(
+    category: 'movies' | 'tv',
+    genre?: string
+): Metadata {
+    const categoryName = category === 'movies' ? 'Movies' : 'TV Shows'
+    const title = genre
+        ? `Watch Free ${genre} ${categoryName} Online | Egfilm`
+        : `Watch ${categoryName} Online Free | Egfilm`
+
+    const description = genre
+        ? `Watch free ${genre.toLowerCase()} ${category === 'movies' ? 'movies' : 'TV shows'} online in HD. Stream unlimited ${genre} content without subscription on Egfilm.`
+        : `Watch ${category === 'movies' ? 'movies' : 'TV shows'} online free in HD. Stream unlimited content without subscription. Browse by genre, rating, and popularity on Egfilm.`
+
+    return {
+        title,
+        description: truncateDescription(description, 160),
+        keywords: [
+            `free ${categoryName.toLowerCase()}`,
+            `watch ${categoryName.toLowerCase()} free`,
+            `stream ${categoryName.toLowerCase()} online free`,
+            `${categoryName.toLowerCase()} no subscription`,
+            `hd ${categoryName.toLowerCase()} free`,
+            `unlimited ${categoryName.toLowerCase()}`,
+            ...(genre ? [
+                `free ${genre.toLowerCase()} ${categoryName.toLowerCase()}`,
+                `watch ${genre.toLowerCase()} ${categoryName.toLowerCase()}`,
+                `${genre.toLowerCase()} streaming free`
+            ] : []),
+        ],
+        openGraph: {
+            title,
+            description,
+            type: 'website',
+            locale: 'en_US',
+            siteName: siteConfig.name,
+        },
+    }
+}
+
+// Generate Watch Together Metadata
+export function generateWatchTogetherMetadata(roomCode?: string): Metadata {
+    const title = roomCode
+        ? `Watch Together - Room ${roomCode} | Egfilm`
+        : 'Watch Together | Egfilm'
+
+    const description = 'Watch movies and TV shows together with friends in real-time. Create or join a watch party on Egfilm.'
+
+    return {
+        title,
+        description,
+        keywords: [
+            'watch together',
+            'watch party',
+            'group streaming',
+            'watch with friends',
+            'synchronized playback',
+            'video chat',
+        ],
+        openGraph: {
+            title,
+            description,
+            type: 'website',
+            locale: 'en_US',
+            siteName: siteConfig.name,
+        },
+        robots: {
+            index: false, // Don't index room-specific pages
+            follow: true,
+        },
+    }
+}
+
+// Generate Canonical URL Helper
+export function getCanonicalUrl(path: string): string {
+    return `${siteConfig.url}${path.startsWith('/') ? path : `/${path}`}`
+}
+
+// Generate Alt Text for Images
+export function generateImageAlt(
+    mediaType: 'movie' | 'tv',
+    title: string,
+    imageType: 'poster' | 'backdrop' = 'poster'
+): string {
+    const type = mediaType === 'movie' ? 'movie' : 'TV show'
+    return `${title} ${type} ${imageType}`
+}
+
+// Meta Description Helper (truncate to optimal length)
+export function truncateDescription(text: string, maxLength: number = 160): string {
+    if (text.length <= maxLength) return text
+    return `${text.substring(0, maxLength - 3)}...`
 }

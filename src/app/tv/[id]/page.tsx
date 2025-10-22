@@ -8,11 +8,13 @@ import Link from 'next/link';
 import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Plus, Check, Users } from 'lucide-react';
 import { getTVDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
+import { PlayButton } from '@/components/ui/play-button';
 import { formatVoteAverage } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
 import { getTVEmbedUrl } from '@/lib/videoSources';
 import WatchTogetherModal from '@/components/WatchTogetherModal';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function TVDetailPage() {
     const params = useParams();
@@ -126,7 +128,9 @@ export default function TVDetailPage() {
                                         src={getImageUrl(tv.poster_path, 'w500')}
                                         alt={(tv as any).name || 'TV Show'}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover object-center"
+                                        priority
+                                        quality={85}
                                     />
                                 </div>
                             </div>
@@ -212,14 +216,11 @@ export default function TVDetailPage() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-4">
-                                    <Button
+                                    <PlayButton
                                         onClick={() => router.push(`/tv/${tvId}/watch?season=${selectedSeason}&episode=${selectedEpisode}`)}
-                                        size="lg"
-                                        className="gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600"
                                     >
-                                        <Play className="w-5 h-5 fill-white" />
                                         Watch Now
-                                    </Button>
+                                    </PlayButton>
 
                                     <Button
                                         onClick={() => {
@@ -229,8 +230,9 @@ export default function TVDetailPage() {
                                                 setShowWatchTogether(true);
                                             }
                                         }}
+                                        variant="secondary"
                                         size="lg"
-                                        className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
+                                        className="gap-2"
                                     >
                                         <Users className="w-5 h-5" />
                                         Watch Together
@@ -241,7 +243,7 @@ export default function TVDetailPage() {
                                             onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
                                             variant="outline"
                                             size="lg"
-                                            className="gap-2 text-white border-white hover:bg-white/10"
+                                            className="gap-2"
                                         >
                                             <Play className="w-5 h-5" />
                                             Watch Trailer
@@ -252,7 +254,7 @@ export default function TVDetailPage() {
                                         onClick={toggleWatchlist}
                                         variant="outline"
                                         size="lg"
-                                        className={`gap-2 ${inWatchlist ? 'text-pink-500 border-pink-500 hover:bg-pink-500/10' : 'text-white border-white hover:bg-white/10'}`}
+                                        className="gap-2"
                                         title={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
                                     >
                                         {inWatchlist ? (
@@ -271,7 +273,7 @@ export default function TVDetailPage() {
                                     <Button
                                         variant="outline"
                                         size="lg"
-                                        className="text-white border-white hover:bg-white/10"
+                                        className="gap-2"
                                         onClick={() => {
                                             if (navigator.share) {
                                                 navigator.share({
@@ -292,6 +294,14 @@ export default function TVDetailPage() {
             </div>
 
             <div className="container mx-auto px-4 py-12 space-y-12">
+                {/* Breadcrumbs */}
+                <Breadcrumb
+                    items={[
+                        { name: 'TV Shows', url: '/tv' },
+                        { name: (tv as any).name, url: `/tv/${tvId}` },
+                    ]}
+                />
+
                 {tv.credits?.cast && tv.credits.cast.length > 0 && (
                     <section>
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Top Cast</h2>
@@ -304,6 +314,7 @@ export default function TVDetailPage() {
                                                 src={getImageUrl(person.profile_path, 'w185')}
                                                 alt={person.name}
                                                 fill
+                                                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, (max-width: 1280px) 16vw, 12vw"
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                             />
                                         ) : (

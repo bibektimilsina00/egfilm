@@ -9,6 +9,7 @@ import MediaCard from '@/components/catalog/MediaCard';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { MediaGridSkeleton } from '@/components/ui/loading-skeletons';
 
 function SearchContent() {
     const searchParams = useSearchParams();
@@ -172,9 +173,9 @@ function SearchContent() {
                             />
                             <button
                                 type="submit"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 p-3 rounded-full transition-colors"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 p-3 rounded-full transition-colors"
                             >
-                                <SearchIcon className="w-5 h-5 text-white" />
+                                <SearchIcon className="w-5 h-5 text-primary-foreground" />
                             </button>
 
                             {/* Suggestions dropdown */}
@@ -218,7 +219,7 @@ function SearchContent() {
             {/* Results */}
             <main className="container mx-auto px-4 py-8">
                 {loading ? (
-                    <LoadingSpinner size="lg" />
+                    <MediaGridSkeleton title="" count={12} />
                 ) : results.length > 0 ? (
                     <div className="space-y-6">
                         {/* Results Header */}
@@ -232,7 +233,7 @@ function SearchContent() {
                         </div>
 
                         {/* Results Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-in scale-in">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-in scale-in">
                             {results.map((item) => (
                                 <MediaCard
                                     key={`${item.media_type}-${item.id}`}
@@ -260,7 +261,7 @@ function SearchContent() {
                                 setSearchInput('');
                                 router.push('/search');
                             }}
-                            variant="primary"
+                            variant="default"
                         >
                             Clear Search
                         </Button>

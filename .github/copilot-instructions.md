@@ -1,16 +1,143 @@
-# Egfilm - AI Agent Instructions
+# Egfilm - AI Agent Instructions (Updated)
 
 ## Project Overview
-Egfilm is a Next.js 15 streaming platform with embedded video playback, real-time Watch Together features via WebRTC, and NextAuth authentication. Uses TMDb API for metadata, localStorage for client-side persistence, and Socket.IO for real-time sync.
+**Egfilm** is a modern Next.js 15 streaming platform with:
+- **Embedded video playback** with multi-source support (VidSrc, 2Embed, SuperEmbed, etc.)
+- **Real-time Watch Together** via WebRTC peer connections and Socket.IO
+- **Advanced state management** using TanStack React Query (replaces basic hooks)
+- **Radix UI components** for accessible, beautiful UI (replaces custom components)
+- **Modern data fetching** with Axios + React Query (replaces fetch + useState)
+- **NextAuth v5 beta** with JWT-based authentication
+- **PostgreSQL + Prisma ORM** for persistent data storage
+- **Comprehensive analytics** via Umami (auto-tracking) + optional Sentry error tracking
+- **Service-based architecture** for database operations
+- **TypeScript** for type safety throughout
 
 ## Architecture & Critical Patterns
 
-### 1. **Dual Routing System**
+### 1. **API Fetching Architecture** ⭐ REFACTORED
+**Old Pattern**: `fetch()` + `useState` + `useEffect`
+**New Pattern**: **Axios + TanStack React Query (react-query)**
+
+```typescript
+// Location: src/lib/api/tmdb.ts
+// Centralized Axios instance with auto-retry, error handling, timeout
+const tmdbAxios = axios.create({
+    baseURL: 'https://api.themoviedb.org/3',
+    params: { api_key: TMDB_API_KEY },
+    timeout: 10000,
+});
+
+// Functions return promises (exported from tmdb.ts)
+export async function getMovieDetails(id: number): Promise<MovieDetails>
+export async function getTrending(mediaType, timeWindow): Promise<MediaItem[]>
+```
+
+```typescript
+// Location: src/lib/hooks/useTMDb.ts
+// React Query hooks wrapping API calls with caching, retry, stale-time
+export function useMovieDetails(id: number) {
+    return useQuery({
+        queryKey: tmdbKeys.movieDetails(id),
+        queryFn: () => getMovieDetails(id),
+        staleTime: 1000 * 60 * 60,  // 1 hour
+        gcTime: 1000 * 60 * 120,    // Keep in cache 2 hours
+        enabled: !!id,
+    });
+}
+```
+
+**Query Key Pattern** (for caching invalidation):
+```typescript
+// Keys organized by feature
+export const tmdbKeys = {
+    all: ['tmdb'] as const,
+    trending: (mediaType, window) => [...tmdbKeys.all, 'trending', mediaType, window],
+    movieDetails: (id) => [...tmdbKeys.all, 'movieDetails', id],
+    search: (query, page) => [...tmdbKeys.all, 'search', query, page],
+};
+
+// Invalidate queries on mutation
+queryClient.invalidateQueries({ queryKey: tmdbKeys.trending() });
+```
+
+**React Query Configuration**:
+- Location: `src/lib/providers/QueryProvider.tsx`
+- Default staleTime: 5 minutes
+- Default gcTime (garbage collection): 10 minutes
+- Retry failed requests: up to 3 times with exponential backoff
+- Refetch on window focus: automatic refresh when tab refocuses
+- DevTools: Available at bottom right (check `@tanstack/react-query-devtools`)
+
+### 2. **UI Component Architecture** ⭐ REFACTORED
+**Old Pattern**: Custom components built from scratch
+**New Pattern**: **Radix UI primitives + Tailwind CSS**
+
+Installed Radix UI components:
+- `@radix-ui/react-dialog` - Modal dialogs
+- `@radix-ui/react-dropdown-menu` - Dropdown menus
+- `@radix-ui/react-select` - Select inputs
+- `@radix-ui/react-tabs` - Tab navigation
+- `@radix-ui/react-avatar` - User avatars
+- `@radix-ui/react-separator` - Dividers
+- `@radix-ui/react-slot` - Slot composition
+
+**Component Locations**:
+```
+src/components/
+├── ui/              # Radix UI + Tailwind wrappers
+│   ├── button.tsx
+│   ├── modal.tsx
+│   ├── tabs.tsx
+│   └── ...
+├── catalog/         # Feature components (MediaCard, MediaGrid)
+├── player/          # Video player components
+└── ...              # Page-specific components
+```
+
+**Example - Using Radix UI**:
+```tsx
+import { Dialog, DialogContent, DialogTrigger } from '@radix-ui/react-dialog';
+import { Button } from '@/components/ui/button';
+
+export function WatchTogetherModal() {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button>Watch Together</Button>
+            </DialogTrigger>
+            <DialogContent>
+                {/* Modal content */}
+            </DialogContent>
+        </Dialog>
+    );
+}
+```
+
+### 3. **State Management** ⭐ REFACTORED
+**Pattern**: TanStack React Query + React hooks (no Redux/Zustand)
+
+```typescript
+// Queries (read data)
+const { data: movies, isPending, error } = useTrending('movie');
+
+// Mutations (modify data)
+const { mutate: addToWatchlist } = useAddToWatchlist();
+addToWatchlist({ item: movie, type: 'movie' });
+
+// Local component state (only when needed)
+const [isOpen, setIsOpen] = useState(false);
+
+// Derived state
+const isInWatchlist = useWatchlistStatus(movieId, 'movie');
+```
+
+### 4. **Dual Routing System**
 - **Pages Router**: `/src/pages/api/socketio.ts` - Socket.IO API endpoint only
 - **App Router**: Everything else under `/src/app/` 
 - Never mix: Socket.IO requires Pages Router, all other routes use App Router
 
-### 2. **Video Playback Architecture**
+### 5. **Video Playback Architecture**
 ```typescript
 // Pattern: Multi-source embed providers (src/lib/videoSources.ts)
 VIDEO_SOURCES = [VidSrc, VidSrc Pro, VidSrc.to, 2Embed, SuperEmbed]
@@ -21,7 +148,7 @@ VIDEO_SOURCES = [VidSrc, VidSrc Pro, VidSrc.to, 2Embed, SuperEmbed]
 - Server switching handled in `EmbeddedPlayer.tsx` via dropdown (sourceIndex state)
 - Embedded players have ads/redirects - this is expected behavior documented in `IFRAME_LIMITATIONS.md`
 
-### 3. **Watch Together System**
+### 6. **Watch Together System**
 Two flows exist (keep separate):
 - **Main Flow** (preferred): Movie/TV page → "Watch Together" button → Modal → `/watch-together?room=CODE`
 - **Legacy Flow** (redirect only): Direct `/watch-party` access → shows instructions → auto-redirect homepage
@@ -39,10 +166,9 @@ RTCPeerConnection → createOffer/Answer → socket.emit('webrtc-offer')
 → onicecandidate → socket.emit('webrtc-ice-candidate')
 ```
 
-### 4. **Authentication Pattern**
+### 7. **Authentication Pattern**
 ```typescript
 // PostgreSQL + Prisma ORM (src/lib/prisma.ts)
-// Default test user creation was removed for security. Create test users via a seed script or admin interface when needed.
 // Session strategy: JWT with NextAuth v5 beta
 // Protected routes: Check useSession() status → redirect to /login if 'unauthenticated'
 ```
@@ -53,20 +179,22 @@ if (status === 'unauthenticated') router.push('/login');
 else setShowWatchTogether(true);
 ```
 
-### 5. **Data Persistence Strategy**
+### 8. **Data Persistence Strategy**
 - **PostgreSQL + Prisma**: Users, watchlist, continue watching, watch rooms, notifications
 - **TMDb API**: Movie/TV metadata (read-only, public key in .env.local)
 - **Socket.IO in-memory Maps**: Active WebRTC connections (lost on restart)
 - **Services**: `/src/lib/services/` - watchlist, continueWatching, watchRoom, notification
 
-### 6. **State Management Patterns**
-```typescript
-// No Redux/Zustand - uses React hooks + Prisma services
-// Watchlist: lib/services/watchlist.service.ts → addToWatchlist/removeFromWatchlist
-// Continue watching: lib/services/continueWatching.service.ts → saves progress to DB
-// Room state: Socket.IO broadcasts + Prisma watchRoom.service.ts for persistence
-// Notifications: lib/services/notification.service.ts
-```
+### 9. **Analytics & Error Tracking**
+- **Umami Analytics**: Global script auto-loaded in root layout
+  - Location: `src/components/UmamiTracker.tsx` in `src/app/layout.tsx`
+  - Auto-tracks: Page views, sessions, devices, referrers
+  - Custom events: Use `useUmamiEvents` hook from `src/lib/hooks/useUmamiEvents.ts`
+
+- **Sentry Error Tracking**: Conditionally initialized (requires SENTRY_DSN env var)
+  - Location: `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`
+  - Only initializes if DSN is provided (respects environment variables)
+  - 10% sample rate in production, 100% in development
 
 ## Development Workflows
 
