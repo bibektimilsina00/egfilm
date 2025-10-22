@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, Play } from 'lucide-react';
-import { MediaItem, getImageUrl } from '@/lib/tmdb';
-import { formatVoteAverage } from '@/lib/utils';
+import { MediaItem, getImageUrl, formatVoteAverage } from '@/lib/api/tmdb';
+import { generateImageAlt } from '@/lib/seo';
 import { useState } from 'react';
 
 interface MediaCardProps {
@@ -32,11 +32,12 @@ export function MediaCard({ media, mediaType }: MediaCardProps) {
                 {!imageError && media.poster_path ? (
                     <Image
                         src={getImageUrl(media.poster_path, 'w500')}
-                        alt={title}
+                        alt={generateImageAlt(type, title, 'poster')}
                         fill
                         className="object-cover transition-opacity group-hover:opacity-75"
                         onError={() => setImageError(true)}
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        loading="lazy"
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500">

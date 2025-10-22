@@ -38,8 +38,8 @@ export default function MediaCard({ item, type }: MediaCardProps) {
     const rating = item.vote_average ? formatVoteAverage(item.vote_average) : 'N/A';
 
     return (
-        <Link href={`/${type}/${item.id}`} className="group block">
-            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-blue-500/50 hover:bg-gray-900/80">
+        <Link href={`/${type}/${item.id}`} className="group block" prefetch={true}>
+            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-blue-500/50 hover:bg-gray-900/80 py-0 gap-0">
                 <CardContent className="p-0 relative">
                     {/* Poster Image */}
                     <div className="relative aspect-[2/3] w-full">
@@ -51,6 +51,8 @@ export default function MediaCard({ item, type }: MediaCardProps) {
                                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                 className="object-cover transition-transform duration-300 group-hover:scale-110"
                                 onError={() => setImageError(true)}
+                                loading="lazy"
+                                quality={75}
                             />
                         ) : (
                             <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">

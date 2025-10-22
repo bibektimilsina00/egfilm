@@ -6,13 +6,9 @@ import { Card } from '@/components/ui/card';
  */
 export function MediaCardSkeleton() {
   return (
-    <Card className="bg-gray-900/50 border-gray-800 overflow-hidden">
+    <Card className="bg-gray-900/50 border-gray-800 overflow-hidden py-0 gap-0">
       <div className="aspect-[2/3] relative">
         <Skeleton className="w-full h-full bg-gray-800" />
-      </div>
-      <div className="p-3">
-        <Skeleton className="h-4 w-3/4 mb-2 bg-gray-800" />
-        <Skeleton className="h-3 w-1/2 bg-gray-800" />
       </div>
     </Card>
   );

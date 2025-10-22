@@ -7,10 +7,11 @@ import MediaCard from '@/components/catalog/MediaCard';
 import { Button } from '@/components/ui/button';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { TVShow } from '@/lib/api/tmdb';
+import { BaseTVShow } from '@/lib/api/tmdb';
+import { MediaGridSkeleton } from '@/components/ui/loading-skeletons';
 
 export default function TVShowsPage() {
-    const [shows, setShows] = useState<TVShow[]>([]);
+    const [shows, setShows] = useState<BaseTVShow[]>([]);
     const [genres, setGenres] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'popular' | 'top_rated' | 'trending'>('popular');
@@ -80,27 +81,36 @@ export default function TVShowsPage() {
                         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
                             <Button
                                 onClick={() => { setFilter('popular'); setPage(1); }}
-                                variant={filter === 'popular' ? 'primary' : 'outline'}
+                                variant="ghost"
                                 size="sm"
-                                className="gap-2 whitespace-nowrap"
+                                className={`gap-2 whitespace-nowrap ${filter === 'popular'
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                        : 'text-gray-300 hover:bg-blue-600/20 hover:text-blue-200'
+                                    }`}
                             >
                                 <Star className="w-4 h-4" />
                                 Popular
                             </Button>
                             <Button
                                 onClick={() => { setFilter('top_rated'); setPage(1); }}
-                                variant={filter === 'top_rated' ? 'primary' : 'outline'}
+                                variant="ghost"
                                 size="sm"
-                                className="gap-2 whitespace-nowrap"
+                                className={`gap-2 whitespace-nowrap ${filter === 'top_rated'
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                        : 'text-gray-300 hover:bg-blue-600/20 hover:text-blue-200'
+                                    }`}
                             >
                                 <Calendar className="w-4 h-4" />
                                 Top Rated
                             </Button>
                             <Button
                                 onClick={() => { setFilter('trending'); setPage(1); }}
-                                variant={filter === 'trending' ? 'primary' : 'outline'}
+                                variant="ghost"
                                 size="sm"
-                                className="gap-2 whitespace-nowrap"
+                                className={`gap-2 whitespace-nowrap ${filter === 'trending'
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                        : 'text-gray-300 hover:bg-blue-600/20 hover:text-blue-200'
+                                    }`}
                             >
                                 <TrendingUp className="w-4 h-4" />
                                 Trending
@@ -111,9 +121,12 @@ export default function TVShowsPage() {
                         <div className="flex gap-2 overflow-x-auto flex-1">
                             <Button
                                 onClick={() => setSelectedGenre(null)}
-                                variant={selectedGenre === null ? 'primary' : 'ghost'}
+                                variant={selectedGenre === null ? 'default' : 'ghost'}
                                 size="sm"
-                                className="whitespace-nowrap"
+                                className={`whitespace-nowrap ${selectedGenre === null
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                        : 'text-gray-300 hover:bg-blue-600/20 hover:text-blue-200'
+                                    }`}
                             >
                                 All Genres
                             </Button>
@@ -121,9 +134,12 @@ export default function TVShowsPage() {
                                 <Button
                                     key={genre.id}
                                     onClick={() => setSelectedGenre(genre.id)}
-                                    variant={selectedGenre === genre.id ? 'primary' : 'ghost'}
+                                    variant={selectedGenre === genre.id ? 'default' : 'ghost'}
                                     size="sm"
-                                    className="whitespace-nowrap"
+                                    className={`whitespace-nowrap ${selectedGenre === genre.id
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                            : 'text-gray-300 hover:bg-blue-600/20 hover:text-blue-200'
+                                        }`}
                                 >
                                     {genre.name}
                                 </Button>
@@ -148,12 +164,10 @@ export default function TVShowsPage() {
                 </h1>
 
                 {loading && page === 1 ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
+                    <MediaGridSkeleton title="" count={12} />
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                             {filteredShows.map((show) => (
                                 <MediaCard key={show.id} item={show} type="tv" />
                             ))}
@@ -164,7 +178,7 @@ export default function TVShowsPage() {
                             <div className="flex justify-center mt-12">
                                 <Button
                                     onClick={() => setPage(p => p + 1)}
-                                    variant="primary"
+                                    variant="default"
                                     size="lg"
                                 >
                                     Load More

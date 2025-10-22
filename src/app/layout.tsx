@@ -6,6 +6,7 @@ import { UmamiTracker } from "@/components/UmamiTracker";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import ServiceWorker from "@/components/ServiceWorker";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
+import { siteConfig, seoKeywords } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,57 +27,54 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'),
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: "Egfilm - Discover Movies & TV Shows",
-    template: "%s | Egfilm"
+    default: `${siteConfig.name} - Watch Movies & TV Shows Online Free`,
+    template: `%s | ${siteConfig.name}`
   },
-  description: "Browse and discover the latest movies and TV shows. Watch trailers, manage your watchlist, and enjoy streaming content with friends. Find your next favorite show today.",
+  description: siteConfig.description,
   keywords: [
-    "free movies",
-    "watch movies online free",
-    "free TV shows",
-    "web series",
+    ...seoKeywords.primary,
+    ...seoKeywords.secondary,
+    ...seoKeywords.genres,
     "watch together",
     "group watch",
-    "free streaming",
     "watchlist",
-    "trailers",
-    "entertainment",
-    "movie database",
-    "no signup"
+    "hd streaming free",
+    "no ads free movies",
+    "unlimited streaming",
+    "no registration required"
   ],
-  authors: [{ name: "Egfilm Team" }],
-  creator: "Egfilm",
-  publisher: "Egfilm",
+  authors: [{ name: siteConfig.creator }],
+  creator: siteConfig.creator,
+  publisher: siteConfig.publisher,
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   category: "entertainment",
-  classification: "Entertainment & Streaming",
+  classification: "Free Movie & TV Streaming Platform",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "/",
-    title: "Egfilm — Watch Movies & TV Shows Online Free",
-    description: "Egfilm offers free movies, TV shows and web series. Invite friends to 'Watch Together' (group audio/video), create watchlists, and stream instantly — no signup required.",
-    siteName: "Egfilm",
+    url: siteConfig.url,
+    title: `${siteConfig.name} — Watch Movies & TV Shows Online Free`,
+    description: "Stream unlimited movies and TV shows for free. No subscription, no payment required. Watch HD quality content, create watchlists, and enjoy Watch Together with friends.",
+    siteName: siteConfig.name,
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Egfilm — Free Movies, TV Shows & Watch Together",
+        alt: `${siteConfig.name} — Free Movie & TV Streaming Platform`,
       },
     ],
-    videos: [],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Egfilm — Free Movies & Watch Together",
-    description: "Free streaming of movies, web series and TV shows. Watch together with friends via audio/video calls. No signup needed.",
+    title: `${siteConfig.name} — Stream Movies & TV Shows Free`,
+    description: "Watch unlimited movies and TV shows online free. No subscription required. HD quality streaming with Watch Together feature.",
     images: ["/og-image.jpg"],
     creator: "@egfilm",
   },
@@ -107,36 +105,63 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'
-
-  const siteJsonLD = JSON.stringify({
+  // Enhanced structured data combining website and organization schemas
+  const structuredData = {
     '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Egfilm',
-    url: baseUrl,
-    description: 'Egfilm - Watch movies, TV shows and web series online for free. Use Watch Together to invite friends and enjoy group audio/video streaming.',
-    publisher: {
-      '@type': 'Organization',
-      name: 'Egfilm',
-      url: baseUrl,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${baseUrl}/og-image.jpg`,
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${siteConfig.url}/#website`,
+        url: siteConfig.url,
+        name: siteConfig.name,
+        description: siteConfig.description,
+        publisher: {
+          '@id': `${siteConfig.url}/#organization`,
+        },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${siteConfig.url}/search?q={search_term_string}`,
+          },
+          'query-input': 'required name=search_term_string',
+        },
+        inLanguage: 'en-US',
       },
-    },
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${baseUrl}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
-  })
+      {
+        '@type': 'Organization',
+        '@id': `${siteConfig.url}/#organization`,
+        name: siteConfig.publisher,
+        url: siteConfig.url,
+        logo: {
+          '@type': 'ImageObject',
+          url: `${siteConfig.url}/logo.png`,
+          width: 512,
+          height: 512,
+        },
+        sameAs: [
+          siteConfig.links.twitter,
+          siteConfig.links.github,
+        ],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'Customer Support',
+        },
+      },
+    ],
+  }
 
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth" className="dark">
       <head>
         <UmamiTracker />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLD }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -13,8 +13,11 @@ import {
 import { getImageUrl, formatVoteAverage } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { Button } from '@/components/ui/button';
+import { PlayButton } from '@/components/ui/play-button';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import HomePageSEO from '@/components/HomePageSEO';
+import FAQSchema from '@/components/FAQSchema';
 import { getContinueWatching } from '@/lib/storage';
 import { HomePageSkeleton, MediaGridSkeleton } from '@/components/ui/loading-skeletons';
 import { ErrorState } from '@/components/ui/error-states';
@@ -77,15 +80,12 @@ function HeroSection({ media }: { media: MediaItem | undefined }) {
           <p className="mb-6 max-w-2xl text-lg text-gray-200 line-clamp-3">{media.overview}</p>
 
           <div className="flex flex-wrap gap-4">
-            <Link href={`/${heroType}/${media.id}`}>
-              <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
-                <Play className="w-5 h-5 fill-white" />
-                Play Now
-              </Button>
+            <Link href={`/${heroType}/${media.id}`} prefetch={true}>
+              <PlayButton />
             </Link>
 
-            <Link href={`/${heroType}/${media.id}`}>
-              <Button variant="outline" className="gap-2 text-white border-white hover:bg-white/10">
+            <Link href={`/${heroType}/${media.id}`} prefetch={true}>
+              <Button variant="outline" className="gap-2">
                 <Info className="w-5 h-5" />
                 More Info
               </Button>
@@ -199,6 +199,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-950">
+      {/* SEO - Structured Data for Trending Content */}
+      <HomePageSEO trendingItems={trendingAll.data} />
+      {/* SEO - FAQ Schema */}
+      <FAQSchema />
+
       <Navigation />
 
       {/* Hero Section */}

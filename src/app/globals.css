@@ -106,8 +106,8 @@
   animation: scale-in 0.3s ease-out;
 }
 
-/* Smooth scroll */
-html {
+/* Smooth scroll - prepared for Next.js future versions */
+html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 }
 
@@ -166,43 +166,44 @@ html {
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+  --background: #0a0e1a;
+  --foreground: #f0f4f8;
+  --card: #1a1f2e;
+  --card-foreground: #f0f4f8;
+  --popover: #1a1f2e;
+  --popover-foreground: #f0f4f8;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #6366f1;
+  --secondary-foreground: #ffffff;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e40af;
+  --accent-foreground: #f0f4f8;
+  --destructive: #ef4444;
+  --border: rgba(59, 130, 246, 0.1);
+  --input: rgba(59, 130, 246, 0.15);
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #06b6d4;
+  --chart-3: #8b5cf6;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+  --sidebar: #1a1f2e;
+  --sidebar-foreground: #f0f4f8;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e40af;
+  --sidebar-accent-foreground: #f0f4f8;
+  --sidebar-border: rgba(59, 130, 246, 0.1);
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

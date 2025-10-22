@@ -20,16 +20,16 @@ export function QueryProvider({ children }: QueryProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Data is considered fresh for 5 minutes
-            staleTime: 1000 * 60 * 5,
-            // Keep data in cache for 10 minutes after component unmount
-            gcTime: 1000 * 60 * 10,
-            // Retry failed requests up to 3 times
-            retry: 3,
+            // Data is considered fresh for 30 minutes (movie data doesn't change often)
+            staleTime: 1000 * 60 * 30,
+            // Keep data in cache for 1 hour after component unmount
+            gcTime: 1000 * 60 * 60,
+            // Retry failed requests up to 2 times (faster failure)
+            retry: 2,
             // Retry with exponential backoff
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-            // Refetch on window focus for fresh data
-            refetchOnWindowFocus: true,
+            retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 10000),
+            // Don't refetch on window focus to avoid unnecessary requests
+            refetchOnWindowFocus: false,
             // Don't refetch on reconnect to avoid spam
             refetchOnReconnect: false,
           },

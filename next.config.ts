@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Add quality config for Next.js 16 compatibility
+    qualities: [75, 85, 90, 95, 100],
   },
   // Enable standalone output for Docker
   output: 'standalone',
@@ -22,6 +24,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    // Speed up webpack compilation
+    webpackBuildWorker: true,
   },
   // Compression and optimization
   compress: true,
@@ -77,14 +81,69 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Suppress deprecation warnings in webpack
+  // Webpack performance optimizations
   webpack: (config, { dev, isServer }) => {
+    // Suppress unnecessary logging and warnings
     if (!isServer) {
       config.infrastructureLogging = {
-        ...config.infrastructureLogging,
-        debug: /webpack/, // Only log webpack-specific issues
+        level: 'error', // Only show errors, hide warnings
+      };
+    } else {
+      config.infrastructureLogging = {
+        level: 'error',
       };
     }
+
+    // Speed up builds with better caching (without buildDependencies to avoid warnings)
+    config.cache = {
+      type: 'filesystem',
+    };
+
+    // Optimize bundle splitting
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'deterministic',
+        runtimeChunk: 'single',
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Vendor chunk for node_modules
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /node_modules/,
+              priority: 20,
+            },
+            // Common chunks
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true,
+            },
+            // React and related libraries
+            react: {
+              name: 'react',
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types)[\\/]/,
+              chunks: 'all',
+              priority: 30,
+            },
+          },
+        },
+      };
+    }
+
+    // Faster module resolution
+    config.resolve = {
+      ...config.resolve,
+      symlinks: false,
+    };
+
     return config;
   },
 };
