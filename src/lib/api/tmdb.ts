@@ -1,16 +1,42 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
+const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const TMDB_BASE_URL = process.env.NEXT_PUBLIC_TMDB_BASE_URL || 'https://api.themoviedb.org/3';
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || '';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-export interface Movie {
+if (!TMDB_API_KEY) {
+    throw new Error('TMDB API key is required');
+}
+
+/**
+ * Axios instance configured for TMDb API
+ */
+const tmdbAxios = axios.create({
+    baseURL: TMDB_BASE_URL,
+    params: {
+        api_key: TMDB_API_KEY,
+    },
+    timeout: 10000,
+});
+
+// Add response interceptor for error handling
+tmdbAxios.interceptors.response.use(
+    (response: AxiosResponse) => response,
+    (error: any) => {
+        console.error('TMDb API Error:', error.response?.data || error.message);
+        return Promise.reject(error);
+    }
+);
+
+// =============================================================================
+// TypeScript Types for TMDb API
+// =============================================================================
+
+export interface BaseMovie {
     id: number;
     title: string;
-    original_title: string;
-    overview: string;
     poster_path: string | null;
     backdrop_path: string | null;
+    overview: string;
     release_date: string;
     vote_average: number;
     vote_count: number;
@@ -18,23 +44,27 @@ export interface Movie {
     genre_ids: number[];
     adult: boolean;
     original_language: string;
+    original_title: string;
     video: boolean;
+    media_type?: 'movie';
 }
 
-export interface TVShow {
+export interface BaseTVShow {
     id: number;
     name: string;
-    original_name: string;
-    overview: string;
     poster_path: string | null;
     backdrop_path: string | null;
+    overview: string;
     first_air_date: string;
     vote_average: number;
     vote_count: number;
     popularity: number;
     genre_ids: number[];
-    origin_country: string[];
+    adult: boolean;
     original_language: string;
+    original_name: string;
+    origin_country: string[];
+    media_type?: 'tv';
 }
 
 export interface Genre {
@@ -42,180 +72,345 @@ export interface Genre {
     name: string;
 }
 
-export interface MovieDetails extends Movie {
-    genres: Genre[];
+export interface CastMember {
+    id: number;
+    name: string;
+    character: string;
+    profile_path: string | null;
+    order: number;
+    adult: boolean;
+    gender: number;
+    known_for_department: string;
+    original_name: string;
+    popularity: number;
+    cast_id: number;
+    credit_id: string;
+}
+
+export interface CrewMember {
+    id: number;
+    name: string;
+    job: string;
+    department: string;
+    profile_path: string | null;
+    adult: boolean;
+    gender: number;
+    known_for_department: string;
+    original_name: string;
+    popularity: number;
+    credit_id: string;
+}
+
+export interface Credits {
+    cast: CastMember[];
+    crew: CrewMember[];
+}
+
+export interface Video {
+    key: string;
+    name: string;
+    site: string;
+    type: string;
+    size: number;
+    iso_639_1: string;
+    iso_3166_1: string;
+    published_at: string;
+    official: boolean;
+    id: string;
+}
+
+export interface Videos {
+    results: Video[];
+}
+
+export interface MovieDetails extends BaseMovie {
     runtime: number;
+    genres: Genre[];
     budget: number;
     revenue: number;
     status: string;
     tagline: string;
-    production_companies: Array<{ id: number; name: string; logo_path: string | null }>;
-    credits?: {
-        cast: Array<{ id: number; name: string; character: string; profile_path: string | null }>;
-        crew: Array<{ id: number; name: string; job: string; profile_path: string | null }>;
-    };
-    videos?: {
-        results: Array<{ id: string; key: string; name: string; site: string; type: string }>;
-    };
+    production_companies: Array<{
+        id: number;
+        name: string;
+        logo_path: string | null;
+        origin_country: string;
+    }>;
+    production_countries: Array<{
+        iso_3166_1: string;
+        name: string;
+    }>;
+    spoken_languages: Array<{
+        iso_639_1: string;
+        name: string;
+        english_name: string;
+    }>;
+    credits?: Credits;
+    videos?: Videos;
+    similar?: TMDbResponse<BaseMovie>;
+    recommendations?: TMDbResponse<BaseMovie>;
 }
 
-export interface TVShowDetails extends TVShow {
+export interface TVDetails extends BaseTVShow {
     genres: Genre[];
-    number_of_seasons: number;
     number_of_episodes: number;
+    number_of_seasons: number;
+    episode_run_time: number[];
+    status: string;
+    tagline: string;
+    type: string;
+    networks: Array<{
+        id: number;
+        name: string;
+        logo_path: string | null;
+        origin_country: string;
+    }>;
+    production_companies: Array<{
+        id: number;
+        name: string;
+        logo_path: string | null;
+        origin_country: string;
+    }>;
+    production_countries: Array<{
+        iso_3166_1: string;
+        name: string;
+    }>;
+    spoken_languages: Array<{
+        iso_639_1: string;
+        name: string;
+        english_name: string;
+    }>;
     seasons: Array<{
         id: number;
+        name: string;
+        overview: string;
+        poster_path: string | null;
         season_number: number;
         episode_count: number;
         air_date: string;
-        poster_path: string | null;
     }>;
-    created_by: Array<{ id: number; name: string }>;
-    networks: Array<{ id: number; name: string; logo_path: string | null }>;
-    status: string;
-    type: string;
-    credits?: {
-        cast: Array<{ id: number; name: string; character: string; profile_path: string | null }>;
-    };
-    videos?: {
-        results: Array<{ id: string; key: string; name: string; site: string; type: string }>;
-    };
+    credits?: Credits;
+    videos?: Videos;
+    similar?: TMDbResponse<BaseTVShow>;
+    recommendations?: TMDbResponse<BaseTVShow>;
 }
 
-const tmdbClient = axios.create({
-    baseURL: TMDB_BASE_URL,
-    params: {
-        api_key: TMDB_API_KEY,
-    },
-});
+export interface TMDbResponse<T> {
+    page: number;
+    results: T[];
+    total_pages: number;
+    total_results: number;
+}
 
-export const tmdbApi = {
-    // Movies
-    getPopularMovies: async (page = 1) => {
-        const response = await tmdbClient.get('/movie/popular', { params: { page } });
-        return response.data;
-    },
+export interface SearchResult {
+    id: number;
+    media_type: 'movie' | 'tv' | 'person';
+    title?: string;
+    name?: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview?: string;
+    release_date?: string;
+    first_air_date?: string;
+    vote_average?: number;
+    popularity: number;
+}
 
-    getTrendingMovies: async (timeWindow: 'day' | 'week' = 'week') => {
-        const response = await tmdbClient.get(`/trending/movie/${timeWindow}`);
-        return response.data;
-    },
+export type MediaItem = BaseMovie | BaseTVShow;
 
-    getTopRatedMovies: async (page = 1) => {
-        const response = await tmdbClient.get('/movie/top_rated', { params: { page } });
-        return response.data;
-    },
+// =============================================================================
+// Utility Functions
+// =============================================================================
 
-    getNowPlayingMovies: async (page = 1) => {
-        const response = await tmdbClient.get('/movie/now_playing', { params: { page } });
-        return response.data;
-    },
+export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-    getUpcomingMovies: async (page = 1) => {
-        const response = await tmdbClient.get('/movie/upcoming', { params: { page } });
-        return response.data;
-    },
+/**
+ * Generate TMDb image URL with fallback
+ */
+export function getImageUrl(path: string | null, size: string = 'w500'): string {
+    if (!path) return '/placeholder-movie.jpg';
+    return `${IMAGE_BASE_URL}/${size}${path}`;
+}
 
-    getMovieDetails: async (movieId: number): Promise<MovieDetails> => {
-        const response = await tmdbClient.get(`/movie/${movieId}`, {
+/**
+ * Get formatted runtime string
+ */
+export function formatRuntime(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
+}
+
+/**
+ * Get year from date string
+ */
+export function getYear(dateString: string): string {
+    return dateString ? new Date(dateString).getFullYear().toString() : '';
+}
+
+/**
+ * Format vote average to one decimal place
+ */
+export function formatVoteAverage(voteAverage: number): string {
+    return voteAverage.toFixed(1);
+}
+
+// =============================================================================
+// API Service Functions
+// =============================================================================
+
+/**
+ * Fetch trending content
+ */
+export async function getTrending(
+    mediaType: 'movie' | 'tv' | 'all' = 'all',
+    timeWindow: 'day' | 'week' = 'week'
+): Promise<MediaItem[]> {
+    const response: AxiosResponse<TMDbResponse<MediaItem>> = await tmdbAxios.get(
+        `/trending/${mediaType}/${timeWindow}`
+    );
+    return response.data.results;
+}
+
+/**
+ * Fetch popular content with pagination
+ */
+export async function getPopular(
+    mediaType: 'movie' | 'tv',
+    page: number = 1
+): Promise<TMDbResponse<MediaItem>> {
+    const response: AxiosResponse<TMDbResponse<MediaItem>> = await tmdbAxios.get(
+        `/${mediaType}/popular`,
+        { params: { page } }
+    );
+    return response.data;
+}
+
+/**
+ * Fetch top rated content with pagination
+ */
+export async function getTopRated(
+    mediaType: 'movie' | 'tv',
+    page: number = 1
+): Promise<TMDbResponse<MediaItem>> {
+    const response: AxiosResponse<TMDbResponse<MediaItem>> = await tmdbAxios.get(
+        `/${mediaType}/top_rated`,
+        { params: { page } }
+    );
+    return response.data;
+}
+
+/**
+ * Fetch detailed movie information
+ */
+export async function getMovieDetails(id: number): Promise<MovieDetails> {
+    const response: AxiosResponse<MovieDetails> = await tmdbAxios.get(`/movie/${id}`, {
+        params: {
+            append_to_response: 'credits,videos,similar,recommendations',
+        },
+    });
+    return response.data;
+}
+
+/**
+ * Fetch detailed TV show information
+ */
+export async function getTVDetails(id: number): Promise<TVDetails> {
+    const response: AxiosResponse<TVDetails> = await tmdbAxios.get(`/tv/${id}`, {
+        params: {
+            append_to_response: 'credits,videos,similar,recommendations',
+        },
+    });
+    return response.data;
+}
+
+/**
+ * Search across movies, TV shows, and people
+ */
+export async function searchMulti(
+    query: string,
+    page: number = 1
+): Promise<TMDbResponse<SearchResult>> {
+    const response: AxiosResponse<TMDbResponse<SearchResult>> = await tmdbAxios.get(
+        '/search/multi',
+        {
+            params: { query, page },
+        }
+    );
+    return response.data;
+}
+
+/**
+ * Fetch genres for a specific media type
+ */
+export async function getGenres(mediaType: 'movie' | 'tv'): Promise<Genre[]> {
+    const response: AxiosResponse<{ genres: Genre[] }> = await tmdbAxios.get(
+        `/genre/${mediaType}/list`
+    );
+    return response.data.genres;
+}
+
+/**
+ * Discover content by genre
+ */
+export async function discoverByGenre(
+    mediaType: 'movie' | 'tv',
+    genreId: number,
+    page: number = 1
+): Promise<TMDbResponse<MediaItem>> {
+    const response: AxiosResponse<TMDbResponse<MediaItem>> = await tmdbAxios.get(
+        `/discover/${mediaType}`,
+        {
             params: {
-                append_to_response: 'credits,videos,similar,recommendations',
+                with_genres: genreId,
+                page,
+                sort_by: 'popularity.desc',
             },
-        });
-        return response.data;
-    },
+        }
+    );
+    return response.data;
+}
 
-    // TV Shows
-    getPopularTVShows: async (page = 1) => {
-        const response = await tmdbClient.get('/tv/popular', { params: { page } });
-        return response.data;
-    },
+/**
+ * Fetch now playing movies
+ */
+export async function getNowPlaying(page: number = 1): Promise<TMDbResponse<BaseMovie>> {
+    const response: AxiosResponse<TMDbResponse<BaseMovie>> = await tmdbAxios.get(
+        '/movie/now_playing',
+        { params: { page } }
+    );
+    return response.data;
+}
 
-    getTrendingTVShows: async (timeWindow: 'day' | 'week' = 'week') => {
-        const response = await tmdbClient.get(`/trending/tv/${timeWindow}`);
-        return response.data;
-    },
+/**
+ * Fetch upcoming movies
+ */
+export async function getUpcoming(page: number = 1): Promise<TMDbResponse<BaseMovie>> {
+    const response: AxiosResponse<TMDbResponse<BaseMovie>> = await tmdbAxios.get(
+        '/movie/upcoming',
+        { params: { page } }
+    );
+    return response.data;
+}
 
-    getTopRatedTVShows: async (page = 1) => {
-        const response = await tmdbClient.get('/tv/top_rated', { params: { page } });
-        return response.data;
-    },
+/**
+ * Fetch TV shows airing today
+ */
+export async function getAiringToday(page: number = 1): Promise<TMDbResponse<BaseTVShow>> {
+    const response: AxiosResponse<TMDbResponse<BaseTVShow>> = await tmdbAxios.get(
+        '/tv/airing_today',
+        { params: { page } }
+    );
+    return response.data;
+}
 
-    getTVShowDetails: async (tvId: number): Promise<TVShowDetails> => {
-        const response = await tmdbClient.get(`/tv/${tvId}`, {
-            params: {
-                append_to_response: 'credits,videos,similar,recommendations',
-            },
-        });
-        return response.data;
-    },
-
-    // Search
-    searchMulti: async (query: string, page = 1) => {
-        const response = await tmdbClient.get('/search/multi', {
-            params: { query, page },
-        });
-        return response.data;
-    },
-
-    searchMovies: async (query: string, page = 1) => {
-        const response = await tmdbClient.get('/search/movie', {
-            params: { query, page },
-        });
-        return response.data;
-    },
-
-    searchTVShows: async (query: string, page = 1) => {
-        const response = await tmdbClient.get('/search/tv', {
-            params: { query, page },
-        });
-        return response.data;
-    },
-
-    // Genres
-    getMovieGenres: async () => {
-        const response = await tmdbClient.get('/genre/movie/list');
-        return response.data.genres;
-    },
-
-    getTVGenres: async () => {
-        const response = await tmdbClient.get('/genre/tv/list');
-        return response.data.genres;
-    },
-
-    // Discovery
-    discoverMovies: async (params: {
-        page?: number;
-        with_genres?: string;
-        sort_by?: string;
-        year?: number;
-        'vote_average.gte'?: number;
-    }) => {
-        const response = await tmdbClient.get('/discover/movie', { params });
-        return response.data;
-    },
-
-    discoverTVShows: async (params: {
-        page?: number;
-        with_genres?: string;
-        sort_by?: string;
-        first_air_date_year?: number;
-        'vote_average.gte'?: number;
-    }) => {
-        const response = await tmdbClient.get('/discover/tv', { params });
-        return response.data;
-    },
-};
-
-// Helper functions for image URLs
-export const getImageUrl = (path: string | null, size: 'w500' | 'w780' | 'original' = 'w500') => {
-    if (!path) return '/placeholder-poster.png';
-    return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
-};
-
-export const getBackdropUrl = (path: string | null, size: 'w780' | 'w1280' | 'original' = 'w1280') => {
-    if (!path) return '/placeholder-backdrop.png';
-    return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
-};
-
-export default tmdbApi;
+/**
+ * Fetch TV shows on the air
+ */
+export async function getOnTheAir(page: number = 1): Promise<TMDbResponse<BaseTVShow>> {
+    const response: AxiosResponse<TMDbResponse<BaseTVShow>> = await tmdbAxios.get(
+        '/tv/on_the_air',
+        { params: { page } }
+    );
+    return response.data;
+}

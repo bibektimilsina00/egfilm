@@ -2,18 +2,31 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown } from 'lucide-react';
+import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { searchMulti } from '@/lib/tmdb';
 
 export default function Navigation() {
     const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [suggestLoading, setSuggestLoading] = useState(false);
+    const [highlighted, setHighlighted] = useState<number>(-1);
+    const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
     const { data: session } = useSession();
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const suggestDebounceRef = useRef<number | undefined>(undefined);
+
+    // Prevent hydration mismatch
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Close user menu when clicking outside
     useEffect(() => {
@@ -32,10 +45,56 @@ export default function Navigation() {
         };
     }, [userMenuOpen]);
 
+    // Autosuggest: debounced as user types
+    useEffect(() => {
+        // Clear previous debounce
+        if (suggestDebounceRef.current) {
+            window.clearTimeout(suggestDebounceRef.current);
+        }
+
+        if (!searchQuery || searchQuery.trim().length < 2) {
+            setSuggestions([]);
+            setSuggestLoading(false);
+            return;
+        }
+
+        setSuggestLoading(true);
+        // debounce 300ms
+        suggestDebounceRef.current = window.setTimeout(async () => {
+            try {
+                const res = await searchMulti(searchQuery.trim(), 1);
+                const items = (res.results || []).filter((it: any) => it.media_type === 'movie' || it.media_type === 'tv');
+                // Map to simplified suggestion items and dedupe by id
+                const uniques: any[] = [];
+                const seen = new Set();
+                for (const it of items) {
+                    const title = it.media_type === 'movie' ? it.title : it.name;
+                    const key = `${it.media_type}-${it.id}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        uniques.push({ id: it.id, media_type: it.media_type, title, poster_path: it.poster_path });
+                    }
+                    if (uniques.length >= 6) break; // limit suggestions to 6 for navbar
+                }
+                setSuggestions(uniques);
+            } catch (err) {
+                console.error('Autosuggest error:', err);
+                setSuggestions([]);
+            } finally {
+                setSuggestLoading(false);
+            }
+        }, 300);
+
+        return () => {
+            if (suggestDebounceRef.current) window.clearTimeout(suggestDebounceRef.current);
+        };
+    }, [searchQuery]);
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+            setSuggestions([]);
             setMobileMenuOpen(false);
         }
     };
@@ -44,6 +103,7 @@ export default function Navigation() {
         { href: '/', label: 'Home', icon: Home },
         { href: '/movies', label: 'Movies', icon: Film },
         { href: '/tv', label: 'TV Shows', icon: Tv },
+        { href: '/blog', label: 'Blog', icon: BookOpen },
         { href: '/watchlist', label: 'Watchlist', icon: Heart },
     ];
 
@@ -57,16 +117,16 @@ export default function Navigation() {
                             <Play className="w-7 h-7 text-blue-500 group-hover:text-blue-400 transition-all duration-300 group-hover:scale-110" fill="currentColor" />
                             <div className="absolute inset-0 bg-blue-500 blur-xl opacity-0 group-hover:opacity-30 transition-opacity" />
                         </div>
-                        <span className="text-white text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                        <span className="text-white text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text">
                             Egfilm
                         </span>
                     </Link>
 
                     {/* Desktop Navigation - Compact */}
-                    <nav className="hidden lg:flex items-center gap-1">
+                    <nav className="hidden lg:flex items-center gap-4">
                         {navLinks.map((link) => {
                             const Icon = link.icon;
-                            const isActive = pathname === link.href;
+                            const isActive = mounted && pathname === link.href;
                             return (
                                 <Link
                                     key={link.href}
@@ -85,12 +145,39 @@ export default function Navigation() {
 
                     {/* Right Side - Search & Auth */}
                     <div className="flex items-center gap-2">
-                        {/* Search Bar - Wider */}
-                        <form onSubmit={handleSearch} className="relative hidden md:block">
+                        {/* Search Bar - Wider with Auto-suggestions */}
+                        <form onSubmit={handleSearch} className="relative hidden md:block" autoComplete="off">
                             <input
+                                ref={searchInputRef}
                                 type="text"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setHighlighted(-1);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        setHighlighted((h) => Math.min(h + 1, suggestions.length - 1));
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        setHighlighted((h) => Math.max(h - 1, 0));
+                                    } else if (e.key === 'Enter') {
+                                        if (highlighted >= 0 && suggestions[highlighted]) {
+                                            e.preventDefault();
+                                            const sel = suggestions[highlighted];
+                                            router.push(`/search?q=${encodeURIComponent(sel.title)}`);
+                                            setSuggestions([]);
+                                            setSearchQuery('');
+                                        }
+                                    } else if (e.key === 'Escape') {
+                                        setSuggestions([]);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    // Delay to allow click on suggestion
+                                    setTimeout(() => setSuggestions([]), 200);
+                                }}
                                 placeholder="Search movies, TV shows..."
                                 className="bg-gray-800/50 text-white px-4 py-2 pr-10 rounded-full outline-none focus:ring-2 focus:ring-blue-500 focus:bg-gray-800 transition-all w-48 lg:w-64 xl:w-72 text-sm placeholder:text-gray-500"
                             />
@@ -100,6 +187,41 @@ export default function Navigation() {
                             >
                                 <Search className="w-4 h-4 text-gray-400 hover:text-blue-400" />
                             </button>
+
+                            {/* Suggestions dropdown */}
+                            {suggestions.length > 0 && (
+                                <ul
+                                    role="listbox"
+                                    className="absolute left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-sm border border-gray-800 rounded-xl shadow-2xl z-50 max-h-80 overflow-auto"
+                                >
+                                    {suggestions.map((sugg, idx) => (
+                                        <li
+                                            key={`${sugg.media_type}-${sugg.id}`}
+                                            role="option"
+                                            aria-selected={highlighted === idx}
+                                            onMouseDown={(e) => {
+                                                // onMouseDown to prevent blur before click
+                                                e.preventDefault();
+                                                router.push(`/search?q=${encodeURIComponent(sugg.title)}`);
+                                                setSuggestions([]);
+                                                setSearchQuery('');
+                                            }}
+                                            onMouseEnter={() => setHighlighted(idx)}
+                                            className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-800 transition-colors ${highlighted === idx ? 'bg-gray-800' : ''}`}
+                                        >
+                                            <img
+                                                src={sugg.poster_path ? `https://image.tmdb.org/t/p/w92${sugg.poster_path}` : '/placeholder-movie.jpg'}
+                                                alt={sugg.title}
+                                                className="w-8 h-12 object-cover rounded-md shrink-0"
+                                            />
+                                            <div className="flex-1 text-left min-w-0">
+                                                <div className="text-white text-sm font-medium truncate">{sugg.title}</div>
+                                                <div className="text-gray-400 text-xs">{sugg.media_type === 'movie' ? 'Movie' : 'TV Show'}</div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </form>
 
                         {/* Auth Section - Compact with Dropdown */}
@@ -185,7 +307,7 @@ export default function Navigation() {
                         <nav className="flex flex-col gap-2">
                             {navLinks.map((link) => {
                                 const Icon = link.icon;
-                                const isActive = pathname === link.href;
+                                const isActive = mounted && pathname === link.href;
                                 return (
                                     <Link
                                         key={link.href}

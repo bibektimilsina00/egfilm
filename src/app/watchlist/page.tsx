@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { getWatchlist, removeFromWatchlist } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { MediaItem } from '@/lib/tmdb';
+import { MediaGridSkeleton } from '@/components/ui/loading-skeletons';
 
 export default function WatchlistPage() {
     const [watchlist, setWatchlist] = useState<MediaItem[]>([]);
@@ -65,11 +66,9 @@ export default function WatchlistPage() {
 
                 {/* Content */}
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
+                    <MediaGridSkeleton title="" count={12} />
                 ) : watchlist.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-in scale-in">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-in scale-in">
                         {watchlist.map((item) => (
                             <div key={`${item.media_type}-${item.id}`} className="relative group">
                                 <MediaCard item={item} type={item.media_type!} />
@@ -100,7 +99,7 @@ export default function WatchlistPage() {
                         </p>
                         <Button
                             onClick={() => window.location.href = '/'}
-                            variant="primary"
+                            variant="default"
                             size="lg"
                         >
                             Browse Content

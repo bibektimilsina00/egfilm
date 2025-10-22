@@ -8,12 +8,13 @@ import Link from 'next/link';
 import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Plus, Check, Users } from 'lucide-react';
 import { getTVDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
-import { formatVoteAverage, formatDate } from '@/lib/utils';
+import { PlayButton } from '@/components/ui/play-button';
+import { formatVoteAverage } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
-import EmbeddedPlayer from '@/components/EmbeddedPlayer';
 import { getTVEmbedUrl } from '@/lib/videoSources';
 import WatchTogetherModal from '@/components/WatchTogetherModal';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function TVDetailPage() {
     const params = useParams();
@@ -24,7 +25,6 @@ export default function TVDetailPage() {
     const [tv, setTv] = useState<MediaDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showPlayer, setShowPlayer] = useState(false);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [selectedSeason, setSelectedSeason] = useState(1);
     const [selectedEpisode, setSelectedEpisode] = useState(1);
@@ -81,7 +81,7 @@ export default function TVDetailPage() {
             <div className="min-h-screen bg-gray-950 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-white mb-4">TV Show Not Found</h1>
-                    <Button onClick={() => router.push('/')} variant="primary">
+                    <Button onClick={() => router.push('/')} variant="default">
                         Go Home
                     </Button>
                 </div>
@@ -128,7 +128,9 @@ export default function TVDetailPage() {
                                         src={getImageUrl(tv.poster_path, 'w500')}
                                         alt={(tv as any).name || 'TV Show'}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover object-center"
+                                        priority
+                                        quality={85}
                                     />
                                 </div>
                             </div>
@@ -214,15 +216,11 @@ export default function TVDetailPage() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-4">
-                                    <Button
-                                        onClick={() => setShowPlayer(true)}
-                                        variant="primary"
-                                        size="lg"
-                                        className="gap-2"
+                                    <PlayButton
+                                        onClick={() => router.push(`/tv/${tvId}/watch?season=${selectedSeason}&episode=${selectedEpisode}`)}
                                     >
-                                        <Play className="w-5 h-5 fill-white" />
                                         Watch Now
-                                    </Button>
+                                    </PlayButton>
 
                                     <Button
                                         onClick={() => {
@@ -232,9 +230,9 @@ export default function TVDetailPage() {
                                                 setShowWatchTogether(true);
                                             }
                                         }}
-                                        variant="primary"
+                                        variant="secondary"
                                         size="lg"
-                                        className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
+                                        className="gap-2"
                                     >
                                         <Users className="w-5 h-5" />
                                         Watch Together
@@ -245,7 +243,7 @@ export default function TVDetailPage() {
                                             onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
                                             variant="outline"
                                             size="lg"
-                                            className="gap-2 text-white border-white hover:bg-white/10"
+                                            className="gap-2"
                                         >
                                             <Play className="w-5 h-5" />
                                             Watch Trailer
@@ -256,7 +254,7 @@ export default function TVDetailPage() {
                                         onClick={toggleWatchlist}
                                         variant="outline"
                                         size="lg"
-                                        className={`gap-2 ${inWatchlist ? 'text-pink-500 border-pink-500 hover:bg-pink-500/10' : 'text-white border-white hover:bg-white/10'}`}
+                                        className="gap-2"
                                         title={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
                                     >
                                         {inWatchlist ? (
@@ -275,7 +273,7 @@ export default function TVDetailPage() {
                                     <Button
                                         variant="outline"
                                         size="lg"
-                                        className="text-white border-white hover:bg-white/10"
+                                        className="gap-2"
                                         onClick={() => {
                                             if (navigator.share) {
                                                 navigator.share({
@@ -296,6 +294,14 @@ export default function TVDetailPage() {
             </div>
 
             <div className="container mx-auto px-4 py-12 space-y-12">
+                {/* Breadcrumbs */}
+                <Breadcrumb
+                    items={[
+                        { name: 'TV Shows', url: '/tv' },
+                        { name: (tv as any).name, url: `/tv/${tvId}` },
+                    ]}
+                />
+
                 {tv.credits?.cast && tv.credits.cast.length > 0 && (
                     <section>
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Top Cast</h2>
@@ -308,6 +314,7 @@ export default function TVDetailPage() {
                                                 src={getImageUrl(person.profile_path, 'w185')}
                                                 alt={person.name}
                                                 fill
+                                                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, (max-width: 1280px) 16vw, 12vw"
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                             />
                                         ) : (
@@ -337,19 +344,6 @@ export default function TVDetailPage() {
                     </section>
                 )}
             </div>
-
-            {/* Embedded Video Player */}
-            {showPlayer && tv && (
-                <EmbeddedPlayer
-                    title={`${(tv as any).name} - S${selectedSeason}E${selectedEpisode}`}
-                    embedUrl={getTVEmbedUrl(Number(tvId), selectedSeason, selectedEpisode)}
-                    onClose={() => setShowPlayer(false)}
-                    type="tv"
-                    tmdbId={Number(tvId)}
-                    season={selectedSeason}
-                    episode={selectedEpisode}
-                />
-            )}
 
             {/* Watch Together Modal */}
             {showWatchTogether && tv && (

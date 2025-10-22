@@ -66,6 +66,9 @@ jobs:
             echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}"
             echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"
             echo "POSTGRES_PORT=${{ vars.POSTGRES_PORT || '5432' }}"
+            echo "REDIS_HOST=${{ vars.REDIS_HOST || 'egfilm-redis' }}"
+            echo "REDIS_PORT=${{ vars.REDIS_PORT || '6379' }}"
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}"
             echo "NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}"
             echo "NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}"
             echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
@@ -79,14 +82,16 @@ jobs:
           sed -i '/^[[:space:]]*$/d' .env.production
           echo "✅ Environment file generated ($(wc -l < .env.production) lines)"
 
-      - name: 🏗️ Build Docker image
+      - name: 🏗️ Build Docker images
         run: |
-          echo "🔨 Building Egfilm Docker image..."
+          echo "🔨 Building Egfilm Docker images..."
           
           # Normalize repo name (replace hyphens with underscores for GHCR)
           REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
+          # Build main application image
           DOCKER_BUILDKIT=1 docker build \
+            --target runner \
             --build-arg NODE_ENV=production \
             --build-arg APP_VERSION="${{ steps.set-version.outputs.app_version }}" \
             --build-arg GIT_BRANCH="${{ github.ref_name }}" \
@@ -95,23 +100,42 @@ jobs:
             -t "ghcr.io/${REPO_NORMALIZED}:deploy" \
             .
           
-          echo "✅ Docker image built successfully"
+          # Build worker image
+          DOCKER_BUILDKIT=1 docker build \
+            --target worker \
+            --build-arg NODE_ENV=production \
+            --build-arg APP_VERSION="${{ steps.set-version.outputs.app_version }}" \
+            --build-arg GIT_BRANCH="${{ github.ref_name }}" \
+            --build-arg GIT_COMMIT="${{ github.sha }}" \
+            -t "ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}-worker" \
+            -t "ghcr.io/${REPO_NORMALIZED}:deploy-worker" \
+            .
+          
+          echo "✅ Docker images built successfully"
 
       - name: 🚀 Push images to GHCR
         run: |
           REPO_NORMALIZED=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
-          echo "📤 Pushing versioned image..."
+          echo "📤 Pushing versioned application image..."
           docker push "ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}"
           
           echo "📤 Pushing deployment tag..."
           docker push "ghcr.io/${REPO_NORMALIZED}:deploy"
+          
+          echo "📤 Pushing worker image..."
+          docker push "ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}-worker"
+          docker push "ghcr.io/${REPO_NORMALIZED}:deploy-worker"
           
           # For production, also push :latest tag
           if [[ "${{ steps.set-version.outputs.env }}" == "production" ]]; then
             echo "📤 Tagging and pushing :latest..."
             docker tag "ghcr.io/${REPO_NORMALIZED}:deploy" "ghcr.io/${REPO_NORMALIZED}:latest"
             docker push "ghcr.io/${REPO_NORMALIZED}:latest"
+            
+            echo "📤 Tagging and pushing :latest-worker..."
+            docker tag "ghcr.io/${REPO_NORMALIZED}:deploy-worker" "ghcr.io/${REPO_NORMALIZED}:latest-worker"
+            docker push "ghcr.io/${REPO_NORMALIZED}:latest-worker"
           fi
           
           echo "✅ All images pushed to GHCR"
@@ -129,6 +153,7 @@ jobs:
           echo "**Images pushed:**" >> $GITHUB_STEP_SUMMARY
           echo "- \`ghcr.io/${REPO_NORMALIZED}:${{ steps.set-version.outputs.app_version }}-${{ steps.set-version.outputs.env }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`ghcr.io/${REPO_NORMALIZED}:deploy\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${REPO_NORMALIZED}:deploy-worker\` (BullMQ Worker)" >> $GITHUB_STEP_SUMMARY
 
   deploy-to-server:
     needs: build-and-push

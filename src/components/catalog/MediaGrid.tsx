@@ -3,16 +3,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useInView } from 'react-intersection-observer';
 import MediaCard from './MediaCard';
-import { Movie, TVShow } from '@/lib/api/tmdb';
+import { BaseMovie, BaseTVShow } from '@/lib/api/tmdb';
 
 interface MediaGridProps {
-    initialItems: (Movie | TVShow)[];
+    initialItems: (BaseMovie | BaseTVShow)[];
     type: 'movie' | 'tv';
-    fetchMore: (page: number) => Promise<{ results: (Movie | TVShow)[]; page: number; total_pages: number }>;
+    fetchMore: (page: number) => Promise<{ results: (BaseMovie | BaseTVShow)[]; page: number; total_pages: number }>;
 }
 
 export default function MediaGrid({ initialItems, type, fetchMore }: MediaGridProps) {
-    const [items, setItems] = useState<(Movie | TVShow)[]>(initialItems);
+    const [items, setItems] = useState<(BaseMovie | BaseTVShow)[]>(initialItems);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
