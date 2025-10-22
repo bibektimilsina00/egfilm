@@ -7,15 +7,18 @@ import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
+// Validate DATABASE_URL exists
+if (!process.env.DATABASE_URL) {
+    throw new Error(
+        '❌ DATABASE_URL is not defined. Please check your .env.local or .env file.\n' +
+        'Expected format: postgresql://user:password@host:port/database'
+    );
+}
+
 export const prisma =
     globalForPrisma.prisma ||
     new PrismaClient({
         log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-        datasources: {
-            db: {
-                url: process.env.DATABASE_URL,
-            },
-        },
     });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
