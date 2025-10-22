@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
 import { useState } from 'react';
-import { X, ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { VIDEO_SOURCES } from '@/lib/videoSources';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -95,8 +95,8 @@ export default function WatchMoviePage() {
                         setShowSourceMenu(false);
                       }}
                       className={`w-full text-left px-3 py-2 rounded hover:bg-gray-700 transition-colors ${currentSourceIndex === index
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-300'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300'
                         }`}
                     >
                       <div className="flex items-center justify-between">

@@ -83,9 +83,8 @@ function HeroSection({ media }: { media: MediaItem | undefined }) {
             <Link href={`/${heroType}/${media.id}`} prefetch={true}>
               <PlayButton />
             </Link>
-
             <Link href={`/${heroType}/${media.id}`} prefetch={true}>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" size="lg" className="gap-2">
                 <Info className="w-5 h-5" />
                 More Info
               </Button>

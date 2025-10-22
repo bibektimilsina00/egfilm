@@ -7,7 +7,7 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
     const params = await searchParams
-    return generateWatchTogetherMetadata(params.room)
+    return generateWatchTogetherMetadata(params?.room)
 }
 
 export default function WatchTogetherLayout({
