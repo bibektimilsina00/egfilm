@@ -1,6 +1,14 @@
 import { prisma } from '@/lib/prisma';
-// @ts-expect-error - Prisma client types
 import type { BlogPost, Prisma } from '@prisma/client';
+
+// Type for BlogPost with author relation
+export type BlogPostWithAuthor = BlogPost & {
+    author: {
+        id: string;
+        name: string | null;
+        role: string;
+    };
+};
 
 export interface CreateBlogPostInput {
     slug: string;
@@ -93,7 +101,7 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
 }
 
 // Get a blog post by slug (for public pages)
-export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+export async function getBlogPostBySlug(slug: string): Promise<BlogPostWithAuthor | null> {
     const post = await prisma.blogPost.findUnique({
         where: { slug },
         include: {
@@ -123,7 +131,7 @@ export async function getBlogPosts(
     filters: BlogPostFilters = {},
     page: number = 1,
     limit: number = 10
-): Promise<{ posts: BlogPost[]; total: number; pages: number }> {
+): Promise<{ posts: BlogPostWithAuthor[]; total: number; pages: number }> {
     const where: Prisma.BlogPostWhereInput = {};
 
     if (filters.status) where.status = filters.status;
@@ -170,7 +178,7 @@ export async function getPublishedBlogPosts(
     filters: Omit<BlogPostFilters, 'status'> = {},
     page: number = 1,
     limit: number = 10
-): Promise<{ posts: BlogPost[]; total: number; pages: number }> {
+): Promise<{ posts: BlogPostWithAuthor[]; total: number; pages: number }> {
     return getBlogPosts({ ...filters, status: 'published' }, page, limit);
 }
 
@@ -178,7 +186,7 @@ export async function getPublishedBlogPosts(
 export async function getRelatedBlogPosts(
     postId: string,
     limit: number = 3
-): Promise<BlogPost[]> {
+): Promise<BlogPostWithAuthor[]> {
     const post = await prisma.blogPost.findUnique({
         where: { id: postId },
         select: { mediaId: true, mediaType: true, tags: true },
@@ -214,7 +222,7 @@ export async function getRelatedBlogPosts(
 }
 
 // Get popular blog posts
-export async function getPopularBlogPosts(limit: number = 5): Promise<BlogPost[]> {
+export async function getPopularBlogPosts(limit: number = 5): Promise<BlogPostWithAuthor[]> {
     return prisma.blogPost.findMany({
         where: { status: 'published' },
         orderBy: { viewCount: 'desc' },
@@ -232,7 +240,7 @@ export async function getPopularBlogPosts(limit: number = 5): Promise<BlogPost[]
 }
 
 // Get recent blog posts
-export async function getRecentBlogPosts(limit: number = 5): Promise<BlogPost[]> {
+export async function getRecentBlogPosts(limit: number = 5): Promise<BlogPostWithAuthor[]> {
     return prisma.blogPost.findMany({
         where: { status: 'published' },
         orderBy: { publishedAt: 'desc' },

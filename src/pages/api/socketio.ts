@@ -55,7 +55,8 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
         console.log('Socket is already running');
     } else {
         console.log('Socket is initializing');
-        const httpServer: NetServer = res.socket.server as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const httpServer = res.socket.server as any as NetServer;
         const io = new SocketIOServer(httpServer, {
             path: '/api/socketio',
             addTrailingSlash: false,

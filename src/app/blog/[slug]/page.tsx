@@ -31,6 +31,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const imageUrl = post.ogImage || post.featuredImage || post.mediaBackdropPath
         ? `https://image.tmdb.org/t/p/original${post.mediaBackdropPath}`
         : `${siteUrl}/og-image.jpg`;
+    // Normalize author name to string | undefined to satisfy metadata typing
+    const authorName: string | undefined = post.author?.name ?? undefined;
 
     return generateBlogMetadata({
         title: post.metaTitle || post.title,
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         imageUrl: imageUrl,
         publishedAt: post.publishedAt?.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
-        author: post.author.name,
+        author: authorName,
         category: post.category,
         tags: post.tags,
     });
@@ -56,6 +58,8 @@ export default async function BlogPostPage({ params }: PageProps) {
     const relatedPosts = await getRelatedBlogPosts(post.id, 3);
     const siteUrl = process.env.NEXTAUTH_URL || 'https://egfilm.com';
     const postUrl = `${siteUrl}/blog/${post.slug}`;
+    // Normalize author name to string | undefined to satisfy metadata typing
+    const authorName: string | undefined = post.author?.name ?? undefined;
 
     // Generate appropriate structured data based on content type
     let postStructuredData;
@@ -68,7 +72,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                 : '',
             mediaUrl: `${siteUrl}/movie/${post.mediaId}`,
             rating: post.mediaRating,
-            author: post.author.name,
+            author: authorName || 'Egfilm Editorial Team',
             content: post.excerpt,
             publishedAt: post.publishedAt!.toISOString(),
         });
@@ -81,7 +85,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                 : '',
             mediaUrl: `${siteUrl}/tv/${post.mediaId}`,
             rating: post.mediaRating,
-            author: post.author.name,
+            author: authorName || 'Egfilm Editorial Team',
             content: post.excerpt,
             publishedAt: post.publishedAt!.toISOString(),
         });
@@ -89,7 +93,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         postStructuredData = structuredData.blogPost({
             title: post.title,
             description: post.excerpt,
-            author: post.author.name,
+            author: authorName || 'Egfilm Editorial Team',
             publishedAt: post.publishedAt!.toISOString(),
             updatedAt: post.updatedAt.toISOString(),
             imageUrl: post.featuredImage || '',
@@ -120,7 +124,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
             <Navigation />
 
-            <BlogPostClient post={post} relatedPosts={relatedPosts} postUrl={postUrl} />
+            <BlogPostClient post={post as any} relatedPosts={relatedPosts as any} postUrl={postUrl} />
 
             <Footer />
         </div>

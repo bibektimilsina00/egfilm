@@ -1,20 +1,20 @@
 import NextAuth from 'next-auth';
 import { authConfig } from './lib/auth.config';
-import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 const authMiddleware = NextAuth(authConfig).auth;
 
-export default async function middleware(request: any) {
+export default async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
 
     // Log all admin route requests
     if (pathname.startsWith('/admin')) {
         console.log('[Middleware] Admin route requested:', pathname);
-        console.log('[Middleware] User:', request.auth?.user);
-        console.log('[Middleware] User Role:', (request.auth?.user as any)?.role);
+        console.log('[Middleware] User:', (request as any).auth?.user);
+        console.log('[Middleware] User Role:', ((request as any).auth?.user)?.role);
     }
 
-    return authMiddleware(request);
+    return authMiddleware(request as any);
 }
 
 export const config = {
