@@ -159,6 +159,7 @@ export default function TVShowsPage() {
                         <Tv className="w-8 h-8 text-blue-500" />
                         {getPageTitle()}
                     </h1>
+                    <span className='text-white'> | </span>
                     {selectedGenre && (
                         <p className="text-blue-600 text-2xl">{getSelectedGenreName()}</p>
                     )}

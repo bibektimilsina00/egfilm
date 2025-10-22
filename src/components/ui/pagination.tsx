@@ -74,43 +74,49 @@ export default function Pagination({
     const hasNextPage = currentPage < totalPages;
 
     return (
-        <nav className="isolate flex flex-col items-center space-y-2 mt-2" aria-label="Pagination">
-            {/* Buttons Row */}
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-                {showFirstLast && (
+        // 1. Set 'w-full' to ensure it takes up the full width of its parent container.
+        // 2. Set 'justify-between' to push the two main sections (buttons and input) to the far left and far right.
+        <nav className="isolate flex items-center justify-between w-full mt-4 flex-wrap p-2 border-t border-b border-gray-800" aria-label="Pagination">
+
+            {/* LEFT SIDE: Button Controls Group */}
+            <div className="flex items-center gap-4 flex-shrink-0">
+                {/* First/Previous Buttons Group */}
+                <div className="flex items-center gap-1">
+                    {showFirstLast && (
+                        <Button
+                            onClick={() => onPageChange(1)}
+                            disabled={!hasPrevPage || isLoading}
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 shrink-0 hover:bg-gray-800 border-gray-700"
+                            title="First page"
+                            aria-label="Go to first page"
+                        >
+                            <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                    )}
+
                     <Button
-                        onClick={() => onPageChange(1)}
+                        onClick={() => onPageChange(currentPage - 1)}
                         disabled={!hasPrevPage || isLoading}
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 shrink-0"
-                        title="First page"
-                        aria-label="Go to first page"
+                        className="h-9 w-9 shrink-0 hover:bg-gray-800 border-gray-700"
+                        title="Previous page"
+                        aria-label="Go to previous page"
                     >
-                        <ChevronsLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4" />
                     </Button>
-                )}
+                </div>
 
-                <Button
-                    onClick={() => onPageChange(currentPage - 1)}
-                    disabled={!hasPrevPage || isLoading}
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    title="Previous page"
-                    aria-label="Go to previous page"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                {/* Page Buttons */}
-                <div className="flex items-center gap-1 flex-wrap justify-center">
+                {/* Page Buttons - Tightly grouped */}
+                <div className="hidden sm:flex items-center gap-1">
                     {pageNumbers.map((page, index) => {
                         if (page === '...') {
                             return (
                                 <span
                                     key={`ellipsis-${index}`}
-                                    className="px-2 text-gray-400 select-none"
+                                    className="px-2 text-gray-400 select-none text-sm"
                                     aria-hidden="true"
                                 >
                                     ...
@@ -128,66 +134,73 @@ export default function Pagination({
                                 disabled={isLoading}
                                 variant={isActive ? 'default' : 'outline'}
                                 size="icon"
-                                className={`h-9 w-9 shrink-0 ${isActive
-                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                    : 'hover:bg-gray-800 border-gray-700'}`}
+                                // Use 'w-auto px-3' for number buttons to handle multi-digit numbers without overflow
+                                className={`h-9 w-auto px-3 shrink-0 transition-colors duration-200 ${isActive
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                                        : 'bg-transparent text-white hover:bg-gray-800 border-gray-700'
+                                    }`}
                                 aria-label={`Go to page ${pageNum}`}
                                 aria-current={isActive ? 'page' : undefined}
                             >
-                                {pageNum}
+                                {/* 3. Use toLocaleString() for large numbers ($10,000+) */}
+                                {pageNum.toLocaleString()}
                             </Button>
                         );
                     })}
                 </div>
 
-                <Button
-                    onClick={() => onPageChange(currentPage + 1)}
-                    disabled={!hasNextPage || isLoading}
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    title="Next page"
-                    aria-label="Go to next page"
-                >
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-
-                {showFirstLast && (
+                {/* Next/Last Buttons Group */}
+                <div className="flex items-center gap-1">
                     <Button
-                        onClick={() => onPageChange(totalPages)}
+                        onClick={() => onPageChange(currentPage + 1)}
                         disabled={!hasNextPage || isLoading}
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 shrink-0"
-                        title="Last page"
-                        aria-label="Go to last page"
+                        className="h-9 w-9 shrink-0 hover:bg-gray-800 border-gray-700"
+                        title="Next page"
+                        aria-label="Go to next page"
                     >
-                        <ChevronsRight className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
                     </Button>
-                )}
+
+                    {showFirstLast && (
+                        <Button
+                            onClick={() => onPageChange(totalPages)}
+                            disabled={!hasNextPage || isLoading}
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 shrink-0 hover:bg-gray-800 border-gray-700"
+                            title="Last page"
+                            aria-label="Go to last page"
+                        >
+                            <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            {/* Page Input Row */}
-            {totalPages > maxVisiblePages && (
-                <div className="flex items-center gap-2 justify-center flex-wrap">
-                    <input
-                        type="number"
-                        min={1}
-                        max={totalPages}
-                        value={inputValue}
-                        onChange={handleInputChange}
-                        onKeyDown={(e) => e.key === 'Enter' && handleInputSubmit()}
-                        className="w-16 text-white rounded border border-gray-700 px-2 py-1 text-sm"
-                        aria-label="Enter page number"
-                    />
-                    <Button size="sm" onClick={handleInputSubmit}>
-                        Go
-                    </Button>
-                    <span className="text-sm text-gray-400 select-none whitespace-nowrap">
-                        of {totalPages.toLocaleString()}
-                    </span>
-                </div>
-            )}
+            {/* RIGHT SIDE: Go To Page Input & Summary */}
+            <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
+                <span className="text-sm text-gray-400 select-none whitespace-nowrap hidden sm:inline">
+                    Page
+                </span>
+                <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInputSubmit()}
+                    className="w-16 h-9 text-white rounded border border-gray-700 px-2 py-1 text-sm bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    aria-label={`Enter page number, max ${totalPages.toLocaleString()}`}
+                />
+                <Button size="sm" onClick={handleInputSubmit} disabled={isLoading}>
+                    Go
+                </Button>
+                <span className="text-sm text-gray-400 select-none whitespace-nowrap">
+                    of {totalPages.toLocaleString()}
+                </span>
+            </div>
         </nav>
     );
 }
