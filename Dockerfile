@@ -65,8 +65,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Copy entrypoint script (before switching to nextjs user)
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+
 # Set the correct permission for prerender cache
 RUN mkdir -p .next && chown -R nextjs:nodejs .next
+
+# Make entrypoint executable and set ownership
+RUN chmod +x ./docker-entrypoint.sh && chown nextjs:nodejs ./docker-entrypoint.sh
 
 USER nextjs
 
@@ -75,8 +81,8 @@ EXPOSE 8000
 ENV PORT=8000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application with database migration
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# Start the application with database migration handling
+CMD ["./docker-entrypoint.sh"]
 
 # Worker image - separate target for BullMQ worker
 FROM runner AS worker
