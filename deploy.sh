@@ -97,12 +97,14 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 
 # TMDb API
-NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
+NEXT_PUBLIC_TMDB_API_KEY=1b249624f332db818e2f9a5f57d919de
+TMDB_API_KEY=1b249624f332db818e2f9a5f57d919de
 NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+TMDB_BASE_URL=https://api.themoviedb.org/3
 
 # Authentication
-AUTH_SECRET=your_nextauth_secret_here
-AUTH_URL=http://your-server-ip:8000
+AUTH_SECRET=v9ttW9CkmGaDlFNmPlAEUR54Dx32ju0XV4M6Q0C9hOg=
+AUTH_URL=https://egfilm.xyz
 NODE_ENV=production
 
 # Sentry Error Tracking (auto-configured)
@@ -110,7 +112,7 @@ SENTRY_DSN=https://73d62c48c64afbc5fb35441b1fb775e4@o4510202904707072.ingest.de.
 NEXT_PUBLIC_SENTRY_DSN=https://23b85080fcb3a0a10f7dda940109e093@o4510202904707072.ingest.de.sentry.io/4510202921353296
 
 # Umami Analytics (Cloud)
-NEXT_PUBLIC_UMAMI_WEBSITE_ID=your_umami_website_id_here
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53
 NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://cloud.umami.is/script.js
 EOF
         
@@ -263,6 +265,7 @@ start_blue_container() {
         -e REDIS_HOST=egfilm-redis \
         -e REDIS_PORT=6379 \
         ${REDIS_PASSWORD:+-e REDIS_PASSWORD=$REDIS_PASSWORD} \
+        -e TMDB_API_KEY="${NEXT_PUBLIC_TMDB_API_KEY}" \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
         error_exit "Failed to start blue container"
@@ -296,6 +299,7 @@ deploy_green_container() {
         -e REDIS_HOST=egfilm-redis \
         -e REDIS_PORT=6379 \
         ${REDIS_PASSWORD:+-e REDIS_PASSWORD=$REDIS_PASSWORD} \
+        -e TMDB_API_KEY="${NEXT_PUBLIC_TMDB_API_KEY}" \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
         error_exit "Failed to start green container"
@@ -379,7 +383,7 @@ deployment_summary() {
     echo -e "${CYAN}Database:${NC} PostgreSQL (database)"
     echo -e "${CYAN}Cache:${NC} Redis (egfilm-redis)"
     echo -e "${CYAN}Image:${NC} $IMAGE_NAME"
-    echo -e "${CYAN}Production URL:${NC} http://localhost:$PORT_GREEN"
+    echo -e "${CYAN}Production URL:${NC} https://egfilm.xyz"
     echo ""
     
     # Get container stats

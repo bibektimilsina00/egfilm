@@ -5,6 +5,17 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Starting Application with Database Migration"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Load environment variables from .env.production if it exists
+if [ -f /app/.env.production ]; then
+    echo "▶ Loading environment variables from .env.production"
+    export $(grep -v '^#' /app/.env.production | xargs)
+    # Also set TMDB_API_KEY from NEXT_PUBLIC_TMDB_API_KEY if not set
+    if [ -n "$NEXT_PUBLIC_TMDB_API_KEY" ] && [ -z "$TMDB_API_KEY" ]; then
+        export TMDB_API_KEY="$NEXT_PUBLIC_TMDB_API_KEY"
+        echo "✔ Set TMDB_API_KEY from NEXT_PUBLIC_TMDB_API_KEY"
+    fi
+fi
+
 # Try to deploy migrations
 echo "▶ Deploying database migrations..."
 if npx prisma migrate deploy 2>&1 | tee /tmp/migrate.log; then

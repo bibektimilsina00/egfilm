@@ -6,8 +6,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+// Check both TMDB_API_KEY and NEXT_PUBLIC_TMDB_API_KEY
+// Server-side routes can access both, but prefer the non-public one for security
+const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
+const TMDB_BASE_URL = process.env.TMDB_BASE_URL || process.env.NEXT_PUBLIC_TMDB_BASE_URL || 'https://api.themoviedb.org/3';
 
 export async function GET(
     request: NextRequest,
@@ -15,8 +17,15 @@ export async function GET(
 ) {
     try {
         if (!TMDB_API_KEY) {
+            console.error('TMDb API key missing. Checked: TMDB_API_KEY, NEXT_PUBLIC_TMDB_API_KEY');
             return NextResponse.json(
-                { error: 'TMDb API key not configured' },
+                {
+                    error: 'TMDb API key not configured',
+                    debug: process.env.NODE_ENV === 'development' ? {
+                        hasPublicKey: !!process.env.NEXT_PUBLIC_TMDB_API_KEY,
+                        hasPrivateKey: !!process.env.TMDB_API_KEY
+                    } : undefined
+                },
                 { status: 500 }
             );
         }
