@@ -65,6 +65,33 @@ jobs:
           docker build -t ${{ steps.vars.outputs.image }} .
           docker push ${{ steps.vars.outputs.image }}
 
+      - name: 🧹 Cleanup Server (free disk space)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            echo "🧹 Cleaning up Docker resources..."
+            
+            # Stop and remove old containers (but keep volumes)
+            docker compose -f ~/egfilm/docker-compose.yml down --remove-orphans || true
+            
+            # Remove unused images (keep only what's needed)
+            docker image prune -af --filter "until=24h" || true
+            
+            # Remove unused build cache
+            docker builder prune -af || true
+            
+            # Remove dangling volumes (not associated with any container)
+            docker volume prune -f || true
+            
+            # Show disk usage
+            echo "📊 Disk usage after cleanup:"
+            df -h /
+            docker system df
+
       - name: 📤 Copy docker-compose file
         uses: appleboy/scp-action@v0.1.7
         with:
