@@ -1,13 +1,13 @@
 import { Metadata } from 'next'
-import { generateWatchTogetherMetadata } from '@/lib/seo'
 
-type Props = {
-    searchParams: Promise<{ room?: string }>
-}
-
-export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-    const params = await searchParams
-    return generateWatchTogetherMetadata(params?.room)
+// Static metadata for watch together layout
+export const metadata: Metadata = {
+    title: 'Watch Together - Egfilm',
+    description: 'Watch movies and TV shows together with friends in real-time. Share moments, chat, and enjoy synchronized playback.',
+    openGraph: {
+        title: 'Watch Together - Egfilm',
+        description: 'Watch movies and TV shows together with friends in real-time.',
+    },
 }
 
 export default function WatchTogetherLayout({

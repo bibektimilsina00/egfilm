@@ -23,14 +23,14 @@ export async function GET(
 
         const { path } = await params;
         const tmdbPath = path.join('/');
-        
+
         // Get query parameters from the request
         const searchParams = request.nextUrl.searchParams;
         const queryString = searchParams.toString();
-        
+
         // Build TMDb URL with API key
         const url = `${TMDB_BASE_URL}/${tmdbPath}?api_key=${TMDB_API_KEY}${queryString ? `&${queryString}` : ''}`;
-        
+
         // Forward request to TMDb
         const response = await fetch(url, {
             method: 'GET',
@@ -51,7 +51,7 @@ export async function GET(
         }
 
         const data = await response.json();
-        
+
         return NextResponse.json(data, {
             headers: {
                 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
