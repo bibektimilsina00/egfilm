@@ -2,8 +2,6 @@
 # Optimized for performance, security, and minimal resource usage
 # Uses external PostgreSQL database and Redis for caching
 
-version: '3.9'
-
 services:
   # Redis for BullMQ job queue and caching
   redis:
@@ -28,15 +26,15 @@ services:
       start_period: 5s
     networks:
       - app-network
-    # Resource limits for production
+    # Resource limits for production (1 CPU server)
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
+          cpus: '0.2'
           memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     logging:
       driver: "json-file"
       options:
@@ -72,15 +70,15 @@ services:
     labels:
       - "com.egfilm.service=app"
       - "com.egfilm.environment=production"
-    # Resource limits for production
+    # Resource limits for production (1 CPU server)
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 1G
+          cpus: '0.6'
+          memory: 768M
         reservations:
-          cpus: '1'
-          memory: 512M
+          cpus: '0.3'
+          memory: 384M
     logging:
       driver: "json-file"
       options:
@@ -111,15 +109,15 @@ services:
     labels:
       - "com.egfilm.service=worker"
       - "com.egfilm.environment=production"
-    # Resource limits for worker
+    # Resource limits for worker (1 CPU server)
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
+          cpus: '0.2'
           memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     logging:
       driver: "json-file"
       options:
