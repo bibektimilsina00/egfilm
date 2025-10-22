@@ -31,6 +31,10 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 # .env.local is passed in from GitHub Actions during docker build
+# Ensure the build has access to .env.local so Next.js can collect page data
+# at build-time (contains DATABASE_URL etc.). The file is created by the
+# CI workflow before `docker build` runs.
+COPY .env.local .env.local
 RUN npm run build
 
 # Production runtime layer - minimal and secure
