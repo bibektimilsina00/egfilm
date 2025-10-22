@@ -16,9 +16,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset",
-    "admin:make": "tsx scripts/make-admin.ts",
-    "admin:list": "tsx scripts/list-users.ts"
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
