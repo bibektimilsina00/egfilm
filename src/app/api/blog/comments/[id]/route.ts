@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma';
 // Update a comment
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -24,7 +24,7 @@ export async function PATCH(
         }
 
         const userId = (session.user as any).id;
-        const { id } = params;
+        const { id } = await params;
         const body = await request.json();
         const { content } = body;
 
@@ -97,7 +97,7 @@ export async function PATCH(
 // Delete a comment
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -111,7 +111,7 @@ export async function DELETE(
 
         const userId = (session.user as any).id;
         const userRole = (session.user as any).role;
-        const { id } = params;
+        const { id } = await params;
 
         // Find the comment
         const comment = await prisma.blogComment.findUnique({
