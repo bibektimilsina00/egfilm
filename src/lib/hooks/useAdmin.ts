@@ -148,6 +148,8 @@ export function useStatsOverview(options?: UseQueryOptions<StatsOverview>) {
                         userTrend: '+0%',
                         roomTrend: '+0%',
                         sessionTrend: '+0%',
+                        popularMovies: [],
+                        recentActivity: [],
                     };
                 }
 
