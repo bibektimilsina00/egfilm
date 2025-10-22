@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Users, Check } from 'lucide-react';
 
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
@@ -13,8 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
 import { getMovieEmbedUrl } from '@/lib/videoSources';
@@ -329,23 +326,22 @@ export default function MovieDetailPage() {
 
                   {trailer && (
                     <Button
-                      onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
-                      variant="outline"
                       size="lg"
-                      className="gap-2 text-white border-white hover:bg-white/10"
+                      onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
+                      variant="secondary"
+
                     >
-                      <Play className="w-5 h-5" />
+                      <Play className="w-5 h-5 fill-black" />
                       Watch Trailer
                     </Button>
                   )}
 
                   <Button
                     onClick={toggleWatchlist}
-                    variant="outline"
                     size="lg"
                     className={`gap-2 ${inWatchlist
-                        ? 'text-pink-500 border-pink-500 hover:bg-pink-500/10'
-                        : 'text-white border-white hover:bg-white/10'
+                      ? 'text-pink-500 border-pink-500 hover:bg-pink-500/10'
+                      : 'text-white border-white hover:bg-white/10'
                       }`}
                     title={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
                   >
@@ -363,7 +359,7 @@ export default function MovieDetailPage() {
                   </Button>
 
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="lg"
                     className="text-white border-white hover:bg-white/10"
                     onClick={() => {
@@ -386,49 +382,42 @@ export default function MovieDetailPage() {
       </div>
 
       {/* Content Sections */}
-      <div className="container mx-auto px-4 py-12">
-        <Tabs defaultValue="cast" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:w-96 bg-gray-900 border-gray-800">
-            <TabsTrigger value="cast" className="data-[state=active]:bg-gray-800">
-              Cast
-            </TabsTrigger>
-            <TabsTrigger value="similar" className="data-[state=active]:bg-gray-800">
-              Similar Movies
-            </TabsTrigger>
-          </TabsList>
+      <div className="container mx-auto py-8 space-y-16">
+        {/* Cast Section */}
+        <section>
+          <h2 className="text-3xl font-bold text-white mb-8">Cast</h2>
+          {movie.credits?.cast && movie.credits.cast.length > 0 ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              {movie.credits.cast.slice(0, 16).map((person) => (
+                <CastCard key={person.id} person={person} />
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-400">No cast information available</p>
+              </CardContent>
+            </Card>
+          )}
+        </section>
 
-          <TabsContent value="cast" className="mt-8">
-            {movie.credits?.cast && movie.credits.cast.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                {movie.credits.cast.slice(0, 16).map((person) => (
-                  <CastCard key={person.id} person={person} />
-                ))}
-              </div>
-            ) : (
-              <Card className="bg-gray-900/50 border-gray-800">
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-400">No cast information available</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="similar" className="mt-8">
-            {movie.similar?.results && movie.similar.results.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {movie.similar.results.slice(0, 10).map((item: any) => (
-                  <MediaCard key={item.id} item={item} type="movie" />
-                ))}
-              </div>
-            ) : (
-              <Card className="bg-gray-900/50 border-gray-800">
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-400">No similar movies found</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+        {/* Similar Movies Section */}
+        <section>
+          <h2 className="text-3xl font-bold text-white mb-8">Similar Movies</h2>
+          {movie.similar?.results && movie.similar.results.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              {movie.similar.results.slice(0, 12).map((item: any) => (
+                <MediaCard key={item.id} item={item} type="movie" />
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-gray-900/50 border-gray-800">
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-400">No similar movies found</p>
+              </CardContent>
+            </Card>
+          )}
+        </section>
       </div>
 
       {/* Watch Together Modal */}
