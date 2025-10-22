@@ -13,4 +13,4 @@ Allow: /tv/
 Allow: /search
 
 # Sitemap
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://egfilm.xyz/sitemap.xml
