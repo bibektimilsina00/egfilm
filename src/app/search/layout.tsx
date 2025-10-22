@@ -1,11 +1,11 @@
 import { Metadata } from 'next'
 import { generateSearchMetadata } from '@/lib/seo'
 
-type Props = {
+interface SearchLayoutProps {
     searchParams: Promise<{ q?: string }>
 }
 
-export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: SearchLayoutProps): Promise<Metadata> {
     const params = await searchParams
     return generateSearchMetadata(params.q)
 }
