@@ -229,7 +229,6 @@ export default function MovieDetailPage() {
                       size="lg"
                       onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
                       variant="outline"
-                      size="lg"
                       className="gap-2"
                     >
                       <Play className="w-5 h-5 fill-black" />

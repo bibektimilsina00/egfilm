@@ -101,6 +101,7 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
                 select: {
                     id: true,
                     name: true,
+                    role: true,
                 },
             },
         },
@@ -146,6 +147,7 @@ export async function getBlogPosts(
                     select: {
                         id: true,
                         name: true,
+                        role: true,
                     },
                 },
             },
@@ -204,6 +206,7 @@ export async function getRelatedBlogPosts(
                 select: {
                     id: true,
                     name: true,
+                    role: true,
                 },
             },
         },
@@ -221,6 +224,7 @@ export async function getPopularBlogPosts(limit: number = 5): Promise<BlogPost[]
                 select: {
                     id: true,
                     name: true,
+                    role: true,
                 },
             },
         },
@@ -238,6 +242,7 @@ export async function getRecentBlogPosts(limit: number = 5): Promise<BlogPost[]>
                 select: {
                     id: true,
                     name: true,
+                    role: true,
                 },
             },
         },

@@ -1,10 +1,11 @@
-import Link from 'next/link';
-import Image from 'next/image';
 import { Metadata } from 'next';
-import { Clock, Calendar, User, Tag, Film, Tv } from 'lucide-react';
+import { Tag, Film, Calendar, User, Tv } from 'lucide-react';
 import { getPublishedBlogPosts } from '@/lib/services/blogService';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import BlogCard from '@/components/blog/BlogCard';
+import BlogFilters from '@/components/blog/BlogFilters';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'Blog - Movie & TV Show Reviews, News & Guides | Egfilm',
@@ -25,6 +26,8 @@ interface PageProps {
     searchParams: Promise<{
         page?: string;
         category?: string;
+        search?: string;
+        mediaType?: string;
     }>;
 }
 
@@ -32,19 +35,26 @@ export default async function BlogPage({ searchParams }: PageProps) {
     const params = await searchParams;
     const page = parseInt(params.page || '1');
     const category = params.category;
+    const search = params.search;
+    const mediaType = params.mediaType as 'movie' | 'tv' | undefined;
+
+    const filters: any = {};
+    if (category) filters.category = category;
+    if (search) filters.search = search;
+    if (mediaType) filters.mediaType = mediaType;
 
     const { posts, total, pages } = await getPublishedBlogPosts(
-        category ? { category } : {},
+        filters,
         page,
         12
     );
 
     const categories = [
-        { value: 'all', label: 'All Posts', icon: Tag },
-        { value: 'review', label: 'Reviews', icon: Film },
-        { value: 'news', label: 'News', icon: Calendar },
-        { value: 'guide', label: 'Guides', icon: Tv },
-        { value: 'analysis', label: 'Analysis', icon: User },
+        { value: 'all', label: 'All Posts', icon: 'Tag' },
+        { value: 'review', label: 'Reviews', icon: 'Film' },
+        { value: 'news', label: 'News', icon: 'Calendar' },
+        { value: 'guide', label: 'Guides', icon: 'Tv' },
+        { value: 'analysis', label: 'Analysis', icon: 'User' },
     ];
 
     return (
@@ -65,28 +75,10 @@ export default async function BlogPage({ searchParams }: PageProps) {
                 </div>
             </div>
 
-            {/* Category Filters */}
-            <div className="border-b border-gray-800 sticky top-[73px] bg-gray-950/95 backdrop-blur-md z-40">
+            {/* Filters Bar - Categories, Media Type, and Search */}
+            <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-[73px] z-40">
                 <div className="container mx-auto px-4 py-4">
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                        {categories.map((cat) => {
-                            const Icon = cat.icon;
-                            const isActive = category === cat.value || (!category && cat.value === 'all');
-                            return (
-                                <Link
-                                    key={cat.value}
-                                    href={cat.value === 'all' ? '/blog' : `/blog?category=${cat.value}`}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${isActive
-                                        ? 'bg-blue-600 text-white'
-                                        : 'text-gray-300 hover:bg-blue-600/20 hover:text-blue-200'
-                                        }`}
-                                >
-                                    <Icon className="w-4 h-4" />
-                                    {cat.label}
-                                </Link>
-                            );
-                        })}
-                    </div>
+                    <BlogFilters categories={categories} currentCategory={category} />
                 </div>
             </div>
 
@@ -105,123 +97,59 @@ export default async function BlogPage({ searchParams }: PageProps) {
                         {/* Blog Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                             {posts.map((post: any) => (
-                                <article
-                                    key={post.id}
-                                    className="group bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500/50 transition-all duration-300"
-                                >
-                                    <Link href={`/blog/${post.slug}`}>
-                                        {/* Featured Image */}
-                                        <div className="relative h-48 bg-gray-800 overflow-hidden">
-                                            {post.featuredImage || post.mediaBackdropPath ? (
-                                                <Image
-                                                    src={
-                                                        post.featuredImage ||
-                                                        `https://image.tmdb.org/t/p/w500${post.mediaBackdropPath}`
-                                                    }
-                                                    alt={post.title}
-                                                    fill
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <Film className="w-16 h-16 text-gray-600" />
-                                                </div>
-                                            )}
-                                            {/* Category Badge */}
-                                            <div className="absolute top-3 left-3">
-                                                <span className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
-                                                    {post.category}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="p-5">
-                                            {/* Meta Info */}
-                                            <div className="flex items-center gap-4 text-xs text-gray-400 mb-3">
-                                                <div className="flex items-center gap-1">
-                                                    <Calendar className="w-3 h-3" />
-                                                    {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric',
-                                                    })}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    {post.readingTime} min read
-                                                </div>
-                                            </div>
-
-                                            {/* Title */}
-                                            <h2 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors line-clamp-2">
-                                                {post.title}
-                                            </h2>
-
-                                            {/* Excerpt */}
-                                            <p className="text-gray-400 text-sm line-clamp-3 mb-4">{post.excerpt}</p>
-
-                                            {/* Footer */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                    <User className="w-4 h-4" />
-                                                    {post.author.name}
-                                                </div>
-                                                {post.mediaType && (
-                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                        {post.mediaType === 'movie' ? (
-                                                            <Film className="w-3 h-3" />
-                                                        ) : (
-                                                            <Tv className="w-3 h-3" />
-                                                        )}
-                                                        {post.mediaTitle}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </Link>
-                                </article>
+                                <BlogCard key={post.id} post={post} />
                             ))}
                         </div>
 
                         {/* Pagination */}
-                        {pages > 1 && (
-                            <div className="flex justify-center gap-2">
-                                {page > 1 && (
-                                    <Link
-                                        href={`/blog?page=${page - 1}${category ? `&category=${category}` : ''}`}
-                                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                                    >
-                                        Previous
-                                    </Link>
-                                )}
-                                <div className="flex items-center gap-2">
-                                    {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
-                                        const pageNum = i + 1;
-                                        return (
-                                            <Link
-                                                key={pageNum}
-                                                href={`/blog?page=${pageNum}${category ? `&category=${category}` : ''}`}
-                                                className={`px-4 py-2 rounded-lg transition-colors ${page === pageNum
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                                    }`}
-                                            >
-                                                {pageNum}
-                                            </Link>
-                                        );
-                                    })}
+                        {pages > 1 && (() => {
+                            const buildPageUrl = (pageNum: number) => {
+                                const queryParams = new URLSearchParams();
+                                queryParams.set('page', pageNum.toString());
+                                if (category) queryParams.set('category', category);
+                                if (search) queryParams.set('search', search);
+                                if (mediaType) queryParams.set('mediaType', mediaType);
+                                return `/blog?${queryParams.toString()}`;
+                            };
+
+                            return (
+                                <div className="flex justify-center gap-2">
+                                    {page > 1 && (
+                                        <Link
+                                            href={buildPageUrl(page - 1)}
+                                            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                        >
+                                            Previous
+                                        </Link>
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
+                                            const pageNum = i + 1;
+                                            return (
+                                                <Link
+                                                    key={pageNum}
+                                                    href={buildPageUrl(pageNum)}
+                                                    className={`px-4 py-2 rounded-lg transition-colors ${page === pageNum
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                                        }`}
+                                                >
+                                                    {pageNum}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                    {page < pages && (
+                                        <Link
+                                            href={buildPageUrl(page + 1)}
+                                            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                        >
+                                            Next
+                                        </Link>
+                                    )}
                                 </div>
-                                {page < pages && (
-                                    <Link
-                                        href={`/blog?page=${page + 1}${category ? `&category=${category}` : ''}`}
-                                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                                    >
-                                        Next
-                                    </Link>
-                                )}
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {/* Total Posts */}
                         <div className="text-center mt-8 text-gray-400">

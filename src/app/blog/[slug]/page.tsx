@@ -6,6 +6,10 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import BlogPostClient from '@/components/blog/BlogPostClient';
 
+// Force dynamic rendering to ensure view count updates on each visit
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PageProps {
     params: Promise<{
         slug: string;

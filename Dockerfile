@@ -37,8 +37,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install Prisma CLI globally for migrations
-RUN npm install -g prisma
+# Install Prisma CLI and tsx globally for migrations and worker
+RUN npm install -g prisma tsx
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
@@ -54,6 +54,11 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
+# Copy worker files and dependencies needed for worker
+COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
 # Set the correct permission for prerender cache
 RUN mkdir -p .next && chown -R nextjs:nodejs .next
 
@@ -66,3 +71,13 @@ ENV HOSTNAME="0.0.0.0"
 
 # Start the application with database migration
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+
+# Worker image - separate target for BullMQ worker
+FROM runner AS worker
+WORKDIR /app
+
+USER nextjs
+
+# Worker doesn't need to expose ports
+# Start the worker process
+CMD ["tsx", "worker.ts"]

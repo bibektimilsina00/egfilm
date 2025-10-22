@@ -21,11 +21,18 @@ export interface AIModel {
 export const AI_MODELS: AIModel[] = [
     // Google Gemini models
     {
+        id: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        provider: 'gemini',
+        maxTokens: 8192,
+        description: 'Latest Gemini model - fastest and most efficient (Default)',
+    },
+    {
         id: 'gemini-1.5-flash',
         name: 'Gemini 1.5 Flash',
         provider: 'gemini',
         maxTokens: 8192,
-        description: 'Fast and efficient, great for most tasks (Default)',
+        description: 'Fast and efficient, great for most tasks',
     },
     {
         id: 'gemini-1.5-pro',

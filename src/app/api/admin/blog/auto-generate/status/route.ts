@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/admin-auth';
 import { getGenerationStatus } from '@/lib/services/blogGeneratorService';
+import { blogQueue } from '@/lib/queue/blogQueue';
 
 export async function GET(request: NextRequest) {
     try {
@@ -20,7 +21,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
         }
 
-        const status = getGenerationStatus(user.id);
+        // Get status from Redis (now synced in real-time by worker)
+        const status = await getGenerationStatus(user.id);
+
+        // Try to get active job from queue for real-time isRunning state
+        const jobs = await blogQueue.getJobs(['active', 'waiting', 'delayed']);
+        const activeJob = jobs.find(job => job.data.userId === user.id);
+
+        if (activeJob) {
+            const state = await activeJob.getState();
+
+            // Update isRunning status based on queue job state
+            status.isRunning = state === 'active' || state === 'waiting';
+        }
 
         return NextResponse.json({
             success: true,

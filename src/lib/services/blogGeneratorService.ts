@@ -17,13 +17,15 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-export type SortOption = 'popular' | 'top_rated' | 'upcoming' | 'now_playing' | 'trending_day' | 'trending_week';
+export type SortOption = 'popular' | 'top_rated' | 'upcoming' | 'now_playing' | 'trending_day' | 'trending_week' | 'on_the_air' | 'airing_today';
 export type GenerationMode = 'batch' | 'continuous';
+export type BlogCategory = 'review' | 'news' | 'guide' | 'analysis' | 'recommendation' | 'comparison';
 
 export interface GenerationConfig {
     count: number;
-    type: 'movie' | 'tv';
+    type: 'movie' | 'tv' | 'mixed'; // Added 'mixed' for both movies and TV
     sortBy: SortOption;
+    category: BlogCategory; // Which type of blog to generate
     mode: GenerationMode;
     postsPerHour?: number; // For continuous mode
     minRating?: number; // Skip items below this rating
@@ -33,6 +35,8 @@ export interface GenerationConfig {
     yearTo?: number;
     aiModel?: string; // AI model ID (e.g., 'gemini-1.5-flash', 'gpt-4')
     apiKey?: string; // User's API key (optional, will fetch from DB if not provided)
+    rotateCategories?: boolean; // Auto-rotate between categories for variety
+    rotateSortBy?: boolean; // Auto-rotate between sort options
 }
 
 export interface GenerationStatus {
@@ -54,27 +58,61 @@ export interface GenerationStatus {
 }
 
 // User-specific status storage (key: userId, value: status)
-const userGenerationStatus = new Map<string, GenerationStatus>();
+// Import Redis for cross-process status sharing
+import IORedis from 'ioredis';
+
+// Redis connection for status sharing between Next.js server and worker
+const redis = new IORedis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: Number(process.env.REDIS_PORT) || 6379,
+    password: process.env.REDIS_PASSWORD || undefined,
+    maxRetriesPerRequest: null,
+});
+
 const userShouldStop = new Map<string, boolean>();
 const userContinuousInterval = new Map<string, NodeJS.Timeout>();
 
-// Helper to get user-specific status
-function getUserStatus(userId: string): GenerationStatus {
-    if (!userGenerationStatus.has(userId)) {
-        userGenerationStatus.set(userId, {
-            isRunning: false,
-            mode: 'batch',
-            sortBy: 'popular',
-            total: 0,
-            completed: 0,
-            failed: 0,
-            skipped: 0,
-            errors: [],
-            logs: [],
-            userId,
-        });
+// Helper to get Redis key for user status
+function getStatusKey(userId: string): string {
+    return `blog:generation:status:${userId}`;
+}
+
+// Helper to get user-specific status from Redis
+async function getUserStatus(userId: string): Promise<GenerationStatus> {
+    try {
+        const key = getStatusKey(userId);
+        const cached = await redis.get(key);
+
+        if (cached) {
+            return JSON.parse(cached);
+        }
+    } catch (error) {
+        console.error('Redis getUserStatus error:', error);
     }
-    return userGenerationStatus.get(userId)!;
+
+    // Default status if nothing in Redis
+    return {
+        isRunning: false,
+        mode: 'batch',
+        sortBy: 'popular',
+        total: 0,
+        completed: 0,
+        failed: 0,
+        skipped: 0,
+        errors: [],
+        logs: [],
+        userId,
+    };
+}
+
+// Helper to set user status in Redis
+async function setUserStatus(userId: string, status: GenerationStatus): Promise<void> {
+    try {
+        const key = getStatusKey(userId);
+        await redis.setex(key, 3600, JSON.stringify(status)); // Expire after 1 hour
+    } catch (error) {
+        console.error('Redis setUserStatus error:', error);
+    }
 }
 
 // Persist status to database
@@ -93,8 +131,8 @@ async function persistStatus(userId: string, status: GenerationStatus) {
 }
 
 // Helper function to add timestamped logs
-function addLog(userId: string, message: string, emoji: string = '📝') {
-    const status = getUserStatus(userId);
+async function addLog(userId: string, message: string, emoji: string = '📝') {
+    const status = await getUserStatus(userId);
     const timestamp = new Date().toLocaleTimeString();
     const logMessage = `[${timestamp}] ${emoji} ${message}`;
     status.logs.push(logMessage);
@@ -104,15 +142,17 @@ function addLog(userId: string, message: string, emoji: string = '📝') {
     if (status.logs.length > 50) {
         status.logs = status.logs.slice(-50);
     }
+
+    await setUserStatus(userId, status);
 }
 
-export function getGenerationStatus(userId: string): GenerationStatus {
-    return { ...getUserStatus(userId) };
+export async function getGenerationStatus(userId: string): Promise<GenerationStatus> {
+    return getUserStatus(userId);
 }
 
-export function stopGeneration(userId: string) {
+export async function stopGeneration(userId: string) {
     userShouldStop.set(userId, true);
-    addLog(userId, 'Generation stopped by user', '🛑');
+    await addLog(userId, 'Generation stopped by user', '🛑');
 
     const interval = userContinuousInterval.get(userId);
     if (interval) {
@@ -120,8 +160,9 @@ export function stopGeneration(userId: string) {
         userContinuousInterval.delete(userId);
     }
 
-    const status = getUserStatus(userId);
+    const status = await getUserStatus(userId);
     status.isRunning = false;
+    await setUserStatus(userId, status);
 }
 
 /**
@@ -133,18 +174,164 @@ function getEndpoint(type: 'movie' | 'tv', sortBy: SortOption): string {
         return `/trending/${type}/${timeWindow}`;
     }
 
-    const endpoints: Record<string, string> = {
-        popular: type === 'movie' ? '/movie/popular' : '/tv/popular',
-        top_rated: type === 'movie' ? '/movie/top_rated' : '/tv/top_rated',
-        upcoming: '/movie/upcoming', // TV doesn't have upcoming
-        now_playing: '/movie/now_playing', // TV uses on_the_air
+    const endpoints: Record<string, Record<string, string>> = {
+        movie: {
+            popular: '/movie/popular',
+            top_rated: '/movie/top_rated',
+            upcoming: '/movie/upcoming',
+            now_playing: '/movie/now_playing',
+        },
+        tv: {
+            popular: '/tv/popular',
+            top_rated: '/tv/top_rated',
+            on_the_air: '/tv/on_the_air',
+            airing_today: '/tv/airing_today',
+        },
     };
 
-    if (type === 'tv' && sortBy === 'now_playing') {
-        return '/tv/on_the_air';
+    // Map similar options between movie and TV
+    if (type === 'tv') {
+        if (sortBy === 'now_playing') return endpoints.tv.on_the_air;
+        if (sortBy === 'upcoming') return endpoints.tv.on_the_air;
     }
 
-    return endpoints[sortBy] || endpoints.popular;
+    return endpoints[type][sortBy] || endpoints[type].popular;
+}
+
+/**
+ * Get or create blog generation progress tracker
+ */
+async function getGenerationProgress(
+    userId: string,
+    mediaType: 'movie' | 'tv',
+    sortBy: SortOption
+) {
+    let progress = await prisma.blogGenerationProgress.findUnique({
+        where: {
+            userId_mediaType_sortBy: {
+                userId,
+                mediaType,
+                sortBy,
+            },
+        },
+    });
+
+    if (!progress) {
+        progress = await prisma.blogGenerationProgress.create({
+            data: {
+                userId,
+                mediaType,
+                sortBy,
+                currentPage: 1,
+                currentIndex: 0,
+                totalGenerated: 0,
+            },
+        });
+    }
+
+    return progress;
+}
+
+/**
+ * Update generation progress
+ */
+async function updateGenerationProgress(
+    userId: string,
+    mediaType: 'movie' | 'tv',
+    sortBy: SortOption,
+    updates: {
+        currentPage?: number;
+        currentIndex?: number;
+        lastMediaId?: number;
+        incrementGenerated?: boolean;
+    }
+) {
+    const data: any = {};
+
+    if (updates.currentPage !== undefined) data.currentPage = updates.currentPage;
+    if (updates.currentIndex !== undefined) data.currentIndex = updates.currentIndex;
+    if (updates.lastMediaId !== undefined) data.lastMediaId = updates.lastMediaId;
+    if (updates.incrementGenerated) {
+        data.totalGenerated = { increment: 1 };
+    }
+
+    await prisma.blogGenerationProgress.update({
+        where: {
+            userId_mediaType_sortBy: {
+                userId,
+                mediaType,
+                sortBy,
+            },
+        },
+        data,
+    });
+}
+
+/**
+ * Fetch media items with progress tracking
+ */
+async function fetchMediaWithProgress(
+    type: 'movie' | 'tv',
+    sortBy: SortOption,
+    tmdbApiKey: string,
+    userId: string,
+    count: number,
+    filters?: Pick<GenerationConfig, 'minRating' | 'includeAdult' | 'genres' | 'yearFrom' | 'yearTo'>
+) {
+    // Get current progress
+    const progress = await getGenerationProgress(userId, type, sortBy);
+
+    const allResults: any[] = [];
+    let currentPage = progress.currentPage;
+    let currentIndex = progress.currentIndex;
+    let fetched = 0;
+
+    console.log(`📍 Resuming from page ${currentPage}, index ${currentIndex}`);
+    console.log(`📊 Total generated so far: ${progress.totalGenerated}`);
+
+    while (fetched < count) {
+        // Fetch the current page
+        const results = await fetchMedia(type, sortBy, tmdbApiKey, currentPage, filters);
+
+        if (!results || results.length === 0) {
+            // No more results, reset to page 1
+            console.log('📄 No more results on current page, moving to next page');
+            currentPage++;
+            currentIndex = 0;
+
+            // If we've tried too many empty pages, start over
+            if (currentPage > progress.currentPage + 5) {
+                console.log('🔄 Resetting to page 1');
+                currentPage = 1;
+                currentIndex = 0;
+            }
+            continue;
+        }
+
+        // Get items from current index onwards
+        const remainingOnPage = results.slice(currentIndex);
+        const neededFromThisPage = Math.min(remainingOnPage.length, count - fetched);
+
+        allResults.push(...remainingOnPage.slice(0, neededFromThisPage));
+        fetched += neededFromThisPage;
+
+        // Update position
+        currentIndex += neededFromThisPage;
+
+        // If we've consumed all items on this page, move to next page
+        if (currentIndex >= results.length) {
+            currentPage++;
+            currentIndex = 0;
+        }
+
+        // Update progress in database
+        await updateGenerationProgress(userId, type, sortBy, {
+            currentPage,
+            currentIndex,
+        });
+    }
+
+    return { results: allResults, finalPage: currentPage, finalIndex: currentIndex };
 }
 
 /**
@@ -222,7 +409,11 @@ async function getMediaDetails(type: 'movie' | 'tv', id: number, tmdbApiKey: str
 
         return {
             ...details.data,
-            cast: credits.data.cast.slice(0, 10).map((c: any) => c.name),
+            cast: credits.data.cast.slice(0, 10).map((c: any) => ({
+                name: c.name,
+                character: c.character,
+                profile_path: c.profile_path,
+            })),
         };
     } catch (error: any) {
         if (error.response?.status === 401) {
@@ -251,7 +442,8 @@ async function checkDuplicate(mediaId: number, mediaType: string): Promise<boole
 async function generateBlogContent(
     media: any,
     type: 'movie' | 'tv',
-    aiClient?: AIClient
+    aiClient?: AIClient,
+    category: BlogCategory = 'review'
 ) {
     // Use provided AI client or fall back to Gemini
     if (!aiClient && !genAI) {
@@ -263,10 +455,20 @@ async function generateBlogContent(
     const releaseDate = media.release_date || media.first_air_date;
     const rating = media.vote_average;
     const genres = media.genres?.map((g: any) => g.name).join(', ') || '';
-    const cast = media.cast?.join(', ') || '';
+    const cast = media.cast?.map((c: any) => `${c.name}${c.character ? ` as ${c.character}` : ''}`).join(', ') || '';
+
+    // Category-specific prompts
+    const categoryPrompts = {
+        review: `Write a detailed, engaging blog post review for the ${type} "${title}".`,
+        news: `Write a news article about the ${type} "${title}".`,
+        guide: `Write a comprehensive viewing guide for the ${type} "${title}".`,
+        analysis: `Write an in-depth analysis of the ${type} "${title}".`,
+        recommendation: `Write a recommendation post for the ${type} "${title}".`,
+        comparison: `Write a comparison piece featuring the ${type} "${title}".`,
+    };
 
     const prompt = `
-Write a detailed, engaging blog post review for the ${type} "${title}".
+${categoryPrompts[category] || categoryPrompts.review}
 
 Movie/Show Details:
 - Title: ${title}
@@ -295,7 +497,7 @@ Return ONLY the HTML content, no markdown code blocks.
     if (aiClient) {
         content = await aiClient.generateContent(prompt);
     } else {
-        const model = genAI!.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI!.getGenerativeModel({ model: 'gemini-2.5-flash' });
         const result = await model.generateContent(prompt);
         content = result.response.text();
     }
@@ -321,7 +523,7 @@ TAGS: [tag1, tag2, tag3, ...]
     if (aiClient) {
         metaText = await aiClient.generateContent(metaPrompt);
     } else {
-        const model = genAI!.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI!.getGenerativeModel({ model: 'gemini-2.5-flash' });
         const metaResult = await model.generateContent(metaPrompt);
         metaText = metaResult.response.text();
     }
@@ -365,7 +567,13 @@ function generateSlug(title: string): string {
 /**
  * Create blog post in database
  */
-async function createBlogPost(media: any, generatedContent: any, type: 'movie' | 'tv', authorId: string) {
+async function createBlogPost(
+    media: any,
+    generatedContent: any,
+    type: 'movie' | 'tv',
+    authorId: string,
+    category: BlogCategory = 'review'
+) {
     const title = media.title || media.name;
     const slug = generateSlug(generatedContent.title);
 
@@ -385,10 +593,11 @@ async function createBlogPost(media: any, generatedContent: any, type: 'movie' |
             metaDescription: generatedContent.metaDescription,
             keywords: generatedContent.keywords,
             tags: generatedContent.tags,
-            category: 'review',
+            category, // Use provided category
+
             readingTime,
 
-            // Media info
+            // Media info with cast details
             mediaId: media.id,
             mediaType: type,
             mediaTitle: title,
@@ -398,7 +607,7 @@ async function createBlogPost(media: any, generatedContent: any, type: 'movie' |
             mediaGenres: media.genres?.map((g: any) => g.name) || [],
             mediaRating: media.vote_average,
             mediaOverview: media.overview,
-            mediaCast: media.cast || [],
+            mediaCast: media.cast || [], // Store cast array from TMDb
 
             // Featured image (use backdrop)
             featuredImage: media.backdrop_path
@@ -440,6 +649,20 @@ async function fetchMediaItems(
     tmdbApiKey: string
 ): Promise<any[]> {
     const { type, sortBy, minRating, includeAdult, genres, yearFrom, yearTo } = config;
+
+    // Handle 'mixed' type by fetching both movies and TV shows
+    if (type === 'mixed') {
+        const movieCount = Math.ceil(targetCount / 2);
+        const tvCount = Math.floor(targetCount / 2);
+
+        const [movies, tvShows] = await Promise.all([
+            fetchMediaItems({ ...config, type: 'movie' }, movieCount, tmdbApiKey),
+            fetchMediaItems({ ...config, type: 'tv' }, tvCount, tmdbApiKey),
+        ]);
+
+        return [...movies, ...tvShows];
+    }
+
     const mediaToProcess: any[] = [];
     let page = 1;
 
@@ -463,122 +686,18 @@ async function fetchMediaItems(
 }
 
 /**
- * Batch mode: Generate a fixed number of posts
- * @deprecated This function is legacy - use generateBlogsWithQueue instead
- */
-async function runBatchMode(
-    config: GenerationConfig,
-    authorId: string
-): Promise<void> {
-    throw new Error('Legacy function runBatchMode() is deprecated. Use generateBlogsWithQueue() instead.');
-
-}
-
-/**
- * Continuous mode: Generate posts continuously at a specified rate
- */
-async function runContinuousMode(
-    config: GenerationConfig,
-    authorId: string
-): Promise<void> {
-    const postsPerHour = config.postsPerHour || 1;
-    const intervalMs = (60 * 60 * 1000) / postsPerHour; // Convert to milliseconds
-    const status = getUserStatus(authorId);
-
-    addLog(authorId, `Starting continuous mode: ${postsPerHour} posts/hour (every ${Math.round(intervalMs / 1000 / 60)} minutes)`, '⏰');
-
-    // Generate first post immediately
-    await generateSinglePost(config, authorId);
-
-    // Schedule subsequent posts
-    const interval = setInterval(async () => {
-        if (userShouldStop.get(authorId)) {
-            clearInterval(interval);
-            userContinuousInterval.delete(authorId);
-            status.isRunning = false;
-            return;
-        }
-
-        status.nextScheduledAt = new Date(Date.now() + intervalMs);
-        addLog(authorId, `Next post scheduled in ${Math.round(intervalMs / 1000 / 60)} minutes`, '⏱️');
-        await generateSinglePost(config, authorId);
-    }, intervalMs);
-
-    userContinuousInterval.set(authorId, interval);
-}
-
-/**
- * Generate a single post (used in continuous mode)
- * @deprecated This function is legacy - use generateBlogsWithQueue instead
- */
-async function generateSinglePost(
-    config: GenerationConfig,
-    authorId: string
-): Promise<void> {
-    throw new Error('Legacy function generateSinglePost() is deprecated. Use generateBlogsWithQueue() instead.');
-
-}
-
-/**
- * Main generation function with all features
+ * Main generation function - now delegates to queue system
+ * @deprecated Direct generation is deprecated. All generation should go through the queue.
+ * This function is kept for backward compatibility but immediately throws an error.
  */
 export async function generateBlogs(
     config: GenerationConfig,
     authorId: string
 ): Promise<void> {
-    const status = getUserStatus(authorId);
-
-    if (status.isRunning) {
-        throw new Error('Generation is already running for this user');
-    }
-
-    // Reset and initialize status
-    const newStatus: GenerationStatus = {
-        isRunning: true,
-        mode: config.mode,
-        sortBy: config.sortBy,
-        total: config.mode === 'batch' ? config.count : 0,
-        completed: 0,
-        failed: 0,
-        skipped: 0,
-        errors: [],
-        logs: [],
-        startTime: new Date(),
-        postsPerHour: config.postsPerHour,
-        userId: authorId,
-    };
-
-    userGenerationStatus.set(authorId, newStatus);
-    userShouldStop.set(authorId, false);
-
-    // Add initial logs
-    const timestamp = new Date().toLocaleTimeString();
-    newStatus.logs.push(`[${timestamp}] 🚀 Starting ${config.mode} mode generation`);
-    newStatus.logs.push(`[${timestamp}] 📊 Source: ${config.sortBy} ${config.type}`);
-    if (config.mode === 'batch') {
-        newStatus.logs.push(`[${timestamp}] 🎯 Target: ${config.count} posts`);
-    } else {
-        newStatus.logs.push(`[${timestamp}] ⏰ Rate: ${config.postsPerHour} posts/hour`);
-    }
-    if (config.minRating) {
-        newStatus.logs.push(`[${timestamp}] ⭐ Min rating: ${config.minRating}`);
-    }
-    if (config.yearFrom || config.yearTo) {
-        newStatus.logs.push(`[${timestamp}] 📅 Years: ${config.yearFrom || 'any'} - ${config.yearTo || 'any'}`);
-    }
-
-    try {
-        if (config.mode === 'batch') {
-            await runBatchMode(config, authorId);
-        } else {
-            await runContinuousMode(config, authorId);
-        }
-    } catch (error: any) {
-        console.error('Generation error:', error);
-        newStatus.isRunning = false;
-        newStatus.currentMovie = undefined;
-        throw error;
-    }
+    throw new Error(
+        'Direct generation is no longer supported. Please use generateBlogsWithQueue() through the queue system. ' +
+        'Call POST /api/admin/blog/auto-generate/start instead.'
+    );
 }
 
 /**
@@ -593,6 +712,16 @@ export async function generateBlogsWithQueue(params: {
     updateProgress: (progress: number) => Promise<void>;
 }) {
     const { config, authorId, userId, jobId, updateProgress } = params;
+
+    // Handle 'mixed' type by splitting into two separate generations
+    if (config.type === 'mixed') {
+        const movieConfig = { ...config, type: 'movie' as const, count: Math.ceil(config.count / 2) };
+        const tvConfig = { ...config, type: 'tv' as const, count: Math.floor(config.count / 2) };
+
+        await generateBlogsWithQueue({ ...params, config: movieConfig });
+        await generateBlogsWithQueue({ ...params, config: tvConfig });
+        return;
+    }
 
     // Get user's AI settings including TMDB API key
     const user = await prisma.user.findUnique({
@@ -615,9 +744,8 @@ export async function generateBlogsWithQueue(params: {
         throw new Error('❌ TMDb API key not configured. Please add your TMDb API key in Settings → AI Configuration.');
     }
 
-    // Create AI client
-    let aiClient: AIClient | undefined;
-    const modelId = config.aiModel || user.preferredAiModel || 'gemini-1.5-flash';
+    // Determine AI model and get API key
+    const modelId = config.aiModel || user.preferredAiModel || 'gemini-2.5-flash';
     const model = AI_MODELS.find(m => m.id === modelId);
 
     if (!model) {
@@ -636,7 +764,7 @@ export async function generateBlogsWithQueue(params: {
     }
 
     // Create AI client
-    aiClient = createAIClient(modelId, apiKey);
+    const aiClient = createAIClient(modelId, apiKey);
 
     // Initialize status
     const newStatus: GenerationStatus = {
@@ -654,21 +782,37 @@ export async function generateBlogsWithQueue(params: {
         userId: authorId,
     };
 
-    userGenerationStatus.set(authorId, newStatus);
+    await setUserStatus(authorId, newStatus);
     userShouldStop.set(authorId, false);
 
     // Add initial logs
     addLog(authorId, `Starting ${config.mode} mode generation (Job: ${jobId})`, '🚀');
     addLog(authorId, `Using AI Model: ${model.name}`, '🤖');
     addLog(authorId, `Source: ${config.sortBy} ${config.type}`, '📊');
+    addLog(authorId, `Category: ${config.category || 'auto'}`, '📝');
 
     await updateProgress(10);
 
     try {
         if (config.mode === 'batch') {
             // Batch mode with progress tracking
-            addLog(authorId, `Fetching ${config.count} media items...`, '🔍');
-            const mediaItems = await fetchMediaItems(config, config.count, user.tmdbApiKey);
+            addLog(authorId, `Fetching ${config.count} media items with progress tracking...`, '🔍');
+
+            // Fetch media with progress continuation
+            const { results: mediaItems, finalPage, finalIndex } = await fetchMediaWithProgress(
+                config.type,
+                config.sortBy,
+                user.tmdbApiKey,
+                userId,
+                config.count,
+                {
+                    minRating: config.minRating,
+                    includeAdult: config.includeAdult,
+                    genres: config.genres,
+                    yearFrom: config.yearFrom,
+                    yearTo: config.yearTo,
+                }
+            );
 
             await updateProgress(20);
             addLog(authorId, `Found ${mediaItems.length} items, starting generation...`, '📋');
@@ -683,6 +827,7 @@ export async function generateBlogsWithQueue(params: {
                 const mediaItem = mediaItems[i];
                 const title = mediaItem.title || mediaItem.name;
                 newStatus.currentMovie = title;
+                await setUserStatus(authorId, newStatus); // Sync status
                 addLog(authorId, `Processing: ${title}`, '🎬');
 
                 try {
@@ -691,26 +836,35 @@ export async function generateBlogsWithQueue(params: {
                     if (isDuplicate) {
                         addLog(authorId, `Skipped: ${title} (already exists)`, '⏭️');
                         newStatus.skipped++;
+                        await setUserStatus(authorId, newStatus); // Sync status
                         continue;
                     }
 
-                    // Get detailed info
-                    addLog(authorId, `Fetching details for ${title}...`, '📥');
+                    // Get detailed info with cast
+                    addLog(authorId, `Fetching details and cast for ${title}...`, '📥');
                     const details = await getMediaDetails(config.type, mediaItem.id, user.tmdbApiKey);
 
-                    // Generate content with AI
-                    addLog(authorId, `Generating content with AI...`, '🤖');
-                    const content = await generateBlogContent(details, config.type, aiClient);
+                    // Generate content with AI (using category if provided)
+                    const category = config.category || 'review';
+                    addLog(authorId, `Generating ${category} content with AI...`, '🤖');
+                    const content = await generateBlogContent(details, config.type, aiClient, category);
 
-                    // Create blog post
+                    // Create blog post with cast details and category
                     addLog(authorId, `Creating blog post...`, '💾');
-                    await createBlogPost(details, content, config.type, authorId);
+                    await createBlogPost(details, content, config.type, authorId, category);
 
                     newStatus.completed++;
                     newStatus.lastGeneratedAt = new Date();
+                    await setUserStatus(authorId, newStatus); // Sync status
                     addLog(authorId, `Created: ${title} (${newStatus.completed}/${newStatus.total})`, '✅');
 
-                    // Update progress
+                    // Update progress in database (track successful generation)
+                    await updateGenerationProgress(userId, config.type, config.sortBy, {
+                        lastMediaId: mediaItem.id,
+                        incrementGenerated: true,
+                    });
+
+                    // Update job progress
                     const progress = 20 + Math.floor((i / config.count) * 70);
                     await updateProgress(progress);
 
@@ -721,25 +875,106 @@ export async function generateBlogsWithQueue(params: {
                     console.error(`Error processing ${title}:`, error);
                     newStatus.failed++;
                     newStatus.errors.push(`${title}: ${error.message}`);
+                    await setUserStatus(authorId, newStatus); // Sync status
                     addLog(authorId, `Failed: ${title} - ${error.message}`, '❌');
                 }
             }
 
             await updateProgress(95);
             addLog(authorId, `Batch generation completed! Created: ${newStatus.completed}, Skipped: ${newStatus.skipped}, Failed: ${newStatus.failed}`, '🎉');
-        } else {
-            // Continuous mode - not recommended for queue-based processing
-            throw new Error('Continuous mode should use in-memory processing, not queue');
+        } else if (config.mode === 'continuous') {
+            // Continuous mode: Generate one post per job execution
+            // The job will be repeated by BullMQ at the specified interval
+            addLog(authorId, `Continuous mode: Generating single post...`, '🔄');
+            await updateProgress(20);
+
+            try {
+                // Fetch one media item with progress tracking
+                const { results: mediaItems, finalPage, finalIndex } = await fetchMediaWithProgress(
+                    config.type,
+                    config.sortBy,
+                    user.tmdbApiKey,
+                    userId,
+                    1, // Only fetch 1 item per execution
+                    {
+                        minRating: config.minRating,
+                        includeAdult: config.includeAdult,
+                        genres: config.genres,
+                        yearFrom: config.yearFrom,
+                        yearTo: config.yearTo,
+                    }
+                );
+
+                if (mediaItems.length === 0) {
+                    addLog(authorId, `No more items available. Continuous generation will retry later.`, '⏸️');
+                    await updateProgress(100);
+                    return;
+                }
+
+                const mediaItem = mediaItems[0];
+                const title = mediaItem.title || mediaItem.name;
+                addLog(authorId, `Processing: ${title}`, '🎬');
+                await updateProgress(40);
+
+                // Check for duplicates
+                const isDuplicate = await checkDuplicate(mediaItem.id, config.type);
+                if (isDuplicate) {
+                    addLog(authorId, `Skipped: ${title} (already exists)`, '⏭️');
+                    newStatus.skipped++;
+                    await setUserStatus(authorId, newStatus);
+                    await updateProgress(100);
+                    return;
+                }
+
+                // Get detailed info with cast
+                addLog(authorId, `Fetching details and cast for ${title}...`, '📥');
+                const details = await getMediaDetails(config.type, mediaItem.id, user.tmdbApiKey);
+                await updateProgress(60);
+
+                // Generate content with AI (using category if provided)
+                const category = config.category || 'review';
+                addLog(authorId, `Generating ${category} content with AI...`, '🤖');
+                const content = await generateBlogContent(details, config.type, aiClient, category);
+                await updateProgress(80);
+
+                // Create blog post with cast details and category
+                addLog(authorId, `Creating blog post...`, '💾');
+                await createBlogPost(details, content, config.type, authorId, category);
+
+                newStatus.completed++;
+                newStatus.lastGeneratedAt = new Date();
+                await setUserStatus(authorId, newStatus);
+                addLog(authorId, `Created: ${title}`, '✅');
+
+                // Update progress in database
+                await updateGenerationProgress(userId, config.type, config.sortBy, {
+                    lastMediaId: mediaItem.id,
+                    incrementGenerated: true,
+                });
+
+                await updateProgress(100);
+                addLog(authorId, `Continuous mode: Post created successfully! Next post will be generated at the scheduled interval.`, '🎉');
+
+            } catch (error: any) {
+                console.error(`Error in continuous mode:`, error);
+                newStatus.failed++;
+                newStatus.errors.push(`${error.message}`);
+                await setUserStatus(authorId, newStatus);
+                addLog(authorId, `Failed: ${error.message}`, '❌');
+                throw error;
+            }
         }
 
         newStatus.isRunning = false;
         newStatus.currentMovie = undefined;
+        await setUserStatus(authorId, newStatus); // Final status sync
         await updateProgress(100);
 
     } catch (error: any) {
         console.error('Generation error:', error);
         newStatus.isRunning = false;
         newStatus.currentMovie = undefined;
+        await setUserStatus(authorId, newStatus); // Error status sync
         addLog(authorId, `Error: ${error.message}`, '❌');
         throw error;
     }

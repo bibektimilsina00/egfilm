@@ -26,7 +26,7 @@ model User {
   openaiApiKey       String?  // User's OpenAI API key
   anthropicApiKey    String?  // User's Anthropic API key
   tmdbApiKey         String?  // User's TMDb API key for blog generation
-  preferredAiModel   String?  @default("gemini-1.5-flash") // Default AI model (Gemini 1.5 Flash)
+  preferredAiModel   String?  @default("gemini-2.5-flash") // Default AI model (Gemini 2.5 Flash)
   
   // Relations
   watchlist        WatchlistItem[]
@@ -196,7 +196,7 @@ model BlogPost {
   mediaGenres     String[] // Array of genre names
   mediaRating     Float?
   mediaOverview   String?  @db.Text
-  mediaCast       String[] // Array of cast member names
+  mediaCast       Json?    // Array of cast objects with name, character, profile_path
   
   // Blog Metadata
   authorId        String
@@ -259,4 +259,22 @@ model BlogComment {
   @@index([userId])
   @@index([parentId])
   @@index([createdAt])
+}
+
+// Track blog generation progress to avoid duplicates
+model BlogGenerationProgress {
+  id            String   @id @default(cuid())
+  userId        String
+  mediaType     String   // 'movie' or 'tv'
+  sortBy        String   // 'popular', 'top_rated', etc.
+  currentPage   Int      @default(1)
+  currentIndex  Int      @default(0) // Index within the current page
+  totalGenerated Int     @default(0)
+  lastMediaId   Int?     // Last TMDb media ID that was processed
+  lastUpdated   DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  
+  @@unique([userId, mediaType, sortBy]) // One progress tracker per user/type/sort combination
+  @@index([userId])
+  @@index([mediaType, sortBy])
 }

@@ -36,12 +36,15 @@ export async function POST(request: NextRequest) {
             yearTo,
             aiModel, // New: AI model selection
             apiKey, // New: User's API key
+            category, // New: Blog category (optional, auto-select if not provided)
+            rotateCategories = true, // New: Auto-rotate categories
+            rotateSortBy = false, // New: Auto-rotate sort options
         } = body;
 
         // Validate inputs
-        if (!['movie', 'tv'].includes(type)) {
+        if (!['movie', 'tv', 'mixed'].includes(type)) {
             return NextResponse.json(
-                { error: 'Invalid type. Must be "movie" or "tv"' },
+                { error: 'Invalid type. Must be "movie", "tv", or "mixed"' },
                 { status: 400 }
             );
         }
@@ -53,6 +56,8 @@ export async function POST(request: NextRequest) {
             'now_playing',
             'trending_day',
             'trending_week',
+            'on_the_air',
+            'airing_today',
         ];
         if (!validSortOptions.includes(sortBy)) {
             return NextResponse.json(
@@ -68,16 +73,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (mode === 'batch' && (count < 1 || count > 50)) {
+        if (mode === 'batch' && (count < 1 || count > 100)) {
             return NextResponse.json(
-                { error: 'Count must be between 1 and 50 for batch mode' },
+                { error: 'Count must be between 1 and 100 for batch mode' },
                 { status: 400 }
             );
         }
 
         if (mode === 'continuous' && (postsPerHour < 1 || postsPerHour > 10)) {
             return NextResponse.json(
-                { error: 'Posts per hour must be between 1 and 10' },
+                { error: 'Posts per hour must be between 1 and 10 for continuous mode' },
                 { status: 400 }
             );
         }
@@ -99,6 +104,9 @@ export async function POST(request: NextRequest) {
                 yearTo,
                 aiModel,
                 apiKey,
+                category,
+                rotateCategories,
+                rotateSortBy,
             },
         });
 

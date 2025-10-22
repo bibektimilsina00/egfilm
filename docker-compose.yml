@@ -1,10 +1,10 @@
-# Docker Compose for Egfilm Production with PostgreSQL
+# Docker Compose for Egfilm Production with PostgreSQL, Redis, and BullMQ Worker
 
 services:
   # PostgreSQL Database
   database:
     image: postgres:16-alpine
-  container_name: egfilm-postgres
+    container_name: egfilm-postgres
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -22,20 +22,44 @@ services:
     networks:
       - app-network
 
+  # Redis for BullMQ
+  redis:
+    image: redis:7-alpine
+    container_name: egfilm-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
   # Egfilm Application
   egfilm:
     build:
       context: .
       dockerfile: Dockerfile
-  container_name: egfilm-app
+      target: runner
+    container_name: egfilm-app
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-movieuser}:${POSTGRES_PASSWORD:-moviepass}@database:5432/${POSTGRES_DB:-moviedb}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - NEXT_PUBLIC_TMDB_API_KEY=${NEXT_PUBLIC_TMDB_API_KEY}
       - NEXT_PUBLIC_TMDB_BASE_URL=${NEXT_PUBLIC_TMDB_BASE_URL:-https://api.themoviedb.org/3}
       - AUTH_SECRET=${AUTH_SECRET}
@@ -50,10 +74,35 @@ services:
     networks:
       - app-network
 
+  # BullMQ Worker for Blog Generation
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    container_name: egfilm-worker
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-movieuser}:${POSTGRES_PASSWORD:-moviepass}@database:5432/${POSTGRES_DB:-moviedb}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - NEXT_PUBLIC_TMDB_API_KEY=${NEXT_PUBLIC_TMDB_API_KEY}
+    restart: unless-stopped
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local

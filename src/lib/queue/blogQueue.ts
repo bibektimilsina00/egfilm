@@ -55,13 +55,32 @@ queueEvents.on('progress', ({ jobId, data }) => {
 
 // Helper function to add a blog generation job
 export async function addBlogGenerationJob(data: BlogGenerationJobData) {
-    const job = await blogQueue.add('generate-blogs', data, {
-        jobId: `blog-gen-${data.userId}-${Date.now()}`, // Unique job ID
-        priority: data.config.mode === 'batch' ? 1 : 2, // Batch jobs have higher priority
-    });
+    if (data.config.mode === 'continuous') {
+        // For continuous mode, add a repeatable job
+        const postsPerHour = data.config.postsPerHour || 1;
+        const intervalMs = Math.floor((60 * 60 * 1000) / postsPerHour);
 
-    console.log(`🚀 [Queue] Added job ${job.id} for user ${data.userId}`);
-    return job;
+        const job = await blogQueue.add('generate-blogs', data, {
+            jobId: `blog-gen-continuous-${data.userId}`, // Fixed ID for continuous mode
+            priority: 2,
+            repeat: {
+                every: intervalMs, // Repeat at specified interval
+                immediately: true, // Start immediately
+            },
+        });
+
+        console.log(`🔄 [Queue] Added repeatable job ${job.id} for user ${data.userId} (every ${Math.round(intervalMs / 1000 / 60)} minutes)`);
+        return job;
+    } else {
+        // For batch mode, add a one-time job
+        const job = await blogQueue.add('generate-blogs', data, {
+            jobId: `blog-gen-${data.userId}-${Date.now()}`, // Unique job ID
+            priority: 1, // Batch jobs have higher priority
+        });
+
+        console.log(`🚀 [Queue] Added batch job ${job.id} for user ${data.userId}`);
+        return job;
+    }
 }
 
 // Helper function to get job status
@@ -124,6 +143,28 @@ export async function cancelJob(jobId: string) {
     console.log(`🛑 [Queue] Cancelled job ${jobId}`);
 
     return { success: true };
+}
+
+// Helper function to stop continuous mode for a user
+export async function stopContinuousMode(userId: string) {
+    const repeatableJobKey = `blog-gen-continuous-${userId}`;
+
+    try {
+        // Remove the repeatable job
+        const repeatableJobs = await blogQueue.getRepeatableJobs();
+        const userRepeatableJob = repeatableJobs.find(job => job.id === repeatableJobKey || job.key.includes(userId));
+
+        if (userRepeatableJob) {
+            await blogQueue.removeRepeatableByKey(userRepeatableJob.key);
+            console.log(`🛑 [Queue] Stopped continuous mode for user ${userId}`);
+            return { success: true };
+        }
+
+        return { success: false, error: 'No continuous mode job found' };
+    } catch (error: any) {
+        console.error(`Error stopping continuous mode:`, error);
+        return { success: false, error: error.message };
+    }
 }
 
 // Helper function to get queue metrics

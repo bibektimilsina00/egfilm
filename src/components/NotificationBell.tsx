@@ -1,24 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Bell, X, Check, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
+import {
+    useNotifications,
+    useUnreadNotificationsCount,
+    useMarkNotificationAsRead,
+    useMarkAllNotificationsAsRead,
+    useDeleteNotification,
+    useClearAllNotifications,
+    type Notification as NotificationType,
+} from '@/lib/hooks/useNotifications';
 
-interface Notification {
-    id: string;
-    type: string;
-    title: string;
-    message: string;
-    isRead: boolean;
-    createdAt: string;
+interface Notification extends NotificationType {
     roomCode?: string;
     mediaId?: number;
     mediaType?: string;
     mediaTitle?: string;
     embedUrl?: string;
-    fromUser: {
+    fromUser?: {
         id: string;
         name: string;
         email: string;
@@ -29,66 +32,21 @@ export default function NotificationBell() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [showDropdown, setShowDropdown] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (status === 'authenticated') {
-            fetchUnreadCount();
-            // Poll for new notifications every 30 seconds
-            const interval = setInterval(fetchUnreadCount, 30000);
-            return () => clearInterval(interval);
-        }
-    }, [status]);
+    // React Query hooks
+    const { data: unreadCount = 0 } = useUnreadNotificationsCount();
+    const { data: notifications = [], isLoading: loading, refetch } = useNotifications({
+        enabled: showDropdown && status === 'authenticated',
+    });
 
-    useEffect(() => {
-        if (showDropdown && status === 'authenticated') {
-            fetchNotifications();
-        }
-    }, [showDropdown, status]);
-
-    const fetchUnreadCount = async () => {
-        try {
-            const response = await fetch('/api/notifications?countOnly=true');
-            if (response.ok) {
-                const data = await response.json();
-                setUnreadCount(data.count);
-            }
-        } catch (error) {
-            console.error('Error fetching unread count:', error);
-        }
-    };
-
-    const fetchNotifications = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/notifications');
-            if (response.ok) {
-                const data = await response.json();
-                setNotifications(data.notifications);
-            }
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const markAsReadMutation = useMarkNotificationAsRead();
+    const markAllAsReadMutation = useMarkAllNotificationsAsRead();
+    const deleteNotificationMutation = useDeleteNotification();
+    const clearAllMutation = useClearAllNotifications();
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const response = await fetch('/api/notifications', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ notificationId }),
-            });
-
-            if (response.ok) {
-                setNotifications((prev) =>
-                    prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-                );
-                setUnreadCount((prev) => Math.max(0, prev - 1));
-            }
+            await markAsReadMutation.mutateAsync(notificationId);
         } catch (error) {
             console.error('Error marking as read:', error);
         }
@@ -96,16 +54,7 @@ export default function NotificationBell() {
 
     const markAllAsRead = async () => {
         try {
-            const response = await fetch('/api/notifications', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ markAll: true }),
-            });
-
-            if (response.ok) {
-                setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-                setUnreadCount(0);
-            }
+            await markAllAsReadMutation.mutateAsync();
         } catch (error) {
             console.error('Error marking all as read:', error);
         }
@@ -113,14 +62,7 @@ export default function NotificationBell() {
 
     const deleteNotification = async (notificationId: string) => {
         try {
-            const response = await fetch(`/api/notifications?id=${notificationId}`, {
-                method: 'DELETE',
-            });
-
-            if (response.ok) {
-                setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-                fetchUnreadCount();
-            }
+            await deleteNotificationMutation.mutateAsync(notificationId);
         } catch (error) {
             console.error('Error deleting notification:', error);
         }
