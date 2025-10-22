@@ -96,6 +96,8 @@ WORKDIR /app
 # Copy worker files
 COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+# Copy tsconfig.json so tsx can resolve path aliases like @/
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 
 # Install tsx for running TypeScript
 RUN npm install --save-dev tsx@^4.0.0
