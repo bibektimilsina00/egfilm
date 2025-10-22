@@ -1,35 +1,23 @@
-# Docker Compose for Egfilm Production with PostgreSQL, Redis, and BullMQ Worker
+# Docker Compose for Egfilm Production Deployment
+# Optimized for performance, security, and minimal resource usage
+# Uses external PostgreSQL database and Redis for caching
+
+version: '3.9'
 
 services:
-  # PostgreSQL Database
-  database:
-    image: postgres:16-alpine
-    container_name: egfilm-postgres
-    restart: unless-stopped
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-movieuser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-moviepass}
-      - POSTGRES_DB=${POSTGRES_DB:-moviedb}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-movieuser}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
-  # Redis for BullMQ
+  # Redis for BullMQ job queue and caching
   redis:
     image: redis:7-alpine
     container_name: egfilm-redis
     restart: unless-stopped
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    command: >
+      redis-server 
+      --appendonly yes
+      --maxmemory ${REDIS_MAXMEM:-512mb}
+      --maxmemory-policy allkeys-lru
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     volumes:
       - redis_data:/data
     healthcheck:
@@ -37,72 +25,118 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
     networks:
       - app-network
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Egfilm Application
-  egfilm:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
+  # Egfilm Application (Production)
+  app:
+    image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}
     container_name: egfilm-app
     depends_on:
-      database:
-        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-movieuser}:${POSTGRES_PASSWORD:-moviepass}@database:5432/${POSTGRES_DB:-moviedb}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - NEXT_PUBLIC_TMDB_API_KEY=${NEXT_PUBLIC_TMDB_API_KEY}
-      - NEXT_PUBLIC_TMDB_BASE_URL=${NEXT_PUBLIC_TMDB_BASE_URL:-https://api.themoviedb.org/3}
-      - AUTH_SECRET=${AUTH_SECRET}
-      - AUTH_URL=${AUTH_URL:-http://localhost:8000}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     networks:
       - app-network
+    labels:
+      - "com.egfilm.service=app"
+      - "com.egfilm.environment=production"
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    # Use init process for proper signal handling
+    init: true
 
-  # BullMQ Worker for Blog Generation
+  # BullMQ Worker for Background Jobs (Blog generation, etc.)
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: worker
+    image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}
     container_name: egfilm-worker
     depends_on:
-      database:
-        condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-movieuser}:${POSTGRES_PASSWORD:-moviepass}@database:5432/${POSTGRES_DB:-moviedb}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - NEXT_PUBLIC_TMDB_API_KEY=${NEXT_PUBLIC_TMDB_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+    command: ["npm", "run", "worker"]
     restart: unless-stopped
     networks:
       - app-network
+    labels:
+      - "com.egfilm.service=worker"
+      - "com.egfilm.environment=production"
+    # Resource limits for worker
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+    # Init process for proper signal handling
+    init: true
+
+volumes:
+  redis_data:
+    name: egfilm_redis_data
+    driver: local
 
 networks:
   app-network:
+    name: app-network
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.default_bridge: "false"
 
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local

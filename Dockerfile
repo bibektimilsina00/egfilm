@@ -1,95 +1,104 @@
-# Egfilm Production Dockerfile
+# Egfilm Production Dockerfile - Optimized for Performance
+# Multi-stage build to minimize image size
+
 FROM node:20-alpine AS base
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init libc6-compat
 
-# Install dependencies only when needed
+# Dependencies layer
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
+COPY package*.json ./
+# Use npm ci for reproducible builds + clean install
+RUN npm ci --only=production && npm cache clean --force
 
-# Copy package files
-COPY package.json package-lock.json* ./
-RUN npm ci
+# Build dependencies layer
+FROM base AS build-deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci && npm cache clean --force
 
-# Rebuild the source code only when needed
+# Builder layer
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build-deps /app/node_modules ./node_modules
 COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Set build-time environment variables
-# Next.js collects telemetry data by default - disable it
+# Build Next.js app with optimizations
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Build the application
+ENV NODE_ENV=production
 RUN npm run build
 
-# Production image, copy all the files and run next
+# Production runtime layer - minimal and secure
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Security: Run as non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
 
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Install Prisma CLI and tsx globally for migrations and worker
-# Use retries and increase timeout for network issues
-RUN npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-retry-mintimeout 10000 && \
-    npm config set fetch-retries 5 && \
-    npm install -g prisma@6.17.1 tsx || \
-    npm install -g prisma@6.17.1 tsx || \
-    npm install -g prisma@6.17.1 tsx
-
-# Copy necessary files
+# Copy only what's needed for production
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Copy Next.js build output (standalone mode)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma Client and CLI from builder
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+# Copy Prisma runtime files only
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy worker files and dependencies needed for worker
-COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
-COPY --from=builder --chown=nextjs:nodejs /app/src ./src
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Copy production dependencies only
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Copy entrypoint script (before switching to nextjs user)
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
+# Make entrypoint executable
+RUN chmod +x ./entrypoint.sh && \
+    chown -R nextjs:nodejs /app
 
-# Set the correct permission for prerender cache
+# Security: Create .next directory with proper permissions
 RUN mkdir -p .next && chown -R nextjs:nodejs .next
 
-# Make entrypoint executable and set ownership
-RUN chmod +x ./docker-entrypoint.sh && chown nextjs:nodejs ./docker-entrypoint.sh
-
+# Switch to non-root user
 USER nextjs
 
+# Expose port
 EXPOSE 8000
 
+# Set environment for production
+ENV NODE_ENV=production
 ENV PORT=8000
-ENV HOSTNAME="0.0.0.0"
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Start the application with database migration handling
-CMD ["./docker-entrypoint.sh"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:8000/ || exit 1
 
-# Worker image - separate target for BullMQ worker
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start application with entrypoint
+CMD ["./entrypoint.sh"]
+
+# Worker image - separate target for background jobs
 FROM runner AS worker
 WORKDIR /app
 
+# Copy worker files
+COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+
+# Install tsx for running TypeScript
+RUN npm install --save-dev tsx@^4.0.0
+
 USER nextjs
 
-# Worker doesn't need to expose ports
-# Start the worker process
-CMD ["tsx", "worker.ts"]
+# No port exposure for worker
+# Start worker process
+CMD ["npx", "tsx", "worker.ts"]
+
