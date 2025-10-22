@@ -13,7 +13,7 @@ console.log('🔍 Checking Environment Variables...\n');
 
 const requiredVars = [
     'DATABASE_URL',
-    'NEXT_PUBLIC_TMDB_API_KEY',
+    'TMDB_API_KEY',
     'AUTH_SECRET',
     'AUTH_URL',
 ];

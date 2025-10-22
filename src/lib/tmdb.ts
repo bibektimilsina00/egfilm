@@ -1,13 +1,10 @@
 import axios from 'axios';
 
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-const TMDB_BASE_URL = process.env.NEXT_PUBLIC_TMDB_BASE_URL || 'https://api.themoviedb.org/3';
+// Use internal API proxy to hide API key from client
+const TMDB_BASE_URL = '/api/tmdb';
 
 export const tmdbApi = axios.create({
     baseURL: TMDB_BASE_URL,
-    params: {
-        api_key: TMDB_API_KEY,
-    },
 });
 
 export interface Movie {

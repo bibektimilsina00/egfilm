@@ -382,7 +382,7 @@ async function fetchMedia(
         return results;
     } catch (error: any) {
         if (error.response?.status === 401) {
-            throw new Error('❌ Invalid TMDB API key. Please check your NEXT_PUBLIC_TMDB_API_KEY in .env.local file.');
+            throw new Error('❌ Invalid TMDB API key. Please check your TMDB_API_KEY in .env.local file.');
         }
         throw error;
     }
@@ -417,7 +417,7 @@ async function getMediaDetails(type: 'movie' | 'tv', id: number, tmdbApiKey: str
         };
     } catch (error: any) {
         if (error.response?.status === 401) {
-            throw new Error('❌ Invalid TMDB API key. Please check your NEXT_PUBLIC_TMDB_API_KEY in .env.local file.');
+            throw new Error('❌ Invalid TMDB API key. Please check your TMDB_API_KEY in .env.local file.');
         }
         throw error;
     }
