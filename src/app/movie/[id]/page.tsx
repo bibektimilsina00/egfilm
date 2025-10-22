@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Users, Check } from 'lucide-react';
 
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
@@ -227,19 +226,19 @@ export default function MovieDetailPage() {
 
                   {trailer && (
                     <Button
+                      size="lg"
                       onClick={() => window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank')}
                       variant="outline"
                       size="lg"
                       className="gap-2"
                     >
-                      <Play className="w-5 h-5" />
+                      <Play className="w-5 h-5 fill-black" />
                       Watch Trailer
                     </Button>
                   )}
 
                   <Button
                     onClick={toggleWatchlist}
-                    variant="outline"
                     size="lg"
                     className="gap-2"
                     title={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
@@ -258,7 +257,7 @@ export default function MovieDetailPage() {
                   </Button>
 
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="lg"
                     className="gap-2"
                     onClick={() => {

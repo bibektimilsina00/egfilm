@@ -117,13 +117,13 @@ export default function Navigation() {
                             <Play className="w-7 h-7 text-blue-500 group-hover:text-blue-400 transition-all duration-300 group-hover:scale-110" fill="currentColor" />
                             <div className="absolute inset-0 bg-blue-500 blur-xl opacity-0 group-hover:opacity-30 transition-opacity" />
                         </div>
-                        <span className="text-white text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                        <span className="text-white text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text">
                             Egfilm
                         </span>
                     </Link>
 
                     {/* Desktop Navigation - Compact */}
-                    <nav className="hidden lg:flex items-center gap-1">
+                    <nav className="hidden lg:flex items-center gap-4">
                         {navLinks.map((link) => {
                             const Icon = link.icon;
                             const isActive = mounted && pathname === link.href;

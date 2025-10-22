@@ -42,13 +42,13 @@ export default function MediaCard({ item, type }: MediaCardProps) {
             <Card className="bg-gray-900/50 border-gray-800 overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-blue-500/50 hover:bg-gray-900/80 py-0 gap-0">
                 <CardContent className="p-0 relative">
                     {/* Poster Image */}
-                    <div className="relative aspect-[2/3] w-full">
+                    <div className="relative aspect-[2/3] w-full h-full">
                         {!imageError && item.poster_path ? (
                             <Image
                                 src={getImageUrl(item.poster_path, 'w500')}
                                 alt={title || 'Media poster'}
                                 fill
-                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                // sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                 className="object-cover transition-transform duration-300 group-hover:scale-110"
                                 onError={() => setImageError(true)}
                                 loading="lazy"

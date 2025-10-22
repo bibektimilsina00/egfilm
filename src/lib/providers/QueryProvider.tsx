@@ -1,8 +1,8 @@
 'use client';
 
+import React, { ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ReactNode, useState } from 'react';
 
 interface QueryProviderProps {
   children: ReactNode;
@@ -53,3 +53,6 @@ export function QueryProvider({ children }: QueryProviderProps) {
     </QueryClientProvider>
   );
 }
+
+// Also export as default for compatibility
+export default QueryProvider;
