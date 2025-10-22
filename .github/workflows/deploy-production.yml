@@ -29,7 +29,7 @@ jobs:
 
       - name: 📝 Create .env.local for build
         run: |
-            cat > .env <<'ENVEOF'
+            cat > .env.local <<'ENVEOF'
             NODE_ENV=production
             NEXT_TELEMETRY_DISABLED=1
             DATABASE_URL=${{ secrets.DATABASE_URL }}
