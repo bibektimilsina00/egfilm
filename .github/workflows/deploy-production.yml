@@ -27,6 +27,30 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:$VERSION" >> $GITHUB_OUTPUT
 
+      - name: 📝 Create .env.local for build
+        run: |
+            cat > .env <<'ENVEOF'
+            NODE_ENV=production
+            NEXT_TELEMETRY_DISABLED=1
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            REDIS_HOST=egfilm-redis
+            REDIS_PORT=6379
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}
+            NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+            NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
+            AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            AUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
+            NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
+            NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
+            NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
+            NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
+            SENTRY_DSN=${{ secrets.SENTRY_DSN || '' }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN || '' }}
+            NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.UMAMI_WEBSITE_ID || '' }}
+            NEXT_PUBLIC_UMAMI_SCRIPT_URL=${{ vars.UMAMI_SCRIPT_URL || '' }}
+            ENVEOF
+      
       - name: 🔐 Login to GHCR
         uses: docker/login-action@v3
         with:
