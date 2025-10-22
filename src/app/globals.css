@@ -130,6 +130,20 @@ html[data-scroll-behavior="smooth"] {
   background: #2563eb;
 }
 
+/* Hide horizontal scrollbars but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari */
+}
+
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

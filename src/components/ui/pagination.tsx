@@ -76,7 +76,7 @@ export default function Pagination({
     return (
         // 1. Set 'w-full' to ensure it takes up the full width of its parent container.
         // 2. Set 'justify-between' to push the two main sections (buttons and input) to the far left and far right.
-        <nav className="isolate flex items-center justify-between w-full mt-4 flex-wrap p-2 border-t border-b border-gray-800" aria-label="Pagination">
+        <nav className="isolate flex items-center justify-center lg:justify-between w-full mt-4 flex-wrap p-2 border-t border-b border-gray-800" aria-label="Pagination">
 
             {/* LEFT SIDE: Button Controls Group */}
             <div className="flex items-center gap-4 flex-shrink-0">
@@ -136,8 +136,8 @@ export default function Pagination({
                                 size="icon"
                                 // Use 'w-auto px-3' for number buttons to handle multi-digit numbers without overflow
                                 className={`h-9 w-auto px-3 shrink-0 transition-colors duration-200 ${isActive
-                                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                        : 'bg-transparent text-white hover:bg-gray-800 border-gray-700'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                                    : 'bg-transparent text-white hover:bg-gray-800 border-gray-700'
                                     }`}
                                 aria-label={`Go to page ${pageNum}`}
                                 aria-current={isActive ? 'page' : undefined}
@@ -180,7 +180,7 @@ export default function Pagination({
             </div>
 
             {/* RIGHT SIDE: Go To Page Input & Summary */}
-            <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
+            <div className="flex items-center gap-2 flex-shrink-0 mt-4 lg:mt-0">
                 <span className="text-sm text-gray-400 select-none whitespace-nowrap hidden sm:inline">
                     Page
                 </span>
