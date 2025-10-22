@@ -21,14 +21,13 @@ dist
 .vercel
 
 # Environment variables
-# NOTE: `.env.local` is created by GitHub Actions before docker build so
-# it must be included in the build context. We still ignore other env files
-# but explicitly allow `.env.local` when present in the repo/workflow.
+# NOTE: `.env.local` is NOT ignored - it's created by GitHub Actions before
+# docker build and contains build-time environment variables (DATABASE_URL, etc.)
+# needed for Next.js build. We ignore other env files for security.
 .env
 .env.development.local
 .env.test.local
 .env.production.local
-.env.local
 
 # IDEs and editors
 .vscode

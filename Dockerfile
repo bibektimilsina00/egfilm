@@ -31,10 +31,8 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Copy .env.local if it exists (created by CI/CD workflow before docker build)
-# Using wildcard pattern makes this non-failing if file doesn't exist locally
-# The brackets make the pattern fail gracefully: .env.loca[l] matches .env.local
-COPY .env.loca[l] ./
+# Copy .env.local created by GitHub Actions workflow
+COPY .env.local .env.local
 
 RUN npm run build
 
