@@ -32,8 +32,8 @@ jobs:
           cat > .env.local <<'ENVEOF'
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          REDIS_HOST=egfilm-redis
+          DATABASE_URL=postgresql://egfilm_admin:anihortes@localhost:5432/egfilm-database
+          REDIS_HOST=localhost
           REDIS_PORT=6379
           REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
@@ -122,7 +122,14 @@ jobs:
             cat > .env <<'ENVEOF'
             NODE_ENV=production
             NEXT_TELEMETRY_DISABLED=1
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            # PostgreSQL credentials for local Docker service
+            POSTGRES_USER=egfilm_admin
+            POSTGRES_PASSWORD=anihortes
+            POSTGRES_DB=egfilm-database
+            POSTGRES_PORT=5432
+            PGDATA=/var/lib/postgresql/data/pgdata
+            # Database URL pointing to postgres container
+            DATABASE_URL=postgresql://egfilm_admin:anihortes@postgres:5432/egfilm-database
             REDIS_HOST=egfilm-redis
             REDIS_PORT=6379
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}
@@ -144,6 +151,20 @@ jobs:
             # Deploy using docker compose
             IMAGE_NAME=${{ steps.vars.outputs.image }} docker compose pull
             IMAGE_NAME=${{ steps.vars.outputs.image }} docker compose up -d --remove-orphans
+
+            # Test database connectivity before health check
+            echo "🔌 Testing database connectivity..."
+            DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
+            DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+            if nc -zv "$DB_HOST" "$DB_PORT" 2>&1; then
+              echo "✅ Database server is reachable at $DB_HOST:$DB_PORT"
+            else
+              echo "❌ Cannot reach database server at $DB_HOST:$DB_PORT"
+              echo "⚠️  Please check:"
+              echo "   1. PostgreSQL is running on the server"
+              echo "   2. Firewall allows connections from Docker containers"
+              echo "   3. PostgreSQL pg_hba.conf allows connections from Docker network"
+            fi
 
             # Wait for health check
             echo "🏥 Waiting for application to be healthy..."
