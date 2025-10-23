@@ -85,7 +85,7 @@ jobs:
             echo "🧹 Cleaning up Docker resources..."
             
             # Stop and remove old containers (but keep volumes)
-            docker compose -f ~/egfilm/docker-compose.yml down --remove-orphans || true
+            docker-compose -f ~/egfilm/docker-compose.yml down --remove-orphans || true
             
             # Remove unused images (keep only what's needed)
             docker image prune -af --filter "until=24h" || true
@@ -152,8 +152,8 @@ jobs:
             ENVEOF
 
             # Deploy using docker compose
-            IMAGE_NAME=${{ steps.vars.outputs.image }} docker compose pull
-            IMAGE_NAME=${{ steps.vars.outputs.image }} docker compose up -d --remove-orphans
+            IMAGE_NAME=${{ steps.vars.outputs.image }} docker-compose pull
+            IMAGE_NAME=${{ steps.vars.outputs.image }} docker-compose up -d --remove-orphans
 
             # Test database connectivity before health check
             echo "🔌 Testing database connectivity..."
@@ -180,12 +180,12 @@ jobs:
               sleep 2
               if [ $i -eq 60 ]; then
                 echo "❌ Health check failed"
-                docker compose logs app
+                docker-compose logs app
                 exit 1
               fi
             done
 
-            docker compose ps
+            docker-compose ps
 
       - name: ✅ Deployment Summary
         run: |
