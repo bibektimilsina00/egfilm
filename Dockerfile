@@ -93,9 +93,17 @@ CMD ["./entrypoint.sh"]
 FROM runner AS worker
 WORKDIR /app
 
+# Copy production dependencies (includes Prisma Client)
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Copy generated Prisma Client from builder
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
 # Copy worker files
 COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # Copy tsconfig.json so tsx can resolve path aliases like @/
 COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 
