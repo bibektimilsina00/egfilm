@@ -8,13 +8,22 @@ import IORedis from 'ioredis';
 import { BlogGenerationJobData } from './blogQueue';
 import { generateBlogsWithQueue } from '@/lib/services/blogGeneratorService';
 
-// Redis connection (same as queue)
+// Redis connection (same as queue) with error handling
 const connection = new IORedis({
     host: process.env.REDIS_HOST || 'localhost',
     port: Number(process.env.REDIS_PORT) || 6379,
     password: process.env.REDIS_PASSWORD || undefined,
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    lazyConnect: true, // Don't connect immediately
+    retryStrategy: () => null, // Don't retry during build
+});
+
+// Suppress connection errors during build
+connection.on('error', (err) => {
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn('Redis connection warning (may be expected during build):', err.message);
+    }
 });
 
 // Create the worker

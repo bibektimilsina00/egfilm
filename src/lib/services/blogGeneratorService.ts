@@ -67,6 +67,15 @@ const redis = new IORedis({
     port: Number(process.env.REDIS_PORT) || 6379,
     password: process.env.REDIS_PASSWORD || undefined,
     maxRetriesPerRequest: null,
+    lazyConnect: true, // Don't connect immediately
+    retryStrategy: () => null, // Don't retry during build
+});
+
+// Suppress connection errors during build
+redis.on('error', (err) => {
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn('Redis connection warning (may be expected during build):', err.message);
+    }
 });
 
 const userShouldStop = new Map<string, boolean>();

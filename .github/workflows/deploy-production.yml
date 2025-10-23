@@ -35,6 +35,9 @@ jobs:
           DATABASE_URL=postgresql://egfilm_admin:anihortes@localhost:5432/egfilm-database
           REDIS_HOST=localhost
           REDIS_PORT=6379
+          REDIS_PASSWORD=
+          NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+          REDIS_PORT=6379
           REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
           NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}

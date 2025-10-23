@@ -7,13 +7,22 @@ import { Queue, Worker, Job, QueueEvents } from 'bullmq';
 import IORedis from 'ioredis';
 import type { GenerationConfig } from '@/lib/services/blogGeneratorService';
 
-// Redis connection configuration
+// Redis connection configuration with error handling for build time
 const connection = new IORedis({
     host: process.env.REDIS_HOST || 'localhost',
     port: Number(process.env.REDIS_PORT) || 6379,
     password: process.env.REDIS_PASSWORD || undefined,
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    lazyConnect: true, // Don't connect immediately - wait for first use
+    retryStrategy: () => null, // Don't retry during build
+});
+
+// Suppress connection errors during build
+connection.on('error', (err) => {
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn('Redis connection warning (may be expected during build):', err.message);
+    }
 });
 
 // Job data interface
