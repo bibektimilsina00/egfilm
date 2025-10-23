@@ -90,8 +90,11 @@ ENTRYPOINT ["dumb-init", "--"]
 CMD ["./entrypoint.sh"]
 
 # Worker image - separate target for background jobs
-FROM runner AS worker
+FROM base AS worker
 WORKDIR /app
+
+# Copy package files for npm install
+COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
 
 # Copy production dependencies (includes Prisma Client)
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
@@ -100,17 +103,21 @@ COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy worker files
-COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
+# Copy source files and configuration
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-# Copy tsconfig.json so tsx can resolve path aliases like @/
 COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/worker.ts ./worker.ts
 
-# Install tsx for running TypeScript
+# Install tsx for running TypeScript (as root, before switching user)
 RUN npm install --save-dev tsx@^4.0.0
 
-USER nextjs
+# Switch to non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S worker -u 1001 -G nodejs && \
+    chown -R worker:nodejs /app
+
+USER worker
 
 # No port exposure for worker
 # Start worker process
