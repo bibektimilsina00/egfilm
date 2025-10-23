@@ -89,7 +89,7 @@ services:
 
   # BullMQ Worker for Background Jobs (Blog generation, etc.)
   worker:
-    image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}
+    image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}-worker
     container_name: egfilm-worker
     depends_on:
       redis:
