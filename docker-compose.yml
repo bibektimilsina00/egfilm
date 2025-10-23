@@ -51,7 +51,7 @@ services:
       redis-server 
       --appendonly yes
       --maxmemory ${REDIS_MAXMEM:-512mb}
-      --maxmemory-policy allkeys-lru
+      --maxmemory-policy noeviction
       ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     volumes:
       - redis_data:/data
