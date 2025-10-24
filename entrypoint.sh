@@ -30,6 +30,8 @@ else
     fi
 fi
 
+
+
 # Generate Prisma Client
 echo ""
 echo "▶ Generating Prisma Client..."
