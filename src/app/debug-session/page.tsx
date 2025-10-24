@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function SessionDebugPage() {
     const { data: session, status } = useSession();
@@ -53,12 +54,12 @@ export default function SessionDebugPage() {
                 </div>
 
                 <div className="mt-6 flex gap-4">
-                    <a
+                    <Link
                         href="/api/auth/signout"
                         className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                     >
                         Log Out
-                    </a>
+                    </Link>
                     <a
                         href="/login"
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"

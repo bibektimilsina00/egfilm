@@ -1,23 +1,15 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { Users, Activity, Tv, TrendingUp } from 'lucide-react';
 import { StatCard } from '@/components/admin/StatCard';
 import { RecentActivity } from '@/components/admin/RecentActivity';
 import { ActiveRoomsChart } from '@/components/admin/charts/ActiveRoomsChart';
 import { UserGrowthChart } from '@/components/admin/charts/UserGrowthChart';
+import { useStatsOverview } from '@/lib/hooks/useAdmin';
 
 export default function AdminDashboard() {
-    // Fetch dashboard stats
-    const { data: stats, isLoading } = useQuery({
-        queryKey: ['admin', 'stats', 'overview'],
-        queryFn: async () => {
-            const res = await axios.get('/api/admin/stats/overview');
-            return res.data;
-        },
-        staleTime: 1000 * 60, // 1 minute
-    });
+    // Fetch dashboard stats using React Query hook
+    const { data: stats, isLoading } = useStatsOverview();
 
     if (isLoading) {
         return (

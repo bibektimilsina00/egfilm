@@ -3,23 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Save, Key, Brain, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AI_MODELS } from '@/lib/ai/aiModels';
-
-interface APIKeySettings {
-    geminiApiKey: string | null;
-    openaiApiKey: string | null;
-    anthropicApiKey: string | null;
-    tmdbApiKey: string | null;
-    preferredAiModel: string | null;
-    hasGeminiKey: boolean;
-    hasOpenAIKey: boolean;
-    hasAnthropicKey: boolean;
-    hasTmdbKey: boolean;
-}
+import { useAISettings, useUpdateAISettings } from '@/lib/hooks/useUserSettings';
 
 export default function AISettingsPage() {
-    const [settings, setSettings] = useState<APIKeySettings | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Form state
@@ -27,7 +13,7 @@ export default function AISettingsPage() {
     const [openaiKey, setOpenaiKey] = useState('');
     const [anthropicKey, setAnthropicKey] = useState('');
     const [tmdbKey, setTmdbKey] = useState('');
-    const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+    const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
 
     // Visibility toggles
     const [showGemini, setShowGemini] = useState(false);
@@ -35,27 +21,17 @@ export default function AISettingsPage() {
     const [showAnthropic, setShowAnthropic] = useState(false);
     const [showTmdb, setShowTmdb] = useState(false);
 
-    useEffect(() => {
-        fetchSettings();
-    }, []);
+    // React Query hooks
+    const { data: settings, isLoading } = useAISettings();
+    const updateSettingsMutation = useUpdateAISettings();
 
-    const fetchSettings = async () => {
-        try {
-            const response = await fetch('/api/user/ai-settings');
-            if (response.ok) {
-                const data = await response.json();
-                setSettings(data.settings);
-                setSelectedModel(data.settings.preferredAiModel || 'gemini-1.5-flash');
-            }
-        } catch (error) {
-            console.error('Failed to fetch settings:', error);
-        } finally {
-            setIsLoading(false);
+    useEffect(() => {
+        if (settings) {
+            setSelectedModel(settings.preferredAiModel || 'gemini-2.5-flash');
         }
-    };
+    }, [settings]);
 
     const handleSave = async () => {
-        setIsSaving(true);
         setMessage(null);
 
         try {
@@ -77,28 +53,21 @@ export default function AISettingsPage() {
                 payload.tmdbApiKey = tmdbKey;
             }
 
-            const response = await fetch('/api/user/ai-settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+            await updateSettingsMutation.mutateAsync(payload, {
+                onSuccess: () => {
+                    setMessage({ type: 'success', text: 'Settings saved successfully!' });
+                    // Clear input fields after save
+                    setGeminiKey('');
+                    setOpenaiKey('');
+                    setAnthropicKey('');
+                    setTmdbKey('');
+                },
+                onError: (err: any) => {
+                    setMessage({ type: 'error', text: err.message || 'Failed to save settings' });
+                },
             });
-
-            if (response.ok) {
-                setMessage({ type: 'success', text: 'Settings saved successfully!' });
-                fetchSettings();
-                // Clear input fields after save
-                setGeminiKey('');
-                setOpenaiKey('');
-                setAnthropicKey('');
-                setTmdbKey('');
-            } else {
-                const data = await response.json();
-                setMessage({ type: 'error', text: data.error || 'Failed to save settings' });
-            }
-        } catch (error) {
-            setMessage({ type: 'error', text: 'Failed to save settings' });
-        } finally {
-            setIsSaving(false);
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || 'Failed to save settings' });
         }
     };
 
@@ -356,11 +325,11 @@ export default function AISettingsPage() {
             {/* Save Button */}
             <button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={updateSettingsMutation.isPending}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
                 <Save className="w-5 h-5" />
-                {isSaving ? 'Saving...' : 'Save Settings'}
+                {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
             </button>
 
             {/* Information */}

@@ -19,6 +19,7 @@ interface BlogPost {
     mediaTitle?: string;
     mediaType?: string;
     mediaId?: number;
+    mediaCast?: string[];
 }
 
 export default function AdminBlogPage() {
@@ -27,12 +28,13 @@ export default function AdminBlogPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [mediaTypeFilter, setMediaTypeFilter] = useState<string>('all');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
     useEffect(() => {
         fetchPosts();
-    }, [searchQuery, statusFilter, categoryFilter, page]);
+    }, [searchQuery, statusFilter, categoryFilter, mediaTypeFilter, page]);
 
     const fetchPosts = async () => {
         setLoading(true);
@@ -44,6 +46,7 @@ export default function AdminBlogPage() {
             if (searchQuery) params.append('search', searchQuery);
             if (statusFilter !== 'all') params.append('status', statusFilter);
             if (categoryFilter !== 'all') params.append('category', categoryFilter);
+            if (mediaTypeFilter !== 'all') params.append('mediaType', mediaTypeFilter);
 
             const response = await fetch(`/api/admin/blog?${params}`);
             const data = await response.json();
@@ -129,7 +132,7 @@ export default function AdminBlogPage() {
 
             {/* Filters */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     {/* Search */}
                     <div className="md:col-span-2">
                         <div className="relative">
@@ -167,6 +170,17 @@ export default function AdminBlogPage() {
                         <option value="news">News</option>
                         <option value="guide">Guide</option>
                         <option value="analysis">Analysis</option>
+                    </select>
+
+                    {/* Media Type Filter */}
+                    <select
+                        value={mediaTypeFilter}
+                        onChange={(e) => setMediaTypeFilter(e.target.value)}
+                        className="bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    >
+                        <option value="all">All Media Types</option>
+                        <option value="movie">Movies</option>
+                        <option value="tv">TV Shows</option>
                     </select>
                 </div>
             </div>
@@ -209,6 +223,11 @@ export default function AdminBlogPage() {
                                                                     (ID: {post.mediaId})
                                                                 </span>
                                                             )}
+                                                        </span>
+                                                    )}
+                                                    {post.mediaCast && post.mediaCast.length > 0 && (
+                                                        <span className="text-green-400 ml-2">
+                                                            👥 {post.mediaCast.length} cast members
                                                         </span>
                                                     )}
                                                 </div>

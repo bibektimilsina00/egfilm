@@ -9,6 +9,7 @@
 - **Modern data fetching** with Axios + React Query (replaces fetch + useState)
 - **NextAuth v5 beta** with JWT-based authentication
 - **PostgreSQL + Prisma ORM** for persistent data storage
+- **Smart TMDb pagination tracking** - continues from last position instead of restarting from page 1
 - **Comprehensive analytics** via Umami (auto-tracking) + optional Sentry error tracking
 - **Service-based architecture** for database operations
 - **TypeScript** for type safety throughout
@@ -180,12 +181,39 @@ else setShowWatchTogether(true);
 ```
 
 ### 8. **Data Persistence Strategy**
-- **PostgreSQL + Prisma**: Users, watchlist, continue watching, watch rooms, notifications
+- **PostgreSQL + Prisma**: Users, watchlist, continue watching, watch rooms, notifications, **blog generation progress**
 - **TMDb API**: Movie/TV metadata (read-only, public key in .env.local)
 - **Socket.IO in-memory Maps**: Active WebRTC connections (lost on restart)
 - **Services**: `/src/lib/services/` - watchlist, continueWatching, watchRoom, notification
 
-### 9. **Analytics & Error Tracking**
+### 9. **Blog Generation Progress Tracking** ⭐ NEW
+**Problem Solved**: Avoid regenerating same content by tracking pagination position
+**Pattern**: Database-backed progress per [userId, mediaType, sortBy]
+
+```typescript
+// BlogGenerationProgress model tracks:
+// - currentPage: TMDb page number to resume from
+// - currentIndex: Item index within page
+// - totalGenerated: Total posts created
+// - lastMediaId: Last processed TMDb ID
+
+// Usage in blogGeneratorService.ts:
+const { results, finalPage, finalIndex } = await fetchMediaWithProgress(
+    type, sortBy, tmdbApiKey, userId, count, filters
+);
+// Automatically resumes from last position, fetches multiple pages if needed
+```
+
+**UI Features**:
+- View all progress records in admin panel
+- Reset individual progress (starts fresh from page 1)
+- Shows: current page/index, total generated, last updated
+
+**API Endpoints**:
+- `GET /api/blog/reset-progress` - Fetch user's progress records
+- `POST /api/blog/reset-progress` - Reset specific configuration
+
+### 10. **Analytics & Error Tracking**
 - **Umami Analytics**: Global script auto-loaded in root layout
   - Location: `src/components/UmamiTracker.tsx` in `src/app/layout.tsx`
   - Auto-tracks: Page views, sessions, devices, referrers

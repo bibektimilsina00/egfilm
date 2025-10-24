@@ -1,56 +1,22 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { useState } from 'react';
 import { Trash2, Ban, CheckCircle, Edit } from 'lucide-react';
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    isActive: boolean;
-    isBanned: boolean;
-    createdAt: string;
-}
+import { useUsers, useDeleteUser, useUpdateUserBanStatus, type User } from '@/lib/hooks/useAdmin';
 
 export default function UsersPage() {
-    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState('all');
 
-    // Fetch users
-    const { data: usersData = { users: [], total: 0 }, isLoading } = useQuery({
-        queryKey: ['admin', 'users', searchTerm, filterRole],
-        queryFn: async () => {
-            const res = await axios.get('/api/admin/users', {
-                params: { search: searchTerm, role: filterRole === 'all' ? undefined : filterRole },
-            });
-            return res.data;
-        },
-        staleTime: 1000 * 30,
-    });
+    // Fetch users using React Query hook
+    const { data: usersData = { users: [], total: 0 }, isLoading } = useUsers(
+        undefined,
+        searchTerm || undefined
+    );
 
-    // Delete user mutation
-    const deleteUserMutation = useMutation({
-        mutationFn: async (userId: string) => {
-            await axios.delete(`/api/admin/users/${userId}`);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-        },
-    });
-
-    // Ban user mutation
-    const banUserMutation = useMutation({
-        mutationFn: async ({ userId, isBanned }: { userId: string; isBanned: boolean }) => {
-            await axios.patch(`/api/admin/users/${userId}`, { isBanned });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-        },
-    });
+    // Mutations using React Query hooks
+    const deleteUserMutation = useDeleteUser();
+    const banUserMutation = useUpdateUserBanStatus();
 
     return (
         <div className="space-y-6">
@@ -108,16 +74,16 @@ export default function UsersPage() {
                                             <td className="px-6 py-4 text-sm text-gray-400">{user.email}</td>
                                             <td className="px-6 py-4 text-sm">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${user.role === 'admin' ? 'bg-red-500/20 text-red-400' :
-                                                        user.role === 'moderator' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                            'bg-gray-700 text-gray-300'
+                                                    user.role === 'moderator' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-gray-700 text-gray-300'
                                                     }`}>
-                                                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                                    {(user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 {user.isBanned ? (
                                                     <span className="text-red-400 font-medium">Banned</span>
-                                                ) : user.isActive ? (
+                                                ) : user.isActive !== false ? (
                                                     <span className="text-green-400 font-medium flex items-center gap-1">
                                                         <CheckCircle size={16} />
                                                         Active
@@ -134,8 +100,8 @@ export default function UsersPage() {
                                                     <button
                                                         onClick={() => banUserMutation.mutate({ userId: user.id, isBanned: !user.isBanned })}
                                                         className={`p-2 rounded-lg transition-colors ${user.isBanned
-                                                                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                                                : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                                                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                                            : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                                                             }`}
                                                         title={user.isBanned ? 'Unban user' : 'Ban user'}
                                                     >

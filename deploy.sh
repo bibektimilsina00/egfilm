@@ -85,8 +85,22 @@ check_env_file() {
         
         cat > "$DEPLOY_DIR/.env" << 'EOF'
 # Egfilm Environment Configuration
-DATABASE_URL=file:/app/data/production.db
+DATABASE_URL=postgresql://movieuser:moviepass@database:5432/moviedb
+POSTGRES_USER=movieuser
+POSTGRES_PASSWORD=moviepass
+POSTGRES_DB=moviedb
+POSTGRES_PORT=5432
+
+# Redis Configuration
+REDIS_HOST=egfilm-redis
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# TMDb API
 NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
+NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+
+# Authentication
 AUTH_SECRET=your_nextauth_secret_here
 AUTH_URL=http://your-server-ip:8000
 NODE_ENV=production
@@ -199,6 +213,39 @@ setup_postgres() {
     log_success "Database ready!"
 }
 
+# Function to setup Redis
+setup_redis() {
+    log_header "REDIS SETUP"
+
+    # Start Redis container if not running
+    if ! docker ps | grep -q egfilm-redis; then
+        log_step "Starting Redis container..."
+
+        docker run -d \
+            --name egfilm-redis \
+            --restart unless-stopped \
+            --network app-network \
+            -p "${REDIS_PORT:-6379}:6379" \
+            -v redis_data:/data \
+            redis:7-alpine redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD} > /dev/null
+
+        log_success "Redis container started"
+    else
+        log_success "Redis container already running"
+    fi
+
+    # Wait for Redis to be ready
+    log_step "Waiting for Redis to be ready..."
+    i=0
+    CHARS="/-\|"
+    until docker exec egfilm-redis redis-cli ping 2>/dev/null | grep -q "PONG"; do
+        i=$(( (i+1) % ${#CHARS} ))
+        echo -ne "${CHARS:$i:1} "
+        sleep 0.2
+    done
+    log_success "Redis ready!"
+}
+
 
 # Start blue container (staging)
 start_blue_container() {
@@ -213,6 +260,9 @@ start_blue_container() {
         --network app-network \
         -p "$PORT_BLUE:8000" \
         --env-file "$DEPLOY_DIR/.env" \
+        -e REDIS_HOST=egfilm-redis \
+        -e REDIS_PORT=6379 \
+        ${REDIS_PASSWORD:+-e REDIS_PASSWORD=$REDIS_PASSWORD} \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
         error_exit "Failed to start blue container"
@@ -243,6 +293,9 @@ deploy_green_container() {
         --network app-network \
         -p "$PORT_GREEN:8000" \
         --env-file "$DEPLOY_DIR/.env" \
+        -e REDIS_HOST=egfilm-redis \
+        -e REDIS_PORT=6379 \
+        ${REDIS_PASSWORD:+-e REDIS_PASSWORD=$REDIS_PASSWORD} \
         --restart unless-stopped \
         "$IMAGE_NAME"; then
         error_exit "Failed to start green container"
@@ -262,6 +315,43 @@ deploy_green_container() {
     fi
     
     log_success "Green container is healthy and serving traffic"
+}
+
+# Deploy BullMQ Worker
+deploy_worker() {
+    log_header "Deploying BullMQ Worker"
+    
+    CONTAINER_WORKER="egfilm-worker"
+    remove_container "$CONTAINER_WORKER"
+    
+    log_step "Starting $CONTAINER_WORKER"
+    
+    if ! docker run -d \
+        --name "$CONTAINER_WORKER" \
+        --network app-network \
+        --env-file "$DEPLOY_DIR/.env" \
+        -e REDIS_HOST=egfilm-redis \
+        -e REDIS_PORT=6379 \
+        ${REDIS_PASSWORD:+-e REDIS_PASSWORD=$REDIS_PASSWORD} \
+        --restart unless-stopped \
+        "${IMAGE_NAME%:*}:deploy-worker"; then
+        log_warning "Worker container failed to start (this is optional)"
+        log_info "Blog generation will still work but may be slower"
+        return 0
+    fi
+    
+    log_success "Worker container started"
+    
+    # Give worker a moment to connect
+    sleep 3
+    
+    # Check if worker is still running
+    if docker ps | grep -q "$CONTAINER_WORKER"; then
+        log_success "Worker is running and processing jobs"
+    else
+        log_warning "Worker container stopped (check logs for details)"
+        docker logs --tail 20 "$CONTAINER_WORKER"
+    fi
 }
 
 # Cleanup blue container
@@ -286,12 +376,15 @@ deployment_summary() {
     echo -e "${CYAN}Container Status:${NC}"
     docker ps --filter "name=egfilm" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo ""
+    echo -e "${CYAN}Database:${NC} PostgreSQL (database)"
+    echo -e "${CYAN}Cache:${NC} Redis (egfilm-redis)"
     echo -e "${CYAN}Image:${NC} $IMAGE_NAME"
     echo -e "${CYAN}Production URL:${NC} http://localhost:$PORT_GREEN"
     echo ""
     
     # Get container stats
     log_info "Container resource usage:"
+    docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" "$CONTAINER_GREEN" egfilm-worker database egfilm-redis 2>/dev/null || \
     docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" "$CONTAINER_GREEN"
 }
 
@@ -311,19 +404,25 @@ main() {
     # Step 2: Setup PostgreSQL database
     setup_postgres
     
-    # Step 3: Pull latest image
+    # Step 3: Setup Redis
+    setup_redis
+    
+    # Step 4: Pull latest image
     pull_image
     
-    # Step 4: Deploy to blue (staging)
+    # Step 5: Deploy to blue (staging)
     start_blue_container
     
-    # Step 5: Deploy to green (production)
+    # Step 6: Deploy to green (production)
     deploy_green_container
     
-    # Step 6: Cleanup
+    # Step 7: Deploy worker (optional)
+    deploy_worker
+    
+    # Step 8: Cleanup
     cleanup_blue
     
-    # Step 7: Summary
+    # Step 9: Summary
     deployment_summary
     
     echo ""

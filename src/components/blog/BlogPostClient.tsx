@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
-import { Clock, Calendar, User, Tag, ArrowLeft, ExternalLink, Film, Tv, Share2, Heart, MessageCircle, Send } from 'lucide-react';
+import { Clock, Calendar, User, Tag, ArrowLeft, ExternalLink, Film, Tv, Share2, Heart, MessageCircle, Send, Users } from 'lucide-react';
+import { useBlogLikes, useToggleBlogLike, useBlogComments, useCreateBlogComment } from '@/lib/hooks/useBlog';
 
 interface BlogPost {
     id: string;
@@ -25,8 +26,10 @@ interface BlogPost {
     mediaPosterPath: string | null;
     mediaBackdropPath: string | null;
     mediaRating: number | null;
+    mediaCast: string[]; // Array of cast member names
     author: {
         name: string;
+        role?: string;
     };
 }
 
@@ -39,9 +42,40 @@ interface RelatedPost {
     mediaBackdropPath: string | null;
 }
 
+interface CastMember {
+    name: string;
+    character?: string;
+    profile_path?: string | null;
+}
+
 interface BlogPostClientProps {
-    post: BlogPost;
-    relatedPosts: RelatedPost[];
+    post: {
+        id: string;
+        slug: string;
+        title: string;
+        excerpt: string;
+        content: string;
+        category: string;
+        tags?: string[];
+        publishedAt: Date | string;
+        readingTime: number;
+        viewCount: number;
+        featuredImage: string | null;
+        mediaId: number | null;
+        mediaTitle: string | null;
+        mediaType: string | null;
+        mediaOverview: string | null;
+        mediaPosterPath: string | null;
+        mediaBackdropPath: string | null;
+        mediaGenres: string[];
+        mediaRating: number | null;
+        mediaCast: (CastMember | string)[] | null; // Array of cast objects with images OR strings
+        author: {
+            name: string;
+            role?: string;
+        };
+    };
+    relatedPosts?: RelatedPost[];
     postUrl: string;
 }
 
@@ -58,57 +92,29 @@ interface Comment {
 export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPostClientProps) {
     const { data: session, status } = useSession();
     const [copySuccess, setCopySuccess] = useState(false);
-    const [isLiked, setIsLiked] = useState(false);
-    const [likeCount, setLikeCount] = useState(0);
-    const [comments, setComments] = useState<Comment[]>([]);
     const [commentText, setCommentText] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showComments, setShowComments] = useState(true);
 
-    // Fetch likes and comments on mount
-    useEffect(() => {
-        fetchLikesAndComments();
-    }, [post.id]);
+    // React Query hooks for likes and comments
+    const { data: likesData, error: likesError, isLoading: likesLoading } = useBlogLikes(post.slug);
+    const toggleLikeMutation = useToggleBlogLike(post.slug);
+    const { data: comments = [], error: commentsError, isLoading: commentsLoading } = useBlogComments(post.slug);
+    const createCommentMutation = useCreateBlogComment(post.slug);
 
-    const fetchLikesAndComments = async () => {
-        try {
-            // Fetch likes
-            const likesRes = await fetch(`/api/blog/${post.id}/likes`);
-            if (likesRes.ok) {
-                const likesData = await likesRes.json();
-                setLikeCount(likesData.count);
-                setIsLiked(likesData.isLiked);
-            }
+    const isLiked = likesData?.isLiked || false;
+    const likeCount = likesData?.count || 0;
 
-            // Fetch comments
-            const commentsRes = await fetch(`/api/blog/${post.id}/comments`);
-            if (commentsRes.ok) {
-                const commentsData = await commentsRes.json();
-                setComments(commentsData.comments);
-            }
-        } catch (error) {
-            console.error('Failed to fetch likes/comments:', error);
-        }
-    };
+    // Debug logging
+    if (likesError) console.error('Likes error:', likesError);
+    if (commentsError) console.error('Comments error:', commentsError);
 
-    const handleLike = async () => {
+    const handleLike = () => {
         if (status !== 'authenticated') {
             alert('Please login to like this post');
             return;
         }
 
-        try {
-            const res = await fetch(`/api/blog/${post.id}/likes`, {
-                method: isLiked ? 'DELETE' : 'POST',
-            });
-
-            if (res.ok) {
-                setIsLiked(!isLiked);
-                setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-            }
-        } catch (error) {
-            console.error('Failed to toggle like:', error);
-        }
+        toggleLikeMutation.mutate();
     };
 
     const handleComment = async (e: React.FormEvent) => {
@@ -120,24 +126,14 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
 
         if (!commentText.trim()) return;
 
-        setIsSubmitting(true);
-        try {
-            const res = await fetch(`/api/blog/${post.id}/comments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: commentText }),
-            });
-
-            if (res.ok) {
-                const newComment = await res.json();
-                setComments([newComment.comment, ...comments]);
-                setCommentText('');
+        createCommentMutation.mutate(
+            { content: commentText },
+            {
+                onSuccess: () => {
+                    setCommentText('');
+                },
             }
-        } catch (error) {
-            console.error('Failed to post comment:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
+        );
     };
 
     const handleCopyLink = () => {
@@ -195,7 +191,7 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
                     <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
                         {post.category}
                     </span>
-                    {post.tags.slice(0, 3).map((tag: string) => (
+                    {post.tags?.slice(0, 3).map((tag: string) => (
                         <span
                             key={tag}
                             className="px-3 py-1 bg-gray-800 text-gray-300 text-sm rounded-full"
@@ -217,7 +213,9 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
                 <div className="flex flex-wrap items-center gap-6 text-gray-400 pb-6 border-b border-gray-800">
                     <div className="flex items-center gap-2">
                         <User className="w-5 h-5" />
-                        <span className="font-medium text-white">{post.author.name}</span>
+                        <span className="font-medium text-white">
+                            {post.author.role === 'admin' ? 'Egfilm Admin' : post.author.name}
+                        </span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Calendar className="w-5 h-5" />
@@ -285,6 +283,62 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
                 </div>
             )}
 
+            {/* Cast Section */}
+            {post.mediaCast && post.mediaCast.length > 0 && (
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Users className="w-5 h-5 text-blue-400" />
+                        <h3 className="text-xl font-bold text-white">
+                            Featured Cast & Crew
+                        </h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {post.mediaCast.slice(0, 12).map((member, index) => {
+                            // Handle both string and CastMember object types
+                            const memberName = typeof member === 'string' ? member : member.name;
+                            const memberCharacter = typeof member === 'string' ? null : member.character;
+                            const memberProfile = typeof member === 'string' ? null : member.profile_path;
+
+                            return (
+                                <div
+                                    key={index}
+                                    className="flex items-center gap-3 px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+                                >
+                                    {memberProfile ? (
+                                        <Image
+                                            src={`https://image.tmdb.org/t/p/w185${memberProfile}`}
+                                            alt={memberName}
+                                            width={32}
+                                            height={32}
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                            {memberName?.charAt(0)?.toUpperCase() || '?'}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm text-gray-300 truncate font-medium">
+                                            {memberName}
+                                        </p>
+                                        {memberCharacter && (
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {memberCharacter}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {post.mediaCast.length > 12 && (
+                        <p className="text-xs text-gray-500 mt-3">
+                            + {post.mediaCast.length - 12} more cast & crew members
+                        </p>
+                    )}
+                </div>
+            )}
+
             {/* Article Content */}
             <div
                 className="blog-content prose prose-invert prose-lg max-w-none mb-12"
@@ -297,23 +351,24 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
                     {/* Like Button */}
                     <button
                         onClick={handleLike}
-                        disabled={status === 'loading'}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${isLiked
-                                ? 'bg-red-600 text-white hover:bg-red-700'
-                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                        disabled={status === 'loading' || toggleLikeMutation.isPending || likesLoading}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all disabled:opacity-50 ${isLiked
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                             }`}
                     >
                         <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                        <span className="font-medium">{likeCount}</span>
+                        <span className="font-medium">{likesLoading ? '...' : likeCount}</span>
                     </button>
 
                     {/* Comments Button */}
                     <button
                         onClick={() => setShowComments(!showComments)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={commentsLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
                     >
                         <MessageCircle className="w-5 h-5" />
-                        <span className="font-medium">{comments.length}</span>
+                        <span className="font-medium">{commentsLoading ? '...' : comments.length}</span>
                     </button>
                 </div>
 
@@ -352,11 +407,11 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
                                 />
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting || !commentText.trim()}
+                                    disabled={createCommentMutation.isPending || !commentText.trim()}
                                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2 self-start"
                                 >
                                     <Send className="w-4 h-4" />
-                                    {isSubmitting ? 'Posting...' : 'Post'}
+                                    {createCommentMutation.isPending ? 'Posting...' : 'Post'}
                                 </button>
                             </div>
                         </form>
@@ -387,12 +442,12 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
-                                            {comment.user.name.charAt(0).toUpperCase()}
+                                            {comment.user?.name?.charAt(0).toUpperCase() || 'U'}
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="font-medium text-white">
-                                                    {comment.user.name}
+                                                    {comment.user?.name || 'Unknown User'}
                                                 </span>
                                                 <span className="text-sm text-gray-500">
                                                     {new Date(comment.createdAt).toLocaleDateString('en-US', {
@@ -415,11 +470,11 @@ export default function BlogPostClient({ post, relatedPosts, postUrl }: BlogPost
             )}
 
             {/* Related Posts */}
-            {relatedPosts.length > 0 && (
+            {relatedPosts && relatedPosts.length > 0 && (
                 <section className="mt-16">
                     <h2 className="text-2xl font-bold text-white mb-6">Related Posts</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {relatedPosts.map((relatedPost) => (
+                        {relatedPosts.map((relatedPost: RelatedPost) => (
                             <Link
                                 key={relatedPost.id}
                                 href={`/blog/${relatedPost.slug}`}

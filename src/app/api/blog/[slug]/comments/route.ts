@@ -11,10 +11,10 @@ import { prisma } from '@/lib/prisma';
 // Get comments for a post
 export async function GET(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { slug } = params;
+        const { slug } = await params;
 
         // Find the blog post
         const post = await prisma.blogPost.findUnique({
@@ -79,7 +79,7 @@ export async function GET(
 // Create a new comment
 export async function POST(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
         const session = await auth();
@@ -92,7 +92,7 @@ export async function POST(
         }
 
         const userId = (session.user as any).id;
-        const { slug } = params;
+        const { slug } = await params;
         const body = await request.json();
         const { content, parentId } = body;
 

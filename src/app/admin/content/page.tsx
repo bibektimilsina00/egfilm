@@ -1,59 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { CheckCircle, AlertCircle, Power } from 'lucide-react';
-
-interface VideoSource {
-    id: string;
-    name: string;
-    quality: string;
-    isActive: boolean;
-    lastChecked: string;
-    status: 'healthy' | 'degraded' | 'offline';
-    responseTime: number;
-}
+import {
+    useContentSources,
+    useUpdateContentSource,
+    useTestContentSource,
+    type ContentSource,
+} from '@/lib/hooks/useAdmin';
 
 export default function ContentPage() {
-    const queryClient = useQueryClient();
     const [testingSource, setTestingSource] = useState<string | null>(null);
 
-    // Fetch video sources
-    const { data: sources = [], isLoading } = useQuery({
-        queryKey: ['admin', 'content', 'sources'],
-        queryFn: async () => {
-            const res = await axios.get('/api/admin/content/sources');
-            return res.data.sources || [];
-        },
-        staleTime: 1000 * 60,
-    });
+    // Fetch video sources using React Query hook
+    const { data: sources = [], isLoading } = useContentSources();
 
-    // Toggle source mutation
-    const toggleSourceMutation = useMutation({
-        mutationFn: async ({ sourceId, isActive }: { sourceId: string; isActive: boolean }) => {
-            await axios.patch(`/api/admin/content/sources/${sourceId}`, { isActive });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin', 'content', 'sources'] });
-        },
-    });
+    // Mutations using React Query hooks
+    const toggleSourceMutation = useUpdateContentSource();
+    const testSourceMutation = useTestContentSource();
 
-    // Test source mutation
-    const testSourceMutation = useMutation({
-        mutationFn: async (sourceId: string) => {
-            setTestingSource(sourceId);
-            const res = await axios.post(`/api/admin/content/sources/${sourceId}/test`);
-            return res.data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin', 'content', 'sources'] });
-            setTestingSource(null);
-        },
-        onError: () => {
-            setTestingSource(null);
-        },
-    });
+    const handleTestSource = (sourceId: string) => {
+        setTestingSource(sourceId);
+        testSourceMutation.mutate(sourceId, {
+            onSettled: () => setTestingSource(null),
+        });
+    };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
@@ -96,7 +67,7 @@ export default function ContentPage() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                     </div>
                 ) : (
-                    sources.map((source: VideoSource) => (
+                    sources.map((source: ContentSource) => (
                         <div
                             key={source.id}
                             className="bg-gray-900 rounded-lg border border-gray-800 p-6 hover:border-gray-700 transition-colors"
@@ -115,8 +86,8 @@ export default function ContentPage() {
                                         })
                                     }
                                     className={`p-2 rounded-lg transition-colors ${source.isActive
-                                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                            : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                        : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
                                         }`}
                                     title={source.isActive ? 'Disable source' : 'Enable source'}
                                 >
@@ -127,22 +98,22 @@ export default function ContentPage() {
                             {/* Status */}
                             <div className="mb-4 space-y-2">
                                 <div className="flex items-center space-x-2">
-                                    {getStatusIcon(source.status)}
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(source.status)}`}>
-                                        {source.status.charAt(0).toUpperCase() + source.status.slice(1)}
+                                    {getStatusIcon(source.status || 'unknown')}
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(source.status || 'unknown')}`}>
+                                        {(source.status || 'unknown').charAt(0).toUpperCase() + (source.status || 'unknown').slice(1)}
                                     </span>
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                    Response: <span className="text-white">{source.responseTime}ms</span>
+                                    Response: <span className="text-white">{source.responseTime ?? 'N/A'}ms</span>
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                    Last checked: {new Date(source.lastChecked).toLocaleTimeString()}
+                                    Last checked: {source.lastChecked ? new Date(source.lastChecked).toLocaleTimeString() : 'Never'}
                                 </div>
                             </div>
 
                             {/* Test Button */}
                             <button
-                                onClick={() => testSourceMutation.mutate(source.id)}
+                                onClick={() => handleTestSource(source.id)}
                                 disabled={testingSource === source.id}
                                 className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg font-medium text-sm transition-colors"
                             >

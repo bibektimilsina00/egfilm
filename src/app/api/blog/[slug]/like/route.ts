@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
         const session = await auth();
@@ -22,7 +22,7 @@ export async function POST(
         }
 
         const userId = (session.user as any).id;
-        const { slug } = params;
+        const { slug } = await params;
 
         // Find the blog post
         const post = await prisma.blogPost.findUnique({
@@ -94,11 +94,11 @@ export async function POST(
 // Get like status
 export async function GET(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
         const session = await auth();
-        const { slug } = params;
+        const { slug } = await params;
 
         // Find the blog post
         const post = await prisma.blogPost.findUnique({

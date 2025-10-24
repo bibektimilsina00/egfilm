@@ -5,7 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/admin-auth';
-import { stopGeneration } from '@/lib/services/blogGeneratorService';
+import { stopGeneration, getGenerationStatus } from '@/lib/services/blogGeneratorService';
+import { stopContinuousMode } from '@/lib/queue/blogQueue';
 
 export async function POST(request: NextRequest) {
     try {
@@ -20,11 +21,25 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
         }
 
-        stopGeneration(user.id);
+        // Get current status to check mode
+        const status = await getGenerationStatus(user.id);
+
+        if (status.mode === 'continuous') {
+            // Stop the repeatable job for continuous mode
+            const result = await stopContinuousMode(user.id);
+            if (!result.success) {
+                console.warn('Failed to stop continuous mode:', result.error);
+            }
+        }
+
+        // Also stop the in-memory generation flag
+        await stopGeneration(user.id);
 
         return NextResponse.json({
             success: true,
-            message: 'Generation will stop after current item completes',
+            message: status.mode === 'continuous'
+                ? 'Continuous generation stopped. No more posts will be created.'
+                : 'Generation will stop after current item completes',
         });
     } catch (error: any) {
         console.error('Stop API error:', error);
