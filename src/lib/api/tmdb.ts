@@ -1,14 +1,18 @@
 import axios, { AxiosResponse } from 'axios';
 
-// Use internal API proxy to hide API key from client
-const TMDB_BASE_URL = '/api/tmdb';
+// Direct TMDB API access with public key
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
 /**
- * Axios instance configured for TMDb API proxy
+ * Axios instance configured for direct TMDb API calls
  */
 const tmdbAxios = axios.create({
     baseURL: TMDB_BASE_URL,
     timeout: 10000,
+    params: {
+        api_key: TMDB_API_KEY,
+    },
 });
 
 // Add response interceptor for error handling

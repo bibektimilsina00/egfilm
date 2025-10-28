@@ -89,20 +89,8 @@ if [ ! -z "$NEXT_PUBLIC_TMDB_API_KEY" ] && [ "$TMDB_CLIENT_MISSING" = false ]; t
         log_error "TMDB API returned HTTP $DIRECT_RESPONSE"
     fi
 
-    # Test proxy API routes (if app is running)
-    log_info "Testing TMDB proxy API routes..."
-    PROXY_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-        "http://localhost:8000/api/tmdb" \
-        || echo "000")
-    
-    if [ "$PROXY_RESPONSE" = "200" ]; then
-        log_success "TMDB proxy API is working"
-    elif [ "$PROXY_RESPONSE" = "000" ]; then
-        log_warning "App not running or proxy API not accessible"
-        log_info "Start your app with 'npm run dev' or 'docker compose up -d' to test proxy"
-    else
-        log_warning "TMDB proxy API returned HTTP $PROXY_RESPONSE"
-    fi
+    # Note: Direct API calls from client-side
+    log_info "Client-side applications will call TMDB API directly with NEXT_PUBLIC_TMDB_API_KEY"
 else
     log_warning "Skipping API connectivity test (no valid key available)"
 fi
