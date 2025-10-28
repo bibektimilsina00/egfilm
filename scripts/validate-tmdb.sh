@@ -73,20 +73,35 @@ fi
 if [ ! -z "$NEXT_PUBLIC_TMDB_API_KEY" ] && [ "$TMDB_CLIENT_MISSING" = false ]; then
     log_info "Testing TMDB API connectivity..."
     
-    # Test with a simple API call
-    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+    # Test direct TMDB API connection
+    DIRECT_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
         "https://api.themoviedb.org/3/movie/popular?api_key=$NEXT_PUBLIC_TMDB_API_KEY&page=1" \
         || echo "000")
     
-    if [ "$RESPONSE" = "200" ]; then
-        log_success "TMDB API key is valid and working"
-    elif [ "$RESPONSE" = "401" ]; then
+    if [ "$DIRECT_RESPONSE" = "200" ]; then
+        log_success "TMDB API key is valid and working (direct connection)"
+    elif [ "$DIRECT_RESPONSE" = "401" ]; then
         log_error "TMDB API key is invalid (HTTP 401)"
         log_info "Please check your API key at https://www.themoviedb.org/settings/api"
-    elif [ "$RESPONSE" = "000" ]; then
+    elif [ "$DIRECT_RESPONSE" = "000" ]; then
         log_error "Could not connect to TMDB API (network issue)"
     else
-        log_error "TMDB API returned HTTP $RESPONSE"
+        log_error "TMDB API returned HTTP $DIRECT_RESPONSE"
+    fi
+
+    # Test proxy API routes (if app is running)
+    log_info "Testing TMDB proxy API routes..."
+    PROXY_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+        "http://localhost:8000/api/tmdb" \
+        || echo "000")
+    
+    if [ "$PROXY_RESPONSE" = "200" ]; then
+        log_success "TMDB proxy API is working"
+    elif [ "$PROXY_RESPONSE" = "000" ]; then
+        log_warning "App not running or proxy API not accessible"
+        log_info "Start your app with 'npm run dev' or 'docker compose up -d' to test proxy"
+    else
+        log_warning "TMDB proxy API returned HTTP $PROXY_RESPONSE"
     fi
 else
     log_warning "Skipping API connectivity test (no valid key available)"
