@@ -1,9 +1,9 @@
-# Docker Compose for Egfilm Production Deployment
-# Optimized for performance, security, and minimal resource usage
-# Includes PostgreSQL database and Redis for caching
+# Minimal Docker Compose for Egfilm Main Site
+# Only essential services: PostgreSQL database and main streaming app
+# Removed: Redis, BullMQ worker, admin panel, background jobs
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database - Essential for user data and movie metadata
   postgres:
     image: postgres:16-alpine
     container_name: egfilm-postgres
@@ -19,166 +19,94 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-egfilm_admin} -d ${POSTGRES_DB:-egfilm-database}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - app-network
-    # Resource limits for production (1 CPU server)
+    # Optimized resource limits for minimal VPS
     deploy:
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '0.5'
           memory: 512M
         reservations:
-          cpus: '0.15'
-          memory: 256M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "3"
-
-  # Redis for BullMQ job queue and caching
-  redis:
-    image: redis:7-alpine
-    container_name: egfilm-redis
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    command: >
-      redis-server 
-      --appendonly yes
-      --maxmemory ${REDIS_MAXMEM:-512mb}
-      --maxmemory-policy noeviction
-      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    networks:
-      - app-network
-    # Resource limits for production (1 CPU server)
-    deploy:
-      resources:
-        limits:
           cpus: '0.2'
           memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
-        max-file: "3"
+        max-file: "2"
 
-  # Egfilm Application (Production)
+  # Main Egfilm Streaming Application
   app:
     image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}
     container_name: egfilm-app
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     ports:
       - "${PORT:-8000}:8000"
     env_file:
       - .env
     environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      # Database connection
+      DATABASE_URL: ${DATABASE_URL}
+      # TMDB API for movie/TV data
       TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
+      NEXT_PUBLIC_TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
+      # Authentication
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL:-http://localhost:8000}
+      # App configuration
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Egfilm}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:8000}
+      # Analytics (optional)
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+      NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL}
+      # Production optimizations
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
+      # Remove Redis-related variables since we're not using it
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8000/ || exit 1"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8000/api/health || exit 1"]
+      interval: 60s
+      timeout: 15s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     networks:
       - app-network
     labels:
-      - "com.egfilm.service=app"
+      - "com.egfilm.service=streaming-app"
       - "com.egfilm.environment=production"
-    # Resource limits for production (1 CPU server)
+    # Optimized resource limits for main app on minimal VPS
     deploy:
       resources:
         limits:
+          cpus: '0.8'
+          memory: 1G
+        reservations:
           cpus: '0.4'
           memory: 512M
-        reservations:
-          cpus: '0.2'
-          memory: 256M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "5"
-    # Use init process for proper signal handling
-    init: true
-
-  # BullMQ Worker for Background Jobs (Blog generation, etc.)
-  worker:
-    image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:deploy}-worker
-    container_name: egfilm-worker
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
-      NODE_ENV: production
-      NEXT_TELEMETRY_DISABLED: 1
-    command: ["npm", "run", "worker"]
-    restart: unless-stopped
-    networks:
-      - app-network
-    labels:
-      - "com.egfilm.service=worker"
-      - "com.egfilm.environment=production"
-    # Resource limits for worker (1 CPU server)
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     logging:
       driver: "json-file"
       options:
         max-size: "20m"
         max-file: "3"
-    # Init process for proper signal handling
     init: true
 
+# Simplified volumes - only what's essential
 volumes:
   postgres_data:
     name: egfilm_postgres_data
     driver: local
-  redis_data:
-    name: egfilm_redis_data
-    driver: local
 
+# Minimal network configuration
 networks:
   app-network:
-    name: app-network
+    name: egfilm-network
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.default_bridge: "false"
 
