@@ -8,6 +8,66 @@ import IORedis from 'ioredis';
 import { BlogGenerationJobData } from './blogQueue';
 import { generateBlogsWithQueue } from '@/lib/services/blogGeneratorService';
 
+// Helper function to update user status with error
+async function updateUserStatusWithError(userId: string, error: any) {
+    try {
+        const errorMessage = error.message || 'Unknown error occurred';
+        const statusKey = `blog-generation-status:${userId}`;
+        
+        // Get current status or create default
+        let status;
+        try {
+            const cached = await connection.get(statusKey);
+            status = cached ? JSON.parse(cached) : {
+                isRunning: false,
+                mode: 'batch',
+                sortBy: 'popular',
+                total: 0,
+                completed: 0,
+                failed: 0,
+                skipped: 0,
+                errors: [],
+                logs: [],
+                userId,
+            };
+        } catch (parseError) {
+            status = {
+                isRunning: false,
+                mode: 'batch',
+                sortBy: 'popular',
+                total: 0,
+                completed: 0,
+                failed: 0,
+                skipped: 0,
+                errors: [],
+                logs: [],
+                userId,
+            };
+        }
+
+        // Update status with error
+        status.isRunning = false;
+        status.failed = (status.failed || 0) + 1;
+        
+        // Add error to errors array (keep last 10 errors)
+        if (!status.errors) status.errors = [];
+        const timestamp = new Date().toISOString();
+        status.errors.unshift(`[${timestamp}] ${errorMessage}`);
+        status.errors = status.errors.slice(0, 10);
+        
+        // Add log entry
+        if (!status.logs) status.logs = [];
+        status.logs.unshift(`[${timestamp}] ❌ Error: ${errorMessage}`);
+        status.logs = status.logs.slice(0, 50);
+
+        // Save updated status
+        await connection.set(statusKey, JSON.stringify(status), 'EX', 3600); // Expire in 1 hour
+        console.log(`🔄 [Worker] Updated user ${userId} status with error: ${errorMessage}`);
+    } catch (redisError) {
+        console.error('Failed to update Redis status with error:', redisError);
+    }
+}
+
 // Redis connection (same as queue) with error handling
 const connection = new IORedis({
     host: process.env.REDIS_HOST || 'localhost',
@@ -52,8 +112,16 @@ export const blogWorker = new Worker<BlogGenerationJobData>(
 
             console.log(`✅ [Worker] Job ${job.id} completed successfully`);
             return { success: true, message: 'Blog generation completed' };
-        } catch (error) {
+        } catch (error: any) {
             console.error(`❌ [Worker] Job ${job.id} failed:`, error);
+            
+            // Update user status with error details
+            try {
+                await updateUserStatusWithError(job.data.userId, error);
+            } catch (statusError) {
+                console.error('Failed to update user status with error:', statusError);
+            }
+            
             throw error; // BullMQ will handle retries
         }
     },
