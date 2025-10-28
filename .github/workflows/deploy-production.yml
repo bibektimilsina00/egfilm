@@ -32,13 +32,7 @@ jobs:
           cat > .env.local <<'ENVEOF'
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
-          DATABASE_URL=postgresql://egfilm_admin:anihortes@localhost:5432/egfilm-database
-          REDIS_HOST=localhost
-          REDIS_PORT=6379
-          REDIS_PASSWORD=
-          NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-          REDIS_PORT=6379
-          REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}
+          DATABASE_URL=postgresql://egfilm_admin:anihortes@postgres:5432/egfilm-database
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
           NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
@@ -66,13 +60,9 @@ jobs:
           ls -la ./
           cat .env.local
           
-          # Build and push app image (default runner target)
+          # Build and push main streaming app image
           docker build --target runner -t ${{ steps.vars.outputs.image }} .
           docker push ${{ steps.vars.outputs.image }}
-          
-          # Build and push worker image
-          docker build --target worker -t ${{ steps.vars.outputs.image }}-worker .
-          docker push ${{ steps.vars.outputs.image }}-worker
 
       - name: 🧹 Cleanup Server (free disk space)
         uses: appleboy/ssh-action@v1.0.3
@@ -121,7 +111,7 @@ jobs:
             cd ~/egfilm
             echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Create .env file with all required variables
+            # Create .env file with minimal required variables for streaming app
             cat > .env <<'ENVEOF'
             NODE_ENV=production
             NEXT_TELEMETRY_DISABLED=1
@@ -133,54 +123,46 @@ jobs:
             PGDATA=/var/lib/postgresql/data/pgdata
             # Database URL pointing to postgres container
             DATABASE_URL=postgresql://egfilm_admin:anihortes@postgres:5432/egfilm-database
-            REDIS_HOST=egfilm-redis
-            REDIS_PORT=6379
-            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD || '' }}
+            # TMDB API for movie/TV data
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+            TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
+            # Authentication
             AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             AUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            # App configuration
             NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
             NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
+            # WebRTC for watch together (optional)
             NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
             NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
             NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
-            SENTRY_DSN=${{ secrets.SENTRY_DSN || '' }}
-            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN || '' }}
+            # Analytics (optional)
             NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.UMAMI_WEBSITE_ID || '' }}
             NEXT_PUBLIC_UMAMI_SCRIPT_URL=${{ vars.UMAMI_SCRIPT_URL || '' }}
+            # Docker image
+            IMAGE_NAME=${{ steps.vars.outputs.image }}
             ENVEOF
 
             # Deploy using docker compose
             IMAGE_NAME=${{ steps.vars.outputs.image }} docker-compose pull
             IMAGE_NAME=${{ steps.vars.outputs.image }} docker-compose up -d --remove-orphans
 
-            # Test database connectivity before health check
-            echo "🔌 Testing database connectivity..."
-            DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
-            DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
-            if nc -zv "$DB_HOST" "$DB_PORT" 2>&1; then
-              echo "✅ Database server is reachable at $DB_HOST:$DB_PORT"
-            else
-              echo "❌ Cannot reach database server at $DB_HOST:$DB_PORT"
-              echo "⚠️  Please check:"
-              echo "   1. PostgreSQL is running on the server"
-              echo "   2. Firewall allows connections from Docker containers"
-              echo "   3. PostgreSQL pg_hba.conf allows connections from Docker network"
-            fi
-
             # Wait for health check
             echo "🏥 Waiting for application to be healthy..."
-            for i in {1..60}; do
-              if curl -sf http://localhost:8000 > /dev/null 2>&1; then
+            for i in {1..30}; do
+              if curl -sf http://localhost:8000/api/health > /dev/null 2>&1; then
                 echo "✅ Application is healthy"
                 break
               fi
               echo -n "."
-              sleep 2
-              if [ $i -eq 60 ]; then
-                echo "❌ Health check failed"
-                docker-compose logs app
+              sleep 3
+              if [ $i -eq 30 ]; then
+                echo "❌ Health check failed after 90 seconds"
+                echo "📋 Container status:"
+                docker-compose ps
+                echo "📋 Application logs:"
+                docker-compose logs app --tail=50
                 exit 1
               fi
             done
