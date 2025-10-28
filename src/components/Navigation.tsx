@@ -103,7 +103,7 @@ export default function Navigation() {
         { href: '/', label: 'Home', icon: Home },
         { href: '/movies', label: 'Movies', icon: Film },
         { href: '/tv', label: 'TV Shows', icon: Tv },
-        { href: '/blog', label: 'Blog', icon: BookOpen },
+        { href: process.env.NEXT_PUBLIC_BLOG_URL || 'https://blog.egfilm.xyz', label: 'Blog', icon: BookOpen, external: true },
         { href: '/watchlist', label: 'Watchlist', icon: Heart },
     ];
 
@@ -126,7 +126,23 @@ export default function Navigation() {
                     <nav className="hidden lg:flex items-center gap-4">
                         {navLinks.map((link) => {
                             const Icon = link.icon;
-                            const isActive = mounted && pathname === link.href;
+                            const isActive = mounted && pathname === link.href && !link.external;
+                            
+                            if (link.external) {
+                                return (
+                                    <a
+                                        key={link.href}
+                                        href={link.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm text-gray-300 hover:text-blue-400 hover:bg-gray-800/50"
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        <span className="hidden xl:inline">{link.label}</span>
+                                    </a>
+                                );
+                            }
+                            
                             return (
                                 <Link
                                     key={link.href}
@@ -307,7 +323,24 @@ export default function Navigation() {
                         <nav className="flex flex-col gap-2">
                             {navLinks.map((link) => {
                                 const Icon = link.icon;
-                                const isActive = mounted && pathname === link.href;
+                                const isActive = mounted && pathname === link.href && !link.external;
+                                
+                                if (link.external) {
+                                    return (
+                                        <a
+                                            key={link.href}
+                                            href={link.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-300 hover:text-blue-400 hover:bg-gray-800/50"
+                                        >
+                                            <Icon className="w-5 h-5" />
+                                            {link.label}
+                                        </a>
+                                    );
+                                }
+                                
                                 return (
                                     <Link
                                         key={link.href}

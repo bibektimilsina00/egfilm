@@ -21,23 +21,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  // AI Configuration for Blog Generation
-  geminiApiKey       String?  // User's Gemini API key
-  openaiApiKey       String?  // User's OpenAI API key
-  anthropicApiKey    String?  // User's Anthropic API key
-  tmdbApiKey         String?  // User's TMDb API key for blog generation
-  preferredAiModel   String?  @default("gemini-2.5-flash") // Default AI model (Gemini 2.5 Flash)
-  
-  // Relations
+  // Streaming App Relations (no blog/admin fields)
   watchlist        WatchlistItem[]
   continueWatching ContinueWatching[]
   watchRooms       WatchRoom[]
   sentNotifications     Notification[] @relation("SentNotifications")
   receivedNotifications Notification[] @relation("ReceivedNotifications")
   createdNotifications  SystemNotification[] @relation("CreatedNotifications")
-  blogPosts        BlogPost[] @relation("BlogPosts")
-  blogLikes        BlogLike[]
-  blogComments     BlogComment[]
 }
 
 model WatchlistItem {
@@ -173,108 +163,4 @@ model SystemNotification {
   @@index([createdAt])
 }
 
-model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String   @db.Text
-  content     String   @db.Text  // Rich text content (HTML)
-  
-  // SEO Fields
-  metaTitle       String?
-  metaDescription String?  @db.Text
-  keywords        String[] // Array of keywords
-  ogImage         String?  // OpenGraph image URL
-  
-  // Media References
-  mediaId         Int?
-  mediaType       String?  // 'movie' or 'tv'
-  mediaTitle      String?
-  mediaPosterPath String?
-  mediaBackdropPath String?
-  mediaReleaseDate String?
-  mediaGenres     String[] // Array of genre names
-  mediaRating     Float?
-  mediaOverview   String?  @db.Text
-  mediaCast       Json?    // Array of cast objects with name, character, profile_path
-  
-  // Blog Metadata
-  authorId        String
-  category        String   @default("review") // 'review', 'news', 'guide', 'analysis'
-  tags            String[] // Array of tags
-  featuredImage   String?
-  readingTime     Int      @default(5) // Minutes
-  viewCount       Int      @default(0)
-  
-  // Status
-  status          String   @default("draft") // 'draft', 'published', 'archived'
-  publishedAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  author User @relation("BlogPosts", fields: [authorId], references: [id], onDelete: Cascade)
-  likes  BlogLike[]
-  comments BlogComment[]
-  
-  @@index([slug])
-  @@index([status])
-  @@index([publishedAt])
-  @@index([category])
-  @@index([mediaId, mediaType])
-}
 
-model BlogLike {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-  
-  // Relations
-  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([postId, userId]) // User can only like a post once
-  @@index([postId])
-  @@index([userId])
-}
-
-model BlogComment {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  content   String   @db.Text
-  parentId  String?  // For nested replies
-  isEdited  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  post    BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent  BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies BlogComment[] @relation("CommentReplies")
-  
-  @@index([postId])
-  @@index([userId])
-  @@index([parentId])
-  @@index([createdAt])
-}
-
-// Track blog generation progress to avoid duplicates
-model BlogGenerationProgress {
-  id            String   @id @default(cuid())
-  userId        String
-  mediaType     String   // 'movie' or 'tv'
-  sortBy        String   // 'popular', 'top_rated', etc.
-  currentPage   Int      @default(1)
-  currentIndex  Int      @default(0) // Index within the current page
-  totalGenerated Int     @default(0)
-  lastMediaId   Int?     // Last TMDb media ID that was processed
-  lastUpdated   DateTime @updatedAt
-  createdAt     DateTime @default(now())
-  
-  @@unique([userId, mediaType, sortBy]) // One progress tracker per user/type/sort combination
-  @@index([userId])
-  @@index([mediaType, sortBy])
-}
