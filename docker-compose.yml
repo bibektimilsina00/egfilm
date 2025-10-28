@@ -54,8 +54,8 @@ services:
     environment:
       # Database connection
       DATABASE_URL: ${DATABASE_URL}
-      # TMDB API for movie/TV data
-      TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
+      # TMDB API for movie/TV data (server-side and client-side)
+      TMDB_API_KEY: ${TMDB_API_KEY}
       NEXT_PUBLIC_TMDB_API_KEY: ${NEXT_PUBLIC_TMDB_API_KEY}
       # Authentication
       AUTH_SECRET: ${AUTH_SECRET}

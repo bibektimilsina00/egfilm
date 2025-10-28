@@ -33,6 +33,7 @@ jobs:
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
           DATABASE_URL=postgresql://egfilm_admin:anihortes@postgres:5432/egfilm-database
+          TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
           NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
