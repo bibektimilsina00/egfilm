@@ -69,8 +69,6 @@ const createApiClient = (baseURL: string = ''): AxiosInstance => {
 // API Clients for Different Endpoints
 // =============================================================================
 
-export const adminApi = createApiClient('/api/admin');
-export const blogApi = createApiClient('/api/blog');
 export const userApi = createApiClient('/api/user');
 export const notificationsApi = createApiClient('/api/notifications');
 export const watchRoomApi = createApiClient('/api/watch-room');
