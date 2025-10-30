@@ -9,7 +9,6 @@ export default function robots(): MetadataRoute.Robots {
                 allow: '/',
                 disallow: [
                     '/api/',
-                    '/admin/',
                     '/watch-together',
                     '/watchlist',
                 ],
@@ -17,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: 'Googlebot',
                 allow: '/',
-                disallow: ['/api/', '/admin/'],
+                disallow: ['/api/'],
                 crawlDelay: 0,
             },
         ],
@@ -25,7 +24,6 @@ export default function robots(): MetadataRoute.Robots {
             `${siteConfig.url}/sitemap.xml`,
             `${siteConfig.url}/sitemap-movies.xml`,
             `${siteConfig.url}/sitemap-tv.xml`,
-            `${siteConfig.url}/sitemap-blog.xml`,
         ],
         host: siteConfig.url,
     }

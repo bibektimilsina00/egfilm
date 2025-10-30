@@ -28,22 +28,7 @@ export const authConfig = {
             const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
             const isOnWatchlist = nextUrl.pathname.startsWith('/watchlist');
             const isOnWatchParty = nextUrl.pathname.startsWith('/watch-party');
-            const isOnAdmin = nextUrl.pathname.startsWith('/admin');
-
-            // Debug logging for admin routes
-            if (isOnAdmin) {
-                console.log('[Auth Config] Admin route requested');
-                console.log('[Auth Config] Is Logged In:', isLoggedIn);
-                console.log('[Auth Config] User Role:', userRole);
-                console.log('[Auth Config] Auth object:', auth);
-                console.log('[Auth Config] Returning:', isLoggedIn);
-            }
-
-            // Admin routes: allow through if logged in (client-side layout will handle role check)
-            // This prevents the middleware from redirecting to login when user is already logged in
-            if (isOnAdmin) {
-                return isLoggedIn; // Let client-side handle admin role check and redirect
-            }
+            // No admin functionality in main app
 
             // Protected routes require login
             if (isOnDashboard || isOnWatchlist || isOnWatchParty) {

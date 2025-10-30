@@ -7,12 +7,7 @@ const authMiddleware = NextAuth(authConfig).auth;
 export default async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
 
-    // Log all admin route requests
-    if (pathname.startsWith('/admin')) {
-        console.log('[Middleware] Admin route requested:', pathname);
-        console.log('[Middleware] User:', (request as any).auth?.user);
-        console.log('[Middleware] User Role:', ((request as any).auth?.user)?.role);
-    }
+    // No admin functionality in main app
 
     return authMiddleware(request as any);
 }

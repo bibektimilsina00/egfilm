@@ -45,11 +45,10 @@ export default function SessionDebugPage() {
                 </div>
 
                 <div className="mt-6 bg-blue-500/20 border border-blue-500 rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">Expected Behavior:</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
-                        <li>If role is &quot;admin&quot; → You can access /admin</li>
-                        <li>If role is &quot;user&quot; → You cannot access /admin</li>
-                    </ul>
+                    <h3 className="font-semibold mb-2">Session Debug Information:</h3>
+                    <p className="text-sm text-gray-300">
+                        This debug page shows your current session data. Admin functionality has been moved to a separate admin application.
+                    </p>
                 </div>
 
                 <div className="mt-6 flex gap-4">
@@ -65,12 +64,7 @@ export default function SessionDebugPage() {
                     >
                         Go to Login
                     </a>
-                    <a
-                        href="/admin"
-                        className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                    >
-                        Try Admin Panel
-                    </a>
+
                 </div>
             </div>
         </div>

@@ -52,18 +52,6 @@ export const seoKeywords = {
         'free animation movies',
         'free crime series',
     ],
-    blog: [
-        'movie reviews',
-        'tv show reviews',
-        'entertainment news',
-        'movie recommendations',
-        'tv series guides',
-        'streaming tips',
-        'movie analysis',
-        'tv show recaps',
-        'cinema news',
-        'entertainment blog',
-    ],
 }
 
 // Structured Data Schemas
@@ -164,38 +152,7 @@ export const structuredData = {
         sameAs: `https://www.themoviedb.org/person/${person.id}`,
     }),
 
-    // Blog Post Schema Generator
-    blogPost: (post: any) => ({
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: post.title,
-        description: post.description || post.excerpt,
-        image: post.imageUrl || post.featuredImage,
-        datePublished: post.publishedAt || post.createdAt,
-        dateModified: post.updatedAt || post.publishedAt || post.createdAt,
-        author: {
-            '@type': 'Person',
-            name: post.author || 'Egfilm Editorial Team',
-            url: post.authorUrl || siteConfig.url,
-        },
-        publisher: {
-            '@type': 'Organization',
-            name: siteConfig.publisher,
-            logo: {
-                '@type': 'ImageObject',
-                url: `${siteConfig.url}/logo.png`,
-            },
-        },
-        mainEntityOfPage: {
-            '@type': 'WebPage',
-            '@id': `${siteConfig.url}/blog/${post.slug}`,
-        },
-        keywords: post.tags?.join(', ') || post.keywords,
-        articleSection: post.category || 'Entertainment',
-        wordCount: post.content?.split(' ').length || 0,
-    }),
-
-    // Review Schema Generator (for movie/TV reviews in blog)
+    // Review Schema Generator
     review: (review: any) => ({
         '@context': 'https://schema.org',
         '@type': 'Review',
@@ -416,128 +373,7 @@ export async function generateTVJSONLD(id: string) {
     }
 }
 
-// Generate Blog Post Metadata
-export function generateBlogMetadata(post: {
-    title: string
-    description?: string
-    excerpt?: string
-    imageUrl?: string
-    featuredImage?: string
-    publishedAt?: string
-    createdAt?: string
-    updatedAt?: string
-    author?: string
-    slug: string
-    tags?: string[]
-    category?: string
-}): Metadata {
-    const description = post.description || post.excerpt || `Read ${post.title} on Egfilm blog - Free movie and TV show reviews, news, and streaming guides.`
-    const imageUrl = post.imageUrl || post.featuredImage || `${siteConfig.url}/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('Egfilm Blog')}`
-    const publishDate = post.publishedAt || post.createdAt || new Date().toISOString()
 
-    return {
-        title: `${post.title} | Egfilm Blog`,
-        description: truncateDescription(description, 160),
-        keywords: [
-            post.title,
-            'egfilm blog',
-            'free movie streaming',
-            'watch movies free',
-            'movie reviews',
-            'tv show guides',
-            'entertainment blog',
-            ...(post.tags || []),
-            ...(post.category ? [post.category] : []),
-            ...seoKeywords.blog,
-        ],
-        authors: [{ name: post.author || 'Egfilm Editorial Team' }],
-        category: post.category || 'Entertainment',
-        openGraph: {
-            type: 'article',
-            title: post.title,
-            description,
-            images: [
-                {
-                    url: imageUrl,
-                    width: 1200,
-                    height: 630,
-                    alt: post.title,
-                },
-            ],
-            publishedTime: publishDate,
-            modifiedTime: post.updatedAt || publishDate,
-            authors: [post.author || 'Egfilm Editorial Team'],
-            section: post.category || 'Entertainment',
-            tags: post.tags,
-            locale: 'en_US',
-            siteName: siteConfig.name,
-        },
-        twitter: {
-            card: 'summary_large_image',
-            title: post.title,
-            description: truncateDescription(description, 200),
-            images: [imageUrl],
-            creator: '@egfilm',
-        },
-        alternates: {
-            canonical: `${siteConfig.url}/blog/${post.slug}`,
-        },
-    }
-}
-
-// Generate Blog List/Archive Metadata
-export function generateBlogListMetadata(
-    page: number = 1,
-    category?: string,
-    tag?: string
-): Metadata {
-    let title = 'Blog - Free Movie & TV Show Reviews, News & Guides | Egfilm'
-    let description = 'Discover the latest movie reviews, TV show guides, streaming tips, and entertainment news. Learn how to watch movies and TV series free on Egfilm.'
-
-    if (category) {
-        title = `${category} - Egfilm Blog`
-        description = `Browse ${category.toLowerCase()} articles about free movie streaming, reviews, and guides on Egfilm.`
-    }
-
-    if (tag) {
-        title = `${tag} Articles - Egfilm Blog`
-        description = `All articles tagged with ${tag}. Movie reviews, TV guides, and streaming tips.`
-    }
-
-    if (page > 1) {
-        title = `${title} - Page ${page}`
-    }
-
-    return {
-        title,
-        description: truncateDescription(description, 160),
-        keywords: [
-            'movie blog',
-            'tv show blog',
-            'free streaming blog',
-            'movie reviews',
-            'tv show guides',
-            'entertainment news',
-            ...(category ? [category] : []),
-            ...(tag ? [tag] : []),
-            ...seoKeywords.blog,
-        ],
-        openGraph: {
-            type: 'website',
-            title,
-            description,
-            locale: 'en_US',
-            siteName: siteConfig.name,
-        },
-        alternates: {
-            canonical: `${siteConfig.url}/blog${page > 1 ? `?page=${page}` : ''}`,
-        },
-        robots: {
-            index: true,
-            follow: true,
-        },
-    }
-}
 
 // Generate Search Page Metadata
 export function generateSearchMetadata(query?: string): Metadata {
