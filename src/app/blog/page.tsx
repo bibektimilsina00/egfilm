@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import { Tag, Film, Calendar, User, Tv } from 'lucide-react';
-import { getPublishedBlogPosts } from '@/lib/services/blogService';
+import { Film } from 'lucide-react';
+import { getPublishedBlogPosts, BlogPostFilters } from '@/lib/services/blogService';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import BlogCard from '@/components/blog/BlogCard';
@@ -38,7 +38,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
     const search = params.search;
     const mediaType = params.mediaType as 'movie' | 'tv' | undefined;
 
-    const filters: any = {};
+    const filters: BlogPostFilters = {};
     if (category) filters.category = category;
     if (search) filters.search = search;
     if (mediaType) filters.mediaType = mediaType;
@@ -96,8 +96,8 @@ export default async function BlogPage({ searchParams }: PageProps) {
                     <>
                         {/* Blog Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                            {posts.map((post: any) => (
-                                <BlogCard key={post.id} post={post} />
+                            {posts.map((post) => (
+                                <BlogCard key={post.id} post={post as unknown as Parameters<typeof BlogCard>[0]['post']} />
                             ))}
                         </div>
 

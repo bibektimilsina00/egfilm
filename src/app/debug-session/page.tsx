@@ -24,7 +24,7 @@ export default function SessionDebugPage() {
                                 <div className="bg-gray-800 p-4 rounded-lg">
                                     <p><strong>Email:</strong> {session.user?.email}</p>
                                     <p><strong>Name:</strong> {session.user?.name}</p>
-                                    <p><strong>Role:</strong> {(session.user as any)?.role || 'NOT SET (This is the problem!)'}</p>
+                                    <p><strong>Role:</strong> {(session.user as { role?: string })?.role || 'NOT SET (This is the problem!)'}</p>
                                 </div>
                             </div>
 
@@ -47,9 +47,8 @@ export default function SessionDebugPage() {
                 <div className="mt-6 bg-blue-500/20 border border-blue-500 rounded-lg p-4">
                     <h3 className="font-semibold mb-2">Expected Behavior:</h3>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
-                        <li>If role is "admin" → You can access /admin</li>
-                        <li>If role is "user" or undefined → You will be redirected from /admin</li>
-                        <li>If you just became admin, you MUST log out and log back in</li>
+                        <li>If role is &quot;admin&quot; → You can access /admin</li>
+                        <li>If role is &quot;user&quot; → You cannot access /admin</li>
                     </ul>
                 </div>
 

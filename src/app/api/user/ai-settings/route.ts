@@ -16,7 +16,7 @@ const aiSettingsSchema = z.object({
     preferredAiModel: z.string().optional(),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
     try {
         const session = await auth();
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const body = await req.json();
+        const body = await request.json();
         const validated = aiSettingsSchema.parse(body);
 
         // Update user's AI settings
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const session = await auth();
 

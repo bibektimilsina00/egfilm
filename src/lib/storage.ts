@@ -101,7 +101,7 @@ export const removeFromContinueWatching = (id: number, type: 'movie' | 'tv') => 
     localStorage.setItem('egfilm_continue', JSON.stringify(filtered));
 };
 
-type ContinueWatchingItem = {
+export type ContinueWatchingItem = {
     id: number;
     title?: string;
     name?: string;

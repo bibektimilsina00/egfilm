@@ -5,7 +5,6 @@ import {
     getContinueWatching,
     removeContinueWatching,
     getProgress,
-    migrateContinueWatchingFromLocalStorage,
 } from '@/lib/services/continueWatching.service';
 
 // GET - Fetch user's continue watching list

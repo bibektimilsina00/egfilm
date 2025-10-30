@@ -124,7 +124,11 @@ export default async function BlogPostPage({ params }: PageProps) {
 
             <Navigation />
 
-            <BlogPostClient post={post as any} relatedPosts={relatedPosts as any} postUrl={postUrl} />
+            <BlogPostClient 
+                post={post as unknown as Parameters<typeof BlogPostClient>[0]['post']} 
+                relatedPosts={relatedPosts as unknown as Parameters<typeof BlogPostClient>[0]['relatedPosts']} 
+                postUrl={postUrl} 
+            />
 
             <Footer />
         </div>

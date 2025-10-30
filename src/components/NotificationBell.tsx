@@ -11,7 +11,6 @@ import {
     useMarkNotificationAsRead,
     useMarkAllNotificationsAsRead,
     useDeleteNotification,
-    useClearAllNotifications,
     type Notification as NotificationType,
 } from '@/lib/hooks/useNotifications';
 
@@ -35,14 +34,13 @@ export default function NotificationBell() {
 
     // React Query hooks
     const { data: unreadCount = 0 } = useUnreadNotificationsCount();
-    const { data: notifications = [], isLoading: loading, refetch } = useNotifications({
+    const { data: notifications = [], isLoading: loading } = useNotifications({
         enabled: showDropdown && status === 'authenticated',
     });
 
     const markAsReadMutation = useMarkNotificationAsRead();
     const markAllAsReadMutation = useMarkAllNotificationsAsRead();
     const deleteNotificationMutation = useDeleteNotification();
-    const clearAllMutation = useClearAllNotifications();
 
     const markAsRead = async (notificationId: string) => {
         try {
