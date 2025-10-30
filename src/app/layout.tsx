@@ -154,7 +154,6 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth" className="dark">
       <head>
-        <UmamiTracker />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -166,6 +165,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <UmamiTracker />
         <SessionProvider>
           <QueryProvider>
             <PerformanceMonitor />

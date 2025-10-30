@@ -8,16 +8,18 @@ import { useCallback } from 'react';
  *        trackEvent('movie_clicked', { movieId: 12345, movieTitle: 'Avatar' });
  */
 export function useUmamiEvents() {
-    const trackEvent = useCallback((eventName: string, eventData?: Record<string, any>) => {
-        if (typeof window !== 'undefined' && (window as any).umami) {
+    const trackEvent = useCallback((eventName: string, eventData?: Record<string, string | number | boolean | undefined>) => {
+        if (typeof window !== 'undefined' && window.umami) {
             try {
-                (window as any).umami.trackEvent(eventName, eventData);
+                window.umami.track(eventName, eventData);
                 if (process.env.NODE_ENV === 'development') {
                     console.log(`✅ [UMAMI] Event tracked: ${eventName}`, eventData);
                 }
             } catch (error) {
                 console.error('❌ [UMAMI] Failed to track event:', error);
             }
+        } else if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ [UMAMI] Tracker not loaded yet, event not tracked:', eventName);
         }
     }, []);
 
@@ -66,15 +68,17 @@ export const umamiEvents = {
 /**
  * Core function to track Umami events
  */
-function trackUmamiEvent(eventName: string, eventData?: Record<string, any>) {
-    if (typeof window !== 'undefined' && (window as any).umami) {
+function trackUmamiEvent(eventName: string, eventData?: Record<string, string | number | boolean | undefined>) {
+    if (typeof window !== 'undefined' && window.umami) {
         try {
-            (window as any).umami.trackEvent(eventName, eventData);
+            window.umami.track(eventName, eventData);
             if (process.env.NODE_ENV === 'development') {
                 console.log(`✅ [UMAMI] Event tracked: ${eventName}`, eventData);
             }
         } catch (error) {
             console.error('❌ [UMAMI] Failed to track event:', error);
         }
+    } else if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ [UMAMI] Tracker not loaded, event not tracked:', eventName);
     }
 }
