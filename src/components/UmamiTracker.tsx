@@ -2,7 +2,7 @@
 
 import Script from 'next/script';
 import { useEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 /**
  * Umami Analytics Tracker Component
@@ -20,13 +20,12 @@ export function UmamiTracker() {
     const scriptUrl = process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || "https://cloud.umami.is/script.js";
     
     const pathname = usePathname();
-    const searchParams = useSearchParams();
 
     // Track initial load and route changes
     useEffect(() => {
         if (typeof window !== 'undefined' && window.umami) {
-            // Build full URL with query params
-            const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
+            // Get current URL with query params from window.location
+            const url = window.location.pathname + window.location.search;
             
             // Track page view
             window.umami.track(url);
@@ -35,7 +34,7 @@ export function UmamiTracker() {
                 console.log('✅ [UMAMI] Page view tracked:', url);
             }
         }
-    }, [pathname, searchParams]);
+    }, [pathname]);
 
     // Verify Umami is loaded
     useEffect(() => {
