@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
-import { UmamiTracker } from "@/components/UmamiTracker";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { GoogleTagManager } from "@/components/GoogleTagManager";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import ServiceWorker from "@/components/ServiceWorker";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { siteConfig, seoKeywords } from "@/lib/seo";
+import { seoConfig, generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seoConfig";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,24 +29,29 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  ...seoConfig.generateMetadata({
+    title: 'Watch Movies & TV Shows Online Free - Stream HD Content',
+    description: 'Discover and watch thousands of movies and TV shows online for free. Stream HD content, get detailed information, ratings, and reviews. No registration required.',
+    keywords: [
+      ...seoKeywords.primary,
+      ...seoKeywords.secondary,
+      ...seoKeywords.genres,
+      "watch together",
+      "group watch",
+      "watchlist",
+      "hd streaming free",
+      "no ads free movies",
+      "unlimited streaming",
+      "no registration required",
+      "movie database",
+      "tv show database",
+      "stream movies online",
+      "free streaming platform",
+      "entertainment hub"
+    ],
+    canonicalUrl: siteConfig.url,
+  }),
   metadataBase: new URL(siteConfig.url),
-  title: {
-    default: `${siteConfig.name} - Watch Movies & TV Shows Online Free`,
-    template: `%s | ${siteConfig.name}`
-  },
-  description: siteConfig.description,
-  keywords: [
-    ...seoKeywords.primary,
-    ...seoKeywords.secondary,
-    ...seoKeywords.genres,
-    "watch together",
-    "group watch",
-    "watchlist",
-    "hd streaming free",
-    "no ads free movies",
-    "unlimited streaming",
-    "no registration required"
-  ],
   authors: [{ name: siteConfig.creator }],
   creator: siteConfig.creator,
   publisher: siteConfig.publisher,
@@ -151,21 +158,79 @@ export default function RootLayout({
     ],
   }
 
+  // Enhanced structured data
+  const organizationSchema = generateOrganizationSchema();
+  const websiteSchema = generateWebsiteSchema(siteConfig.url);
+
   return (
     <html lang="en" data-scroll-behavior="smooth" className="dark">
       <head>
+        {/* Enhanced Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
+
+        {/* Enhanced Web App Manifest */}
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* Preconnect to external domains for performance */}
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="preconnect" href="https://api.themoviedb.org" />
+        <link rel="preconnect" href="https://www.google-analytics.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+
+        {/* RSS Feed Discovery */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="Egfilm Blog RSS Feed"
+          href="https://blog.egfilm.xyz/blog/rss.xml"
+        />
+
+        {/* Sitemap Reference */}
+        <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
+
+        {/* Google Tag Manager */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-NNJD2J44');`
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <UmamiTracker />
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-NNJD2J44"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
+
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
+        <GoogleTagManager gtmId="GTM-NNJD2J44" />
         <SessionProvider>
           <QueryProvider>
             <PerformanceMonitor />

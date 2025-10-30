@@ -25,7 +25,6 @@ const optionalVars = [
     'REDIS_HOST',
     'REDIS_PORT',
     'SENTRY_DSN',
-    'NEXT_PUBLIC_UMAMI_WEBSITE_ID',
 ];
 
 let allRequired = true;

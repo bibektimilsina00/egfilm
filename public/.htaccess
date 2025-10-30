@@ -1,0 +1,155 @@
+# Comprehensive .htaccess for better SEO and performance
+# Note: This file is for Apache servers. Adjust accordingly if using Nginx.
+
+# ======================================================================
+# Security Headers
+# ======================================================================
+
+<IfModule mod_headers.c>
+    # HSTS Security Header
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Content Security and XSS Protection
+    Header always set X-Frame-Options "DENY"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # SEO and Performance Headers
+    Header always set X-Robots-Tag "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    Header always set Accept-CH "Viewport-Width, Width, DPR, Save-Data"
+</IfModule>
+
+# ======================================================================
+# Performance and Caching
+# ======================================================================
+
+<IfModule mod_expires.c>
+    ExpiresActive on
+    
+    # Images
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    
+    # Web fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    
+    # HTML and XML files
+    ExpiresByType text/html "access plus 1 hour"
+    ExpiresByType application/xml "access plus 12 hours"
+    ExpiresByType text/xml "access plus 12 hours"
+    
+    # Sitemaps and feeds
+    ExpiresByType application/rss+xml "access plus 12 hours"
+</IfModule>
+
+# ======================================================================
+# Compression
+# ======================================================================
+
+<IfModule mod_deflate.c>
+    # Compress HTML, CSS, JavaScript, Text, XML and fonts
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE application/x-font
+    AddOutputFilterByType DEFLATE application/x-font-opentype
+    AddOutputFilterByType DEFLATE application/x-font-otf
+    AddOutputFilterByType DEFLATE application/x-font-truetype
+    AddOutputFilterByType DEFLATE application/x-font-ttf
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE font/opentype
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE image/x-icon
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+</IfModule>
+
+# ======================================================================
+# URL Redirects for SEO
+# ======================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Redirect to HTTPS (if not using Cloudflare or load balancer)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    # Remove trailing slashes
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)/$ /$1 [R=301,L]
+    
+    # Redirect old URLs to new structure (customize as needed)
+    RewriteRule ^movies/([0-9]+)/?$ /movie/$1 [R=301,L]
+    RewriteRule ^shows/([0-9]+)/?$ /tv/$1 [R=301,L]
+    RewriteRule ^watch/([0-9]+)/?$ /movie/$1 [R=301,L]
+    
+    # Handle common misspellings
+    RewriteRule ^moive/(.*)$ /movie/$1 [R=301,L]
+    RewriteRule ^tvshow/(.*)$ /tv/$1 [R=301,L]
+</IfModule>
+
+# ======================================================================
+# File Access Control
+# ======================================================================
+
+# Deny access to sensitive files
+<Files "*.log">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".htaccess">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "*.env*">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# ======================================================================
+# Content Type Definitions
+# ======================================================================
+
+<IfModule mod_mime.c>
+    # Add modern web fonts MIME types
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+    
+    # Add WebP and AVIF support
+    AddType image/webp .webp
+    AddType image/avif .avif
+    
+    # Add JSON-LD support
+    AddType application/ld+json .jsonld
+</IfModule>
+
+# ======================================================================
+# Error Pages (Optional)
+# ======================================================================
+
+# ErrorDocument 404 /404.html
+# ErrorDocument 500 /500.html

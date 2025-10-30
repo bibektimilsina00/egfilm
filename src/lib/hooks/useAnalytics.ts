@@ -1,100 +1,85 @@
 'use client';
 
 /**
- * Comprehensive Umami Analytics Hook
- * Tracks page views, events, video quality, WebRTC connections, and Watch Together activity
- *
- * Umami window object reference: window.umami
- * Send events: umami.track('event_name', { property: value })
+ * Google Analytics Hook for React
+ * 
+ * Easy-to-use React hook for tracking events with Google Analytics
  */
 
-interface UmamiProperties {
-    [key: string]: string | number | boolean | undefined;
-}
-
-interface UmamiAnalytics {
-    track: (event: string, properties?: UmamiProperties) => void;
-}
-
-// Extend window interface for Umami
 declare global {
     interface Window {
-        umami?: UmamiAnalytics;
+        gtag: (command: string, action?: string, parameters?: Record<string, unknown>) => void;
+        dataLayer: Record<string, unknown>[];
     }
 }
 
+interface EventProperties {
+    [key: string]: string | number | boolean;
+}
+
 export function useAnalytics() {
-    // Ensure Umami is available
-    const getUmami = () => {
-        if (typeof window !== 'undefined' && window.umami) {
-            return window.umami;
+    // Ensure Google Analytics is available
+    const getGtag = () => {
+        if (typeof window !== 'undefined' && window.gtag) {
+            return window.gtag;
         }
+        console.warn('Google Analytics not loaded yet');
         return null;
     };
 
     /**
-     * Track generic event with properties
-     * @param eventName - Event name (max 50 chars)
-     * @param properties - Event data (stored as strings by Umami)
+     * Track custom events
+     * @param eventName - The name of the event
+     * @param properties - Event data
      */
-    const trackEvent = (eventName: string, properties?: UmamiProperties) => {
-        const umami = getUmami();
-        if (!umami) {
-            if (process.env.NODE_ENV === 'development') {
-                console.warn('📊 [ANALYTICS] Umami not initialized. Make sure tracking script is loaded.');
-            }
+    const trackEvent = (eventName: string, properties?: EventProperties) => {
+        const gtag = getGtag();
+        if (!gtag) {
+            console.warn(`Cannot track event "${eventName}": Google Analytics not available`);
             return;
         }
 
-        // Truncate event name to 50 chars (Umami limit)
-        const truncatedName = eventName.substring(0, 50);
-
         try {
-            umami.track(truncatedName, properties);
-            if (process.env.NODE_ENV === 'development') {
-                console.log('📊 [UMAMI]', truncatedName, properties);
-            }
+            gtag('event', eventName, properties);
+            console.log(`Tracked event: ${eventName}`, properties);
         } catch (error) {
-            console.error('📊 [UMAMI ERROR]', error);
+            console.error('Error tracking event:', error);
         }
     };
 
     /**
-     * Track page view with custom metadata
-     * @param pageName - Page identifier (watch_together, movies, tv, etc)
-     * @param properties - Additional page properties
+     * Track page views
+     * @param pageName - Name of the page being viewed
+     * @param properties - Additional page data
      */
-    const trackPageView = (pageName: string, properties?: UmamiProperties) => {
+    const trackPageView = (pageName: string, properties?: EventProperties) => {
         trackEvent('page_view', {
-            page: pageName,
-            ...properties,
+            page_title: pageName,
+            ...properties
         });
     };
 
     /**
-     * Track application errors
-     * @param error - Error object
-     * @param context - Additional error context
+     * Track errors for debugging
+     * @param error - The error object
+     * @param context - Additional context about where the error occurred
      */
-    const trackError = (error: Error, context?: UmamiProperties) => {
-        trackEvent('error_occurred', {
-            error_message: error.message.substring(0, 100),
-            error_type: error.name,
-            ...context,
+    const trackError = (error: Error, context?: EventProperties) => {
+        trackEvent('exception', {
+            description: error.message,
+            fatal: false,
+            ...context
         });
     };
 
     /**
-     * Track Watch Together room events
-     * @param eventName - watch_together_room_joined, room_left, participant_joined, etc
-     * @param properties - Event data (participants, duration, etc)
+     * Track watch together events
+     * @param eventName - The specific watch together event
+     * @param properties - Event-specific data
      */
-    const trackWatchTogetherEvent = (eventName: string, properties?: UmamiProperties) => {
-        const fullEventName = `watch_together_${eventName}`;
-        trackEvent(fullEventName, properties);
-    };
-
-    /**
+    const trackWatchTogetherEvent = (eventName: string, properties?: EventProperties) => {
+        trackEvent(`watch_together_${eventName}`, properties);
+    };    /**
      * Track video quality and performance metrics
      * @param quality - Video quality level (high, medium, low)
      * @param duration - Video stream duration in seconds
@@ -109,19 +94,17 @@ export function useAnalytics() {
         });
     };
 
-    /**
-     * Track WebRTC connection events
-     * @param status - Connection status (ice_candidate, connected, failed, etc)
-     * @param details - Connection details (ice_type, protocol, etc)
-     */
-    const trackConnectionEvent = (status: string, details?: UmamiProperties) => {
-        trackEvent('webrtc_connection', {
-            status,
-            ...details,
-        });
-    };
+    // Predefined tracking functions with proper typing and validation
 
     /**
+     * Track connection events (WebSocket, network status)
+     */
+    const trackConnectionEvent = (status: string, details?: EventProperties) => {
+        trackEvent('connection', {
+            status: status,
+            ...details
+        });
+    };    /**
      * Track media device permissions
      * @param deviceType - camera, microphone, screen
      * @param granted - true if permission granted
@@ -139,10 +122,13 @@ export function useAnalytics() {
      * @param participantCount - Number of participants in room
      */
     const trackMessage = (messageLength: number, participantCount?: number) => {
-        trackEvent('message_sent', {
+        const properties: EventProperties = {
             message_length: String(messageLength),
-            participant_count: participantCount ? String(participantCount) : undefined,
-        });
+        };
+        if (participantCount !== undefined) {
+            properties.participant_count = String(participantCount);
+        }
+        trackEvent('message_sent', properties);
     };
 
     /**
@@ -162,7 +148,7 @@ export function useAnalytics() {
      * @param eventName - login, logout, register, session_start
      * @param properties - Session properties
      */
-    const trackSession = (eventName: string, properties?: UmamiProperties) => {
+    const trackSession = (eventName: string, properties?: EventProperties) => {
         trackEvent(`session_${eventName}`, properties);
     };
 
@@ -172,10 +158,13 @@ export function useAnalytics() {
      * @param results - Number of results found
      */
     const trackSearch = (searchQuery: string, results?: number) => {
-        trackEvent('search_performed', {
+        const properties: EventProperties = {
             query: searchQuery.substring(0, 100),
-            results: results ? String(results) : undefined,
-        });
+        };
+        if (results !== undefined) {
+            properties.results = String(results);
+        }
+        trackEvent('search_performed', properties);
     };
 
     /**
@@ -185,11 +174,14 @@ export function useAnalytics() {
      * @param contentId - ID of the content
      */
     const trackContent = (contentType: string, action: string, contentId?: string) => {
-        trackEvent('content_interaction', {
+        const properties: EventProperties = {
             content_type: contentType,
             action,
-            content_id: contentId,
-        });
+        };
+        if (contentId !== undefined) {
+            properties.content_id = contentId;
+        }
+        trackEvent('content_interaction', properties);
     };
 
     /**
@@ -197,7 +189,7 @@ export function useAnalytics() {
      * @param action - play, pause, seek, source_change, fullscreen
      * @param properties - Additional player properties
      */
-    const trackPlayerEvent = (action: string, properties?: UmamiProperties) => {
+    const trackPlayerEvent = (action: string, properties?: EventProperties) => {
         trackEvent('player_event', {
             action,
             ...properties,

@@ -45,8 +45,10 @@ jobs:
           NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
           SENTRY_DSN=${{ secrets.SENTRY_DSN || '' }}
           NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN || '' }}
-          NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.UMAMI_WEBSITE_ID || '' }}
-          NEXT_PUBLIC_UMAMI_SCRIPT_URL=${{ vars.UMAMI_SCRIPT_URL || '' }}
+          # Google Analytics
+          NEXT_PUBLIC_GA_MEASUREMENT_ID=G-1YQDBM4Q2J
+          # Google Tag Manager
+          NEXT_PUBLIC_GTM_ID=GTM-NNJD2J44
           ENVEOF
       
       - name: 🔐 Login to GHCR
@@ -138,9 +140,10 @@ jobs:
             NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
             NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
             NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
-            # Analytics (optional)
-            NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.UMAMI_WEBSITE_ID || '' }}
-            NEXT_PUBLIC_UMAMI_SCRIPT_URL=${{ vars.UMAMI_SCRIPT_URL || '' }}
+            # Analytics
+            NEXT_PUBLIC_GA_MEASUREMENT_ID=G-1YQDBM4Q2J
+            # Google Tag Manager
+            NEXT_PUBLIC_GTM_ID=GTM-NNJD2J44
             # Docker image
             IMAGE_NAME=${{ steps.vars.outputs.image }}
             ENVEOF

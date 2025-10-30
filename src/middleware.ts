@@ -1,16 +1,8 @@
 import NextAuth from 'next-auth';
 import { authConfig } from './lib/auth.config';
-import type { NextRequest } from 'next/server';
 
-const authMiddleware = NextAuth(authConfig).auth;
-
-export default async function middleware(request: NextRequest) {
-    const pathname = request.nextUrl.pathname;
-
-    // No admin functionality in main app
-
-    return authMiddleware(request as any);
-}
+// Main app has no admin functionality - minimal middleware
+export default NextAuth(authConfig).auth;
 
 export const config = {
     // Protect specific routes

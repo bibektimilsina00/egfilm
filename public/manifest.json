@@ -1,17 +1,21 @@
 {
-    "name": "Egfilm - Movie & TV Show Discovery",
+    "name": "Egfilm - Watch Movies & TV Shows Online Free",
     "short_name": "Egfilm",
-    "description": "Browse and discover the latest movies and TV shows. Watch trailers, manage your watchlist, and enjoy streaming content with friends.",
-    "start_url": "/",
+    "description": "Stream thousands of movies and TV shows for free. Discover trending content, manage your watchlist, and watch with friends. No registration required.",
+    "start_url": "/?source=pwa",
+    "id": "/?source=pwa",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "scope": "/",
     "lang": "en-US",
+    "dir": "ltr",
     "categories": [
         "entertainment",
-        "lifestyle"
+        "lifestyle",
+        "movies",
+        "tv"
     ],
     "icons": [
         {

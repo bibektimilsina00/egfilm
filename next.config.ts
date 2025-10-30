@@ -29,17 +29,18 @@ const nextConfig: NextConfig = {
   },
   // Compression and optimization
   compress: true,
-  // Add headers to suppress Permissions-Policy warnings and optimize performance
+  // Enhanced headers for SEO, security, and performance
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
+          // Privacy and tracking prevention
           {
             key: 'Permissions-Policy',
-            value: 'interest-cohort=(), browsing-topics=()',
+            value: 'interest-cohort=(), browsing-topics=(), camera=(), microphone=(), geolocation=()',
           },
-          // Security headers
+          // Enhanced security headers
           {
             key: 'X-Frame-Options',
             value: 'DENY',
@@ -49,13 +50,38 @@ const nextConfig: NextConfig = {
             value: 'nosniff',
           },
           {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          // Performance headers
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          // Performance and SEO headers
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
+          },
+          {
+            key: 'X-Robots-Tag',
+            value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+          },
+          // Content delivery optimization
+          {
+            key: 'Accept-CH',
+            value: 'Viewport-Width, Width, DPR, Save-Data',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'credentialless',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
           },
         ],
       },
@@ -69,15 +95,117 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Cache images
+      // Cache images and OG images
       {
-        source: '/api/og',
+        source: '/api/og/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=3600, s-maxage=3600',
+            value: 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=43200',
           },
         ],
+      },
+      // Cache sitemaps with shorter duration for freshness
+      {
+        source: '/sitemap-:path.xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=43200, s-maxage=43200, stale-while-revalidate=21600',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/xml',
+          },
+        ],
+      },
+      // Cache main sitemap.xml
+      {
+        source: '/sitemap.xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=43200, s-maxage=43200, stale-while-revalidate=21600',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/xml',
+          },
+        ],
+      },
+      // Cache sitemap index
+      {
+        source: '/sitemap-index.xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=43200, s-maxage=43200, stale-while-revalidate=21600',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/xml',
+          },
+        ],
+      },
+      // Cache robots.txt
+      {
+        source: '/robots.txt',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=86400',
+          },
+        ],
+      },
+    ];
+  },
+
+  // SEO-friendly redirects
+  async redirects() {
+    return [
+      // Redirect old URLs to new structure (example redirects)
+      {
+        source: '/movies/:id',
+        destination: '/movie/:id',
+        permanent: true,
+      },
+      {
+        source: '/shows/:id',
+        destination: '/tv/:id',
+        permanent: true,
+      },
+      {
+        source: '/watch/:id',
+        destination: '/movie/:id',
+        permanent: true,
+      },
+      // Remove trailing slashes for consistency
+      {
+        source: '/:path+/',
+        destination: '/:path+',
+        permanent: true,
+      },
+      // Redirect common misspellings
+      {
+        source: '/moive/:path*',
+        destination: '/movie/:path*',
+        permanent: true,
+      },
+      {
+        source: '/tvshow/:path*',
+        destination: '/tv/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
+  // SEO-friendly rewrites
+  async rewrites() {
+    return [
+      // Blog subdomain rewrite (if blog is on same server)
+      {
+        source: '/blog/:path*',
+        destination: 'https://blog.egfilm.xyz/blog/:path*',
       },
     ];
   },

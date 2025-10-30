@@ -93,7 +93,7 @@ Added cast count indicator in the admin table:
 ## Data Flow
 
 ### Backend (Already Implemented)
-1. **Blog Generation**: `advancedBlogGenerator.ts` fetches cast via `fetchMediaWithCast()`
+1. **Blog Generation**: `blogGeneratorService.ts` fetches cast and crew via enhanced `getMediaDetails()`
    - Gets top 15 cast members
    - Gets top 5 crew members
    - Stores names as string array

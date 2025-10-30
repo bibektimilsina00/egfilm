@@ -21,7 +21,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  // Streaming App Relations (no blog/admin fields)
+  // AI Configuration for User Settings
+  geminiApiKey       String?  // User's Gemini API key
+  openaiApiKey       String?  // User's OpenAI API key
+  anthropicApiKey    String?  // User's Anthropic API key
+  tmdbApiKey         String?  // User's TMDb API key
+  preferredAiModel   String?  @default("gemini-2.5-flash") // Default AI model
+  
+  // Streaming App Relations
   watchlist        WatchlistItem[]
   continueWatching ContinueWatching[]
   watchRooms       WatchRoom[]
