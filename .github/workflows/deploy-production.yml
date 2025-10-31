@@ -413,18 +413,13 @@ jobs:
             }
             
             # Generate Prisma client and run migrations
-            DATABASE_URL="${{ secrets.DATABASE_URL }}" POSTGRES_USER="${{ secrets.POSTGRES_USER }}" POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" POSTGRES_DB="${{ secrets.POSTGRES_DB }}" docker compose run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
+            docker compose --env-file  run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
               echo "⚠️ Database setup failed, but continuing deployment..."
               echo "This might cause runtime errors - check Prisma configuration"
             }
             
             echo "🚀 Starting deployment..."
-            # Export environment variables for docker compose
-            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
-            export TMDB_API_KEY="${{ secrets.TMDB_API_KEY }}"
-            export NEXT_PUBLIC_TMDB_API_KEY="${{ secrets.TMDB_API_KEY }}"
-            export AUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}"
-            export AUTH_TRUST_HOST="true"
+            # Create environment file for docker compose
             
             # Start new container (database is healthy, port should be free)
             docker compose up -d app
@@ -435,7 +430,7 @@ jobs:
             
             # Regenerate Prisma client in the running container to ensure compatibility
             echo "🔧 Ensuring Prisma client is properly generated..."
-            docker compose exec -T app npx prisma generate || echo "⚠️ Prisma client generation failed, but continuing..."
+            docker compose  exec -T app npx prisma generate || echo "⚠️ Prisma client generation failed, but continuing..."
             
             # Check if container is running
             if ! docker compose ps app | grep -q "Up"; then
@@ -507,20 +502,43 @@ jobs:
           
           # Test critical endpoints
           BASE_URL="${{ vars.APP_URL || 'https://egfilm.xyz' }}"
+          echo "🌐 Testing application at: $BASE_URL"
           
           # Test home page
-          if curl -sf "${BASE_URL}/" > /dev/null; then
-            echo "✅ Home page accessible"
+          echo "🔍 Testing home page..."
+          HOME_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" "${BASE_URL}/" 2>&1)
+          HOME_BODY=$(echo "$HOME_RESPONSE" | sed 's/HTTPSTATUS.*//')
+          HOME_STATUS=$(echo "$HOME_RESPONSE" | grep "HTTPSTATUS:" | cut -d: -f2)
+          
+          if [ "$HOME_STATUS" = "200" ]; then
+            echo "✅ Home page accessible (HTTP $HOME_STATUS)"
           else
-            echo "❌ Home page failed"
+            echo "❌ Home page failed (HTTP $HOME_STATUS)"
+            echo "📄 Response preview:"
+            echo "$HOME_BODY" | head -10
             exit 1
           fi
           
           # Test API health
-          if curl -sf "${BASE_URL}/api/health" | grep -q "healthy"; then
+          echo "🔍 Testing API health endpoint..."
+          API_RESPONSE=$(curl -s "${BASE_URL}/api/health" 2>&1)
+          API_EXIT_CODE=$?
+          
+          echo "📄 API Response (exit code: $API_EXIT_CODE):"
+          echo "$API_RESPONSE"
+          echo "---"
+          
+          if [ $API_EXIT_CODE -ne 0 ]; then
+            echo "❌ API health check failed: curl command failed with exit code $API_EXIT_CODE"
+            exit 1
+          fi
+          
+          if echo "$API_RESPONSE" | grep -q "healthy"; then
             echo "✅ API health check passed"
           else
-            echo "❌ API health check failed"
+            echo "❌ API health check failed: response does not contain 'healthy'"
+            echo "💡 Expected: response containing 'healthy'"
+            echo "💡 Got: $API_RESPONSE"
             exit 1
           fi
           

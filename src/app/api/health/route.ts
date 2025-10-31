@@ -8,6 +8,26 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
     try {
         console.log('🔍 Health check: Starting database connectivity test...');
+        console.log('🔍 Health check: DATABASE_URL present:', !!process.env.DATABASE_URL);
+        console.log('🔍 Health check: NODE_ENV:', process.env.NODE_ENV);
+
+        // Check if DATABASE_URL is set
+        if (!process.env.DATABASE_URL) {
+            console.error('❌ Health check: DATABASE_URL is not set!');
+            return NextResponse.json({
+                status: 'unhealthy',
+                timestamp: new Date().toISOString(),
+                services: {
+                    database: 'disconnected',
+                    app: 'running'
+                },
+                error: 'DATABASE_URL environment variable is not set',
+                details: {
+                    database_url: 'missing',
+                    node_env: process.env.NODE_ENV
+                }
+            }, { status: 503 });
+        }
 
         // Test database connection - try simple query first, fallback to raw query
         let dbTestResult = 'unknown';
