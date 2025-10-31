@@ -10,7 +10,7 @@
 - **NextAuth v5 beta** with JWT-based authentication
 - **PostgreSQL + Prisma ORM** for persistent data storage
 - **Smart TMDb pagination tracking** - continues from last position instead of restarting from page 1
-- **Comprehensive analytics** via Umami (auto-tracking) + optional Sentry error tracking
+- **Comprehensive analytics** via optional Sentry error tracking
 - **Service-based architecture** for database operations
 - **TypeScript** for type safety throughout
 
@@ -214,11 +214,6 @@ const { results, finalPage, finalIndex } = await fetchMediaWithProgress(
 - `POST /api/blog/reset-progress` - Reset specific configuration
 
 ### 10. **Analytics & Error Tracking**
-- **Umami Analytics**: Global script auto-loaded in root layout
-  - Location: `src/components/UmamiTracker.tsx` in `src/app/layout.tsx`
-  - Auto-tracks: Page views, sessions, devices, referrers
-  - Custom events: Use `useUmamiEvents` hook from `src/lib/hooks/useUmamiEvents.ts`
-
 - **Sentry Error Tracking**: Conditionally initialized (requires SENTRY_DSN env var)
   - Location: `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`
   - Only initializes if DSN is provided (respects environment variables)
@@ -279,7 +274,6 @@ NEXTAUTH_URL=http://localhost:8000  # Match dev port!
 # Optional
 NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3  # Has default
 SENTRY_DSN=your_sentry_dsn  # For error tracking
-NEXT_PUBLIC_UMAMI_WEBSITE_ID=your_umami_id  # Analytics
 ```
 
 ### Testing Watch Together Locally
