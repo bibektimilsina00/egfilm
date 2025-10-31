@@ -263,6 +263,7 @@ jobs:
           source: ".env,scripts/deploy.sh,docker-compose.yml"   # ← renamed file
           target: "~/egfilm/"
           strip_components: 1 
+          overwrite: true
 
       # 3.  Run deployment script (appleboy/ssh-action)
       - name: 🚀 Execute deploy.sh
