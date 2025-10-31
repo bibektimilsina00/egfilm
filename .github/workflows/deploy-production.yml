@@ -33,6 +33,11 @@ concurrency:
   group: deploy-main-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  security-events: write
+  packages: write
+
 jobs:
   # ===========================================
   # 🔍 PRE-DEPLOYMENT VALIDATION
@@ -125,7 +130,7 @@ jobs:
           NODE_ENV: production
 
       - name: 🧪 Run Tests
-        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        run: npm test
         env:
           CI: true
 
