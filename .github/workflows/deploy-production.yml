@@ -315,6 +315,7 @@ jobs:
           
           # Authentication
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          AUTH_TRUST_HOST=true
           AUTH_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
           NEXTAUTH_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
           
@@ -374,7 +375,7 @@ jobs:
             
             # Wait for database to be healthy, with recovery on failure
             echo "⏳ Waiting for database to be ready..."
-            timeout 60 bash -c 'until docker compose exec postgres pg_isready -U egfilm > /dev/null 2>&1; do sleep 2; echo -n .; done' || {
+            timeout 60 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 2; echo -n .; done' || {
               echo "❌ Database failed to start, attempting recovery..."
               docker compose logs postgres
               
@@ -389,7 +390,7 @@ jobs:
               docker compose up -d postgres
               
               echo "⏳ Waiting for fresh database to initialize..."
-              timeout 120 bash -c 'until docker compose exec postgres pg_isready -U egfilm > /dev/null 2>&1; do sleep 3; echo -n .; done' || {
+              timeout 120 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 3; echo -n .; done' || {
                 echo "❌ Database recovery failed, showing logs..."
                 docker compose logs postgres
                 exit 1
@@ -399,9 +400,17 @@ jobs:
             }
             
             echo "🔄 Running database setup..."
+            # Wait for database to be fully ready before running Prisma commands
+            echo "⏳ Ensuring database is fully ready for Prisma..."
+            timeout 30 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 1; echo -n .; done' || {
+              echo "❌ Database not ready for Prisma setup"
+              exit 1
+            }
+            
             # Generate Prisma client and run migrations
             docker compose run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
               echo "⚠️ Database setup failed, but continuing deployment..."
+              echo "This might cause runtime errors - check Prisma configuration"
             }
             
             echo " Starting deployment..."

@@ -9,6 +9,7 @@ import { prisma } from './prisma';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
+    trustHost: true, // Required for production deployment
     providers: [
         Credentials({
             async authorize(credentials) {
