@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Check, Users } from 'lucide-react';
-import { getTVDetails, getImageUrl, MediaDetail } from '@/lib/tmdb';
+import { getTVDetails, getImageUrl, MediaDetail, MediaItem } from '@/lib/tmdb';
 import { Button } from '@/components/ui/button';
 import { PlayButton } from '@/components/ui/play-button';
-import { formatVoteAverage } from '@/lib/api/tmdb';
+import { formatVoteAverage, Genre } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
+import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '@/lib/storage';
 import { getTVEmbedUrl } from '@/lib/videoSources';
 import WatchTogetherModal from '@/components/WatchTogetherModal';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -29,31 +29,6 @@ export default function TVDetailPage() {
     const [selectedEpisode, setSelectedEpisode] = useState(1);
     const [showWatchTogether, setShowWatchTogether] = useState(false);
 
-    useEffect(() => {
-        if (tvId) {
-            loadTVDetails();
-        }
-    }, [tvId]);
-
-    useEffect(() => {
-        if (tv) {
-            setInWatchlist(isInWatchlist(tv.id, 'tv'));
-            addToHistory(tv, 'tv');
-        }
-    }, [tv]);
-
-    const toggleWatchlist = () => {
-        if (!tv) return;
-
-        if (inWatchlist) {
-            removeFromWatchlist(tv.id, 'tv');
-            setInWatchlist(false);
-        } else {
-            addToWatchlist(tv, 'tv');
-            setInWatchlist(true);
-        }
-    };
-
     async function loadTVDetails() {
         try {
             setLoading(true);
@@ -66,6 +41,28 @@ export default function TVDetailPage() {
             setLoading(false);
         }
     }
+
+    const memoizedLoadTVDetails = useCallback(loadTVDetails, [tvId]);
+
+    useEffect(() => {
+        if (tvId) {
+            memoizedLoadTVDetails();
+            // Check if TV show is in watchlist
+            setInWatchlist(isInWatchlist(Number(tvId), 'tv'));
+        }
+    }, [tvId, memoizedLoadTVDetails]);
+
+    const toggleWatchlist = useCallback(() => {
+        if (!tv) return;
+
+        if (inWatchlist) {
+            removeFromWatchlist(Number(tvId), 'tv');
+            setInWatchlist(false);
+        } else {
+            addToWatchlist(tv, 'tv');
+            setInWatchlist(true);
+        }
+    }, [tvId, inWatchlist, tv]);
 
     if (loading) {
         return (
@@ -89,7 +86,7 @@ export default function TVDetailPage() {
     }
 
     const trailer = tv.videos?.results?.find(
-        (video: any) => video.type === 'Trailer' && video.site === 'YouTube'
+        (video: { key: string; site: string; type: string }) => video.type === 'Trailer' && video.site === 'YouTube'
     );
 
     return (
@@ -109,7 +106,7 @@ export default function TVDetailPage() {
                 <div className="absolute inset-0">
                     <Image
                         src={getImageUrl(tv.backdrop_path || tv.poster_path, 'original')}
-                        alt={(tv as any).name || 'TV Show'}
+                        alt={tv.name || tv.title || 'TV Show'}
                         fill
                         priority
                         className="object-cover"
@@ -125,7 +122,7 @@ export default function TVDetailPage() {
                                 <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-2xl">
                                     <Image
                                         src={getImageUrl(tv.poster_path, 'w500')}
-                                        alt={(tv as any).name || 'TV Show'}
+                                        alt={tv.name || tv.title || 'TV Show'}
                                         fill
                                         className="object-cover object-center"
                                         priority
@@ -136,7 +133,7 @@ export default function TVDetailPage() {
 
                             <div className="flex-1">
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
-                                    {(tv as any).name}
+                                    {tv.name || tv.title}
                                 </h1>
 
                                 <div className="flex flex-wrap items-center gap-4 mb-6">
@@ -149,24 +146,24 @@ export default function TVDetailPage() {
                                         </div>
                                     )}
 
-                                    {(tv as any).first_air_date && (
+                                    {tv.first_air_date && (
                                         <div className="flex items-center gap-2 text-gray-300">
                                             <Calendar className="w-4 h-4" />
-                                            <span>{new Date((tv as any).first_air_date).getFullYear()}</span>
+                                            <span>{new Date(tv.first_air_date).getFullYear()}</span>
                                         </div>
                                     )}
 
-                                    {(tv as any).number_of_seasons && (
+                                    {tv.number_of_seasons && (
                                         <div className="flex items-center gap-2 text-gray-300">
                                             <TvIcon className="w-4 h-4" />
-                                            <span>{(tv as any).number_of_seasons} Season{(tv as any).number_of_seasons > 1 ? 's' : ''}</span>
+                                            <span>{tv.number_of_seasons} Season{tv.number_of_seasons > 1 ? 's' : ''}</span>
                                         </div>
                                     )}
                                 </div>
 
                                 {tv.genres && tv.genres.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mb-6">
-                                        {tv.genres.map((genre: any) => (
+                                        {tv.genres.map((genre: Genre) => (
                                             <span
                                                 key={genre.id}
                                                 className="px-3 py-1 bg-gray-800/80 backdrop-blur-sm text-gray-300 rounded-full text-sm"
@@ -190,7 +187,7 @@ export default function TVDetailPage() {
                                             onChange={(e) => setSelectedSeason(Number(e.target.value))}
                                             className="px-4 py-2 bg-gray-800/80 backdrop-blur-sm text-white rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            {Array.from({ length: (tv as any).number_of_seasons || 1 }, (_, i) => i + 1).map((season) => (
+                                            {Array.from({ length: tv.number_of_seasons || 1 }, (_, i) => i + 1).map((season) => (
                                                 <option key={season} value={season}>
                                                     Season {season}
                                                 </option>
@@ -276,7 +273,7 @@ export default function TVDetailPage() {
                                         onClick={() => {
                                             if (navigator.share) {
                                                 navigator.share({
-                                                    title: (tv as any).name,
+                                                    title: tv.name || tv.title,
                                                     text: tv.overview,
                                                     url: window.location.href,
                                                 });
@@ -297,7 +294,7 @@ export default function TVDetailPage() {
                 <Breadcrumb
                     items={[
                         { name: 'TV Shows', url: '/tv' },
-                        { name: (tv as any).name, url: `/tv/${tvId}` },
+                        { name: tv.name || tv.title, url: `/tv/${tvId}` },
                     ]}
                 />
 
@@ -305,7 +302,7 @@ export default function TVDetailPage() {
                     <section>
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Top Cast</h2>
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                            {tv.credits.cast.slice(0, 16).map((person: any) => (
+                            {tv.credits.cast.slice(0, 16).map((person: { id: number; name: string; character: string; profile_path: string | null }) => (
                                 <div key={person.id} className="group cursor-pointer">
                                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 bg-gray-800 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
                                         {person.profile_path ? (
@@ -336,7 +333,7 @@ export default function TVDetailPage() {
                     <section>
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Similar Shows</h2>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {tv.similar.results.slice(0, 10).map((item: any) => (
+                            {tv.similar.results.slice(0, 10).map((item: MediaItem) => (
                                 <MediaCard key={item.id} item={item} type="tv" />
                             ))}
                         </div>
@@ -349,7 +346,7 @@ export default function TVDetailPage() {
                 <WatchTogetherModal
                     isOpen={showWatchTogether}
                     onClose={() => setShowWatchTogether(false)}
-                    movieTitle={`${(tv as any).name} - S${selectedSeason}E${selectedEpisode}`}
+                    movieTitle={`${tv.name || tv.title} - S${selectedSeason}E${selectedEpisode}`}
                     movieId={Number(tvId)}
                     embedUrl={getTVEmbedUrl(Number(tvId), selectedSeason, selectedEpisode)}
                     type="tv"

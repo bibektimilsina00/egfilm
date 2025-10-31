@@ -30,7 +30,7 @@ export interface Notification {
     isRead: boolean;
     createdAt: string;
     roomCode?: string;
-    data?: any;
+    data?: unknown;
 }
 
 // =============================================================================

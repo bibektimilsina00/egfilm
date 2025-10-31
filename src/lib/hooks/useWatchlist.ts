@@ -7,6 +7,7 @@ import {
     getWatchlist,
     isInWatchlist as checkIsInWatchlist
 } from '@/lib/storage';
+import type { MediaItem } from '@/lib/tmdb';
 
 // Query keys for watchlist
 export const watchlistKeys = {
@@ -48,7 +49,7 @@ export function useAddToWatchlist() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ item, type }: { item: any; type: 'movie' | 'tv' }) => {
+        mutationFn: async ({ item, type }: { item: MediaItem; type: 'movie' | 'tv' }) => {
             addToWatchlistStorage(item, type);
             return { item, type };
         },
@@ -63,7 +64,7 @@ export function useAddToWatchlist() {
             );
 
             // Optional: Show success feedback
-            const title = type === 'movie' ? item.title : item.name;
+            const title = 'title' in item ? item.title : 'name' in item ? item.name : 'Unknown';
             console.log(`Added "${title}" to watchlist`);
         },
         onError: (error) => {
@@ -119,11 +120,11 @@ export function useToggleWatchlist() {
             type,
             isInWatchlist: currentStatus
         }: {
-            item: any;
+            item: MediaItem;
             type: 'movie' | 'tv';
             isInWatchlist: boolean;
         }) => {
-            const title = type === 'movie' ? item.title : item.name;
+            const title = 'title' in item ? item.title : 'name' in item ? item.name : 'Unknown';
 
             if (currentStatus) {
                 return removeFromWatchlist.mutateAsync({

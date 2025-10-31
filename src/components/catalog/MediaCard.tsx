@@ -15,7 +15,7 @@ interface SimpleMediaItem {
     title?: string;
     name?: string;
     poster_path: string | null;
-    vote_average: number;
+    vote_average?: number;
     release_date?: string;
     first_air_date?: string;
 }
@@ -76,7 +76,7 @@ export default function MediaCard({ item, type }: MediaCardProps) {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                         {/* Rating badge */}
-                        {item.vote_average > 0 && (
+                        {item.vote_average && item.vote_average > 0 && (
                             <div className="absolute right-2 top-2">
                                 <Badge
                                     variant="secondary"

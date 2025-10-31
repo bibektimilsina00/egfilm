@@ -10,7 +10,7 @@ export async function GET() {
         // Test database connection - try simple query first, fallback to raw query
         try {
             await prisma.user.count();
-        } catch (userTableError) {
+        } catch {
             // If user table doesn't exist, try a basic connection test
             await prisma.$queryRaw`SELECT 1`;
         }

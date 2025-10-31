@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { structuredData } from '@/lib/seo'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 interface BreadcrumbItem {
     name: string
@@ -16,10 +16,10 @@ interface BreadcrumbProps {
 
 export default function Breadcrumb({ items }: BreadcrumbProps) {
     // Always include Home as first item
-    const allItems: BreadcrumbItem[] = [
+    const allItems: BreadcrumbItem[] = useMemo(() => [
         { name: 'Home', url: '/' },
         ...items,
-    ]
+    ], [items])
 
     useEffect(() => {
         // Inject structured data for breadcrumbs

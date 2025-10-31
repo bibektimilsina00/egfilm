@@ -1,5 +1,18 @@
 import { Metadata } from 'next'
-import { getMovieDetails, getTVDetails, getImageUrl } from '@/lib/tmdb'
+import { getMovieDetails, getTVDetails, getImageUrl, type MediaItem } from '@/lib/tmdb'
+import type { CastMember, CrewMember, MovieDetails, TVDetails, Genre } from '@/lib/api/tmdb'
+
+// Type definitions for SEO functions
+interface Review {
+    mediaType: 'movie' | 'tv';
+    mediaTitle: string;
+    mediaImage?: string;
+    mediaUrl?: string;
+    rating?: number;
+    author?: string;
+    content: string;
+    publishedAt: string;
+}
 
 // Site Configuration
 export const siteConfig = {
@@ -97,7 +110,7 @@ export const structuredData = {
     },
 
     // Item List Schema Generator
-    itemList: (items: any[], listType: 'trending' | 'popular' | 'top-rated') => ({
+    itemList: (items: MediaItem[], listType: 'trending' | 'popular' | 'top-rated') => ({
         '@context': 'https://schema.org',
         '@type': 'ItemList',
         name: `${listType === 'trending' ? 'Trending' : listType === 'popular' ? 'Popular' : 'Top Rated'} Movies & TV Shows`,
@@ -106,11 +119,11 @@ export const structuredData = {
             '@type': 'ListItem',
             position: index + 1,
             item: {
-                '@type': item.media_type === 'movie' ? 'Movie' : 'TVSeries',
-                name: item.title || item.name,
-                url: `${siteConfig.url}/${item.media_type}/${item.id}`,
-                image: getImageUrl(item.poster_path, 'w500'),
-                datePublished: item.release_date || item.first_air_date,
+                '@type': 'media_type' in item && item.media_type === 'movie' ? 'Movie' : 'TVSeries',
+                name: 'title' in item ? item.title : 'name' in item ? item.name : 'Unknown',
+                url: `${siteConfig.url}/${'media_type' in item ? item.media_type : 'movie'}/${item.id}`,
+                image: getImageUrl('poster_path' in item ? item.poster_path : null, 'w500'),
+                datePublished: 'release_date' in item ? item.release_date : 'first_air_date' in item ? item.first_air_date : '',
             },
         })),
     }),
@@ -142,7 +155,7 @@ export const structuredData = {
     }),
 
     // Person Schema Generator (for actors, directors, crew)
-    person: (person: any) => ({
+    person: (person: CastMember | CrewMember) => ({
         '@context': 'https://schema.org',
         '@type': 'Person',
         name: person.name,
@@ -153,7 +166,7 @@ export const structuredData = {
     }),
 
     // Review Schema Generator
-    review: (review: any) => ({
+    review: (review: Review) => ({
         '@context': 'https://schema.org',
         '@type': 'Review',
         itemReviewed: {
@@ -183,7 +196,7 @@ export const structuredData = {
 
 export async function generateMovieMetadata(id: string): Promise<Metadata> {
     try {
-        const movie = await getMovieDetails(parseInt(id))
+        const movie = await getMovieDetails(parseInt(id)) as MovieDetails
 
         const title = `Watch ${movie.title} (${new Date(movie.release_date).getFullYear()}) Free Online`
         const description = `Watch ${movie.title} free online in HD. ${movie.overview.length > 120 ? `${movie.overview.substring(0, 117)}...` : movie.overview} Stream now without subscription.`
@@ -200,9 +213,9 @@ export async function generateMovieMetadata(id: string): Promise<Metadata> {
                 'free movie streaming',
                 'hd movie free',
                 'no subscription',
-                ...movie.genres.map((g: any) => `free ${g.name.toLowerCase()} movies`),
-                ...movie.credits?.cast.slice(0, 3).map((actor: any) => actor.name) || [],
-                movie.credits?.crew.find((c: any) => c.job === 'Director')?.name || '',
+                ...movie.genres.map((g: Genre) => `free ${g.name.toLowerCase()} movies`),
+                ...movie.credits?.cast.slice(0, 3).map((actor: CastMember) => actor.name) || [],
+                movie.credits?.crew.find((c: CrewMember) => c.job === 'Director')?.name || '',
             ].filter(Boolean),
             openGraph: {
                 type: 'video.movie',
@@ -301,7 +314,7 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
 
 export async function generateMovieJSONLD(id: string) {
     try {
-        const movie = await getMovieDetails(parseInt(id))
+        const movie = await getMovieDetails(parseInt(id)) as MovieDetails
 
         return {
             '@context': 'https://schema.org',
@@ -310,15 +323,15 @@ export async function generateMovieJSONLD(id: string) {
             description: movie.overview,
             image: getImageUrl(movie.poster_path, 'w500'),
             datePublished: movie.release_date,
-            director: movie.credits?.crew.find((c: any) => c.job === 'Director') ? {
+            director: movie.credits?.crew.find((c: CrewMember) => c.job === 'Director') ? {
                 '@type': 'Person',
-                name: movie.credits.crew.find((c: { job: string; name: string }) => c.job === 'Director').name,
+                name: movie.credits!.crew.find((c: CrewMember) => c.job === 'Director')!.name,
             } : undefined,
-            actor: movie.credits?.cast?.slice(0, 5).map((actor: { name: string }) => ({
+            actor: movie.credits?.cast?.slice(0, 5).map((actor: CastMember) => ({
                 '@type': 'Person',
                 name: actor.name,
             })),
-            genre: movie.genres?.map((genre: { name: string }) => genre.name),
+            genre: movie.genres?.map((genre: Genre) => genre.name),
             aggregateRating: movie.vote_average ? {
                 '@type': 'AggregateRating',
                 ratingValue: movie.vote_average,
@@ -334,7 +347,7 @@ export async function generateMovieJSONLD(id: string) {
 
 export async function generateTVJSONLD(id: string) {
     try {
-        const show = await getTVDetails(parseInt(id))
+        const show = await getTVDetails(parseInt(id)) as TVDetails
 
         return {
             '@context': 'https://schema.org',
@@ -343,16 +356,16 @@ export async function generateTVJSONLD(id: string) {
             description: show.overview,
             image: getImageUrl(show.poster_path, 'w500'),
             datePublished: show.first_air_date,
-            creator: show.created_by?.map((creator: any) => ({
+            creator: (show as TVDetails & { created_by?: Array<{ name: string }> }).created_by?.map((creator) => ({
                 '@type': 'Person',
                 name: creator.name,
             })),
-            actor: show.credits?.cast.slice(0, 5).map((actor: { name: string; id: number }) => ({
+            actor: show.credits?.cast.slice(0, 5).map((actor: CastMember) => ({
                 '@type': 'Person',
                 name: actor.name,
                 sameAs: `https://www.themoviedb.org/person/${actor.id}`
             })),
-            genre: show.genres.map((g: { name: string }) => g.name),
+            genre: show.genres.map((g: Genre) => g.name),
             aggregateRating: {
                 '@type': 'AggregateRating',
                 ratingValue: show.vote_average,

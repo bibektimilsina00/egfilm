@@ -18,8 +18,8 @@ const tmdbAxios = axios.create({
 // Add response interceptor for error handling
 tmdbAxios.interceptors.response.use(
     (response: AxiosResponse) => response,
-    (error: any) => {
-        console.error('TMDb API Error:', error.response?.data || error.message);
+    (error: unknown) => {
+        console.error('TMDb API Error:', error instanceof Error ? error.message : String(error));
         return Promise.reject(error);
     }
 );

@@ -2,8 +2,10 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Search as SearchIcon, Sparkles, TrendingUp } from 'lucide-react';
 import { searchMulti, getTrending } from '@/lib/tmdb';
+import { SearchResult, MediaItem } from '@/lib/api/tmdb';
 import { Button } from '@/components/ui/button';
 import MediaCard from '@/components/catalog/MediaCard';
 import Navigation from '@/components/Navigation';
@@ -11,17 +13,23 @@ import Footer from '@/components/Footer';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { MediaGridSkeleton } from '@/components/ui/loading-skeletons';
 
+type SearchSuggestion = {
+    id: number;
+    media_type: 'movie' | 'tv';
+    title: string;
+    poster_path: string | null;
+};
+
 function SearchContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const query = searchParams?.get('q') || '';
 
-    const [results, setResults] = useState<any[]>([]);
-    const [trendingContent, setTrendingContent] = useState<any[]>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
+    const [trendingContent, setTrendingContent] = useState<MediaItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState(query);
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [suggestLoading, setSuggestLoading] = useState(false);
+    const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
     const [highlighted, setHighlighted] = useState<number>(-1);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const suggestDebounceRef = useRef<number | undefined>(undefined);
@@ -58,7 +66,7 @@ function SearchContent() {
             setLoading(true);
             const data = await searchMulti(searchQuery);
             const filtered = data.results.filter(
-                (item: any) => item.media_type === 'movie' || item.media_type === 'tv'
+                (item: SearchResult) => item.media_type === 'movie' || item.media_type === 'tv'
             );
             setResults(filtered);
         } catch (error) {
@@ -78,18 +86,16 @@ function SearchContent() {
 
         if (!searchInput || searchInput.trim().length < 2) {
             setSuggestions([]);
-            setSuggestLoading(false);
             return;
         }
 
-        setSuggestLoading(true);
         // debounce 300ms
         suggestDebounceRef.current = window.setTimeout(async () => {
             try {
                 const res = await searchMulti(searchInput.trim(), 1);
-                const items = (res.results || []).filter((it: any) => it.media_type === 'movie' || it.media_type === 'tv');
+                const items = (res.results || []).filter((it: SearchResult) => it.media_type === 'movie' || it.media_type === 'tv');
                 // Map to simplified suggestion items and dedupe by id
-                const uniques: any[] = [];
+                const uniques: SearchSuggestion[] = [];
                 const seen = new Set();
                 for (const it of items) {
                     const title = it.media_type === 'movie' ? it.title : it.name;
@@ -104,8 +110,6 @@ function SearchContent() {
             } catch (err) {
                 console.error('Autosuggest error:', err);
                 setSuggestions([]);
-            } finally {
-                setSuggestLoading(false);
             }
         }, 300);
 
@@ -198,9 +202,11 @@ function SearchContent() {
                                             onMouseEnter={() => setHighlighted(idx)}
                                             className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-800 ${highlighted === idx ? 'bg-gray-800' : ''}`}
                                         >
-                                            <img
+                                            <Image
                                                 src={sugg.poster_path ? `https://image.tmdb.org/t/p/w92${sugg.poster_path}` : '/placeholder-movie.jpg'}
                                                 alt={sugg.title}
+                                                width={40}
+                                                height={56}
                                                 className="w-10 h-14 object-cover rounded-md"
                                             />
                                             <div className="flex-1 text-left">
@@ -225,7 +231,7 @@ function SearchContent() {
                         {/* Results Header */}
                         <div className="flex items-center justify-between">
                             <h2 className="text-2xl md:text-3xl font-bold text-white">
-                                Search Results for "{query}"
+                                Search Results for &ldquo;{query}&rdquo;
                             </h2>
                             <span className="text-gray-400 text-lg">
                                 {results.length} {results.length === 1 ? 'result' : 'results'}
@@ -251,7 +257,7 @@ function SearchContent() {
                             </div>
                         </div>
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                            No results found for "{query}"
+                            No results found for &ldquo;{query}&rdquo;
                         </h2>
                         <p className="text-gray-400 mb-8 text-lg">
                             Try searching with different keywords or check for spelling
@@ -279,7 +285,7 @@ function SearchContent() {
                                 Start Your Search
                             </h2>
                             <p className="text-gray-400 text-lg">
-                                Enter a movie or TV show name above to find what you're looking for
+                                Enter a movie or TV show name above to find what you&apos;re looking for
                             </p>
                         </div>
 

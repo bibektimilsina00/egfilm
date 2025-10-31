@@ -12,8 +12,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     providers: [
         Credentials({
             async authorize(credentials) {
-                const email = (credentials as any)?.email as string;
-                const password = (credentials as any)?.password as string;
+                const email = credentials?.email as string;
+                const password = credentials?.password as string;
 
                 if (!email || !password) return null;
 
@@ -31,7 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         async jwt({ token, user }) {
             // Add role and id to JWT token on sign in
             if (user) {
-                token.role = (user as any).role;
+                token.role = user.role;
                 token.id = user.id;
             }
             return token;
@@ -39,8 +39,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         async session({ session, token }) {
             // Add role and id to session from JWT token
             if (session.user) {
-                (session.user as any).role = token.role;
-                (session.user as any).id = token.id;
+                session.user.role = token.role as string;
+                session.user.id = token.id as string;
             }
             return session;
         },

@@ -25,6 +25,7 @@ import { getContinueWatching } from '@/lib/storage';
 import { HomePageSkeleton, MediaGridSkeleton } from '@/components/ui/loading-skeletons';
 import { ErrorState } from '@/components/ui/error-states';
 import type { MediaItem } from '@/lib/api/tmdb';
+import type { ContinueWatchingItem } from '@/lib/storage';
 
 /**
  * Reusable section component with icon and title
@@ -157,7 +158,7 @@ function MediaGrid({
     <Section title={title} icon={icon}>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {data.slice(0, 12).map((media) => (
-          <MediaCard key={media.id} item={media as any} type={type} />
+          <MediaCard key={media.id} item={media} type={type} />
         ))}
       </div>
     </Section>
@@ -169,7 +170,7 @@ function MediaGrid({
  */
 export default function HomePage() {
   // Continue watching state (local storage)
-  const [continueWatching, setContinueWatching] = useState<any[]>([]);
+  const [continueWatching, setContinueWatching] = useState<ContinueWatchingItem[]>([]);
 
   // React Query hooks for different content sections
   const trendingAll = useTrending('all', 'day');

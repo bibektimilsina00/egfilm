@@ -14,6 +14,7 @@ import {
     useGenres,
     useDiscoverByGenre
 } from '@/lib/hooks/useTMDb';
+import { MediaItem } from '@/lib/api/tmdb';
 import Pagination from '@/components/ui/pagination';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
 
@@ -22,7 +23,7 @@ export default function TVShowsPage() {
     const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
     const [page, setPage] = useState(1);
     const [isSmallScreen, setIsSmallScreen] = useState(false);
-    const [allShows, setAllShows] = useState<any[]>([]);
+    const [allShows, setAllShows] = useState<MediaItem[]>([]);
 
     // Fetch genres
     const { data: genres = [], isLoading: genresLoading } = useGenres('tv');

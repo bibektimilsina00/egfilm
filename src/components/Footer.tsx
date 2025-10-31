@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import React from 'react';
 import { Github, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
 
 const BLOG_SITE_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
@@ -85,7 +86,7 @@ export default function Footer() {
 }
 
 // Helper Components
-function SocialLink({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
+function SocialLink({ href, icon: Icon, label }: { href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; label: string }) {
     return (
         <a
             href={href}
@@ -107,7 +108,7 @@ function FooterLink({
 }: {
     href: string;
     text: string;
-    icon?: any;
+    icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     external?: boolean;
 }) {
     const className = "text-gray-400 hover:text-blue-400 transition-colors text-sm flex items-center gap-2 group";

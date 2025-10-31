@@ -24,6 +24,18 @@ interface ChatMessage {
     timestamp: number;
 }
 
+interface RoomData {
+    id: string;
+    roomCode: string;
+    movieId: number;
+    type: 'movie' | 'tv';
+    movieTitle: string;
+    embedUrl?: string;
+    posterPath?: string;
+    season?: number;
+    episode?: number;
+}
+
 let socket: Socket;
 let peerConnections: { [key: string]: RTCPeerConnection } = {};
 
@@ -54,7 +66,7 @@ function WatchTogetherContent() {
     const [copied, setCopied] = useState(false);
     const [isConnecting, setIsConnecting] = useState(true);
     const [error, setError] = useState('');
-    const [roomData, setRoomData] = useState<any>(null);
+    const [roomData, setRoomData] = useState<RoomData | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -292,8 +304,8 @@ function WatchTogetherContent() {
             // Now connect the socket (this will trigger the 'connect' event)
             socket.connect();
 
-        } catch (err: any) {
-            setError(err.message || 'Failed to join room');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to join room');
             setIsConnecting(false);
         }
     };
@@ -372,17 +384,18 @@ function WatchTogetherContent() {
             const successMsg = '✅ Camera and microphone permissions granted';
             console.log('📡 [SETUP MEDIA]', successMsg);
             addSystemMessage(successMsg);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('📡 [SETUP MEDIA ERROR]', error);
             localStreamRef.current = null;
 
             let errorMsg = '';
-            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            const err = error as Error;
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 errorMsg = '❌ Camera/microphone access denied. Please allow permissions in your browser.';
-            } else if (error.name === 'NotFoundError') {
+            } else if (err.name === 'NotFoundError') {
                 errorMsg = '❌ No camera or microphone found on your device.';
             } else {
-                errorMsg = '❌ Failed to access camera/microphone: ' + error.message;
+                errorMsg = '❌ Failed to access camera/microphone: ' + err.message;
             }
 
             console.error('📡 [SETUP MEDIA ERROR MESSAGE]', errorMsg);
@@ -594,7 +607,7 @@ function WatchTogetherContent() {
                 to: from,
                 answer
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(`❌ [WEBRTC OFFER ERROR]`, err);
         }
     };
@@ -611,7 +624,7 @@ function WatchTogetherContent() {
             } else {
                 console.error(`❌ [WEBRTC ANSWER ERROR] No peer connection found for ${from.substring(0, 8)}...`);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(`❌ [WEBRTC ANSWER ERROR]`, err);
         }
     };
@@ -635,7 +648,7 @@ function WatchTogetherContent() {
             } else {
                 console.error(`❌ [ICE ERROR] No peer connection found for ${from.substring(0, 8)}...`);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(`❌ [ICE CANDIDATE ERROR]`, err);
         }
     };
@@ -702,10 +715,11 @@ function WatchTogetherContent() {
             const statusMsg = newVideoState ? '📹 Camera enabled' : '📹 Camera disabled';
             console.log(`✅ [VIDEO NOTIFICATION] ${statusMsg}`);
             addSystemMessage(statusMsg);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('🎬 [TOGGLE VIDEO ERROR]', err);
-            trackError(err, { context: 'toggle_video' });
-            addSystemMessage('❌ Could not toggle camera: ' + err.message);
+            const error = err as Error;
+            trackError(error, { context: 'toggle_video' });
+            addSystemMessage('❌ Could not toggle camera: ' + error.message);
         }
     };
 
@@ -758,10 +772,11 @@ function WatchTogetherContent() {
             const statusMsg = newAudioState ? '🎤 Microphone enabled' : '🎤 Microphone muted';
             console.log(`✅ [AUDIO NOTIFICATION] ${statusMsg}`);
             addSystemMessage(statusMsg);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('🎤 [TOGGLE AUDIO ERROR]', err);
-            trackError(err, { context: 'toggle_audio' });
-            addSystemMessage('❌ Could not toggle microphone: ' + err.message);
+            const error = err as Error;
+            trackError(error, { context: 'toggle_audio' });
+            addSystemMessage('❌ Could not toggle microphone: ' + error.message);
         }
     };
 
@@ -805,7 +820,7 @@ function WatchTogetherContent() {
             socket.emit('leave-watch-together', { roomCode, username });
             socket.removeAllListeners(); // Remove all event listeners
             socket.disconnect();
-            socket = null as any; // Clear the socket reference
+            socket = null as never; // Clear the socket reference
         }
     };
 

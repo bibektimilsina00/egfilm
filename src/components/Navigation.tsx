@@ -9,13 +9,20 @@ import { useSession, signOut } from 'next-auth/react';
 import { Film, Search, Menu, X, Home, Tv, Heart, LogIn, LogOut, User, ChevronDown, BookOpen } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { searchMulti } from '@/lib/tmdb';
+import { SearchResult } from '@/lib/api/tmdb';
+
+type SearchSuggestion = {
+    id: number;
+    media_type: 'movie' | 'tv';
+    title: string;
+    poster_path: string | null;
+};
 
 export default function Navigation() {
     const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [suggestLoading, setSuggestLoading] = useState(false);
+    const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
     const [highlighted, setHighlighted] = useState<number>(-1);
     const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
@@ -56,18 +63,16 @@ export default function Navigation() {
 
         if (!searchQuery || searchQuery.trim().length < 2) {
             setSuggestions([]);
-            setSuggestLoading(false);
             return;
         }
 
-        setSuggestLoading(true);
         // debounce 300ms
         suggestDebounceRef.current = window.setTimeout(async () => {
             try {
                 const res = await searchMulti(searchQuery.trim(), 1);
-                const items = (res.results || []).filter((it: any) => it.media_type === 'movie' || it.media_type === 'tv');
+                const items = (res.results || []).filter((it: SearchResult) => it.media_type === 'movie' || it.media_type === 'tv');
                 // Map to simplified suggestion items and dedupe by id
-                const uniques: any[] = [];
+                const uniques: SearchSuggestion[] = [];
                 const seen = new Set();
                 for (const it of items) {
                     const title = it.media_type === 'movie' ? it.title : it.name;
@@ -82,8 +87,6 @@ export default function Navigation() {
             } catch (err) {
                 console.error('Autosuggest error:', err);
                 setSuggestions([]);
-            } finally {
-                setSuggestLoading(false);
             }
         }, 300);
 
@@ -227,9 +230,11 @@ export default function Navigation() {
                                             onMouseEnter={() => setHighlighted(idx)}
                                             className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-800 transition-colors ${highlighted === idx ? 'bg-gray-800' : ''}`}
                                         >
-                                            <img
+                                            <Image
                                                 src={sugg.poster_path ? `https://image.tmdb.org/t/p/w92${sugg.poster_path}` : '/placeholder-movie.jpg'}
                                                 alt={sugg.title}
+                                                width={32}
+                                                height={48}
                                                 className="w-8 h-12 object-cover rounded-md shrink-0"
                                             />
                                             <div className="flex-1 text-left min-w-0">

@@ -1,4 +1,5 @@
 import { getTrending, getPopular, getTopRated, tmdbApi } from '@/lib/tmdb'
+import { BaseTVShow } from '@/lib/api/tmdb'
 import { siteConfig } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,7 @@ export async function GET() {
 
         const pages = await Promise.allSettled(showPromises)
         const successfulPages = pages
-            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+            .filter((result): result is PromiseFulfilledResult<BaseTVShow[]> => result.status === 'fulfilled')
             .map(result => result.value)
             .flat()
 
@@ -49,7 +50,7 @@ export async function GET() {
         ).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
 
         // Calculate priorities based on popularity and rating
-        const calculatePriority = (show: any): number => {
+        const calculatePriority = (show: BaseTVShow): number => {
             const rating = show.vote_average || 0
             const popularity = show.popularity || 0
             const voteCount = show.vote_count || 0

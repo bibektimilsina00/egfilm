@@ -1,4 +1,5 @@
 import { getTrending, getPopular, getTopRated, tmdbApi } from '@/lib/tmdb'
+import { BaseMovie } from '@/lib/api/tmdb'
 import { siteConfig } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,7 @@ export async function GET() {
 
         const pages = await Promise.allSettled(moviePromises)
         const successfulPages = pages
-            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+            .filter((result): result is PromiseFulfilledResult<BaseMovie[]> => result.status === 'fulfilled')
             .map(result => result.value)
             .flat()
 
@@ -49,7 +50,7 @@ export async function GET() {
         ).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
 
         // Calculate priorities based on popularity and rating
-        const calculatePriority = (movie: any): number => {
+        const calculatePriority = (movie: BaseMovie): number => {
             const rating = movie.vote_average || 0
             const popularity = movie.popularity || 0
             const voteCount = movie.vote_count || 0

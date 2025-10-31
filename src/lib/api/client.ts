@@ -23,7 +23,7 @@ const BASE_CONFIG: AxiosRequestConfig = {
 const handleAxiosError = (error: AxiosError) => {
     if (error.response) {
         // Server responded with error status
-        const data = error.response.data as any;
+        const data = error.response.data as { error?: string; message?: string };
         throw {
             message: data?.error || data?.message || 'Server error',
             status: error.response.status,
@@ -81,7 +81,7 @@ export const apiClient = createApiClient('/api');
 // Type-safe API Response Wrapper
 // =============================================================================
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
     success: boolean;
     data?: T;
     error?: string;
@@ -102,7 +102,7 @@ export const extractData = <T>(response: AxiosResponse<T>): T => {
 /**
  * Create query string from params object
  */
-export const buildQueryString = (params: Record<string, any>): string => {
+export const buildQueryString = (params: Record<string, unknown>): string => {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {

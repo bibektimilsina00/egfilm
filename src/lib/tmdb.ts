@@ -36,6 +36,9 @@ export interface TVShow {
 }
 
 export interface MediaDetail extends Movie {
+    name?: string; // For TV shows
+    first_air_date?: string; // For TV shows
+    number_of_seasons?: number; // For TV shows
     runtime?: number;
     genres: { id: number; name: string }[];
     credits?: {

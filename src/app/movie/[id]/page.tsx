@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Users, Check } from 'lucide-react';
 
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
-import { getImageUrl, formatVoteAverage, formatRuntime } from '@/lib/api/tmdb';
+import { getImageUrl, formatVoteAverage, formatRuntime, CastMember, BaseMovie } from '@/lib/api/tmdb';
 import { Button } from '@/components/ui/button';
 import { PlayButton } from '@/components/ui/play-button';
 import MediaCard from '@/components/catalog/MediaCard';
@@ -85,7 +85,7 @@ export default function MovieDetailPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-4">Movie Not Found</h1>
-            <p className="text-gray-400 mb-6">We couldn't load this movie. Please try again.</p>
+            <p className="text-gray-400 mb-6">We couldn&apos;t load this movie. Please try again.</p>
             <div className="flex gap-4 justify-center">
               <Button onClick={() => refetch()} variant="default">
                 Try Again
@@ -292,7 +292,7 @@ export default function MovieDetailPage() {
           <section>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Top Cast</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-              {movie.credits.cast.slice(0, 16).map((person: any) => (
+              {movie.credits.cast.slice(0, 16).map((person: CastMember) => (
                 <div key={person.id} className="group cursor-pointer">
                   <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 bg-gray-800 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
                     {person.profile_path ? (
@@ -323,7 +323,7 @@ export default function MovieDetailPage() {
           <section>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Similar Movies</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {movie.similar.results.slice(0, 10).map((item: any) => (
+              {movie.similar.results.slice(0, 10).map((item: BaseMovie) => (
                 <MediaCard key={item.id} item={item} type="movie" />
               ))}
             </div>

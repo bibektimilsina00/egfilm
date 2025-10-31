@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react'
 import { structuredData } from '@/lib/seo'
+import { MediaItem } from '@/lib/api/tmdb'
 
 interface HomePageSEOProps {
-    trendingItems?: any[]
+    trendingItems?: MediaItem[]
 }
 
 export default function HomePageSEO({ trendingItems }: HomePageSEOProps) {
