@@ -343,8 +343,8 @@ jobs:
             docker compose stop app || true
             docker compose rm -f app || true
             
-            # Remove any orphaned containers that might be using port 3000
-            docker ps -a --filter "expose=3000" --format "{{.ID}}" | xargs -r docker rm -f || true
+            # Remove any orphaned containers that might be using port 3000 (but not database)
+            docker ps -a --filter "expose=3000" --filter "name!=postgres" --format "{{.ID}}" | xargs -r docker rm -f || true
             
             # Remove old app images to save space (keep database images)
             docker images | grep egfilm | grep -v latest | awk '{print $3}' | xargs -r docker rmi || true
@@ -355,8 +355,20 @@ jobs:
             echo "📥 Pulling new image..."
             docker compose pull app
             
-            echo "� Starting deployment..."
-            # Start new container (port should be free now)
+            echo "🗄️ Ensuring database is running and healthy..."
+            # Ensure postgres is running first
+            docker compose up -d postgres
+            
+            # Wait for database to be healthy
+            echo "⏳ Waiting for database to be ready..."
+            timeout 60 bash -c 'until docker compose exec postgres pg_isready -U egfilm > /dev/null 2>&1; do sleep 2; echo -n .; done' || {
+              echo "❌ Database failed to start, checking logs..."
+              docker compose logs postgres
+              exit 1
+            }
+            
+            echo "🚀 Starting deployment..."
+            # Start new container (database is healthy, port should be free)
             docker compose up -d app
             
             echo "⏳ Waiting for new container to be ready..."
