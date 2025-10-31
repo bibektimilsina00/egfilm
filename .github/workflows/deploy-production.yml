@@ -354,10 +354,28 @@ jobs:
             echo "🔄 Removing old container..."
             docker compose up -d --no-deps --scale app=1 --remove-orphans app
             
-            echo "🧹 Cleaning up old images..."
+            echo "🧹 Comprehensive cleanup after successful deployment..."
+            # Remove stopped containers
+            docker container prune -f
+            
+            # Remove unused images (keep recent ones)
             docker image prune -af --filter "until=24h"
             
-            echo "✅ Deployment completed successfully!"
+            # Remove unused networks
+            docker network prune -f
+            
+            # Remove unused volumes (be careful with database volumes)
+            docker volume prune -f --filter "label!=keep"
+            
+            # Clean up build cache
+            docker builder prune -af --filter "until=24h"
+            
+            # Show final cleanup summary
+            echo "📊 Cleanup summary:"
+            echo "Containers: $(docker ps -a --format 'table {{.Names}}\t{{.Status}}')"
+            echo "Images: $(docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}')"
+            
+            echo "✅ Deployment and cleanup completed successfully!"
           DEPLOY_SCRIPT
 
       - name: 🏥 Post-deployment Health Check
@@ -414,6 +432,33 @@ jobs:
             echo "⚠️ Movies page check failed (non-critical)"
           fi
 
+      - name: 🧹 Final System Cleanup
+        if: success()
+        run: |
+          echo "🧹 Performing final system cleanup after successful deployment..."
+          
+          ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }} << 'CLEANUP_SCRIPT'
+            set -e
+            cd ~/egfilm
+            
+            echo "🔍 Removing any dangling containers..."
+            docker container prune -f
+            
+            echo "🗑️ Cleaning up unused Docker resources..."
+            docker system prune -af --filter "until=1h"
+            
+            echo "📦 Final resource usage:"
+            docker system df
+            
+            echo "💾 Disk usage after cleanup:"
+            df -h /
+            
+            echo "🎯 Active containers:"
+            docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+            
+            echo "✨ System cleanup completed!"
+          CLEANUP_SCRIPT
+
   # ===========================================
   # 📊 DEPLOYMENT REPORTING
   # ===========================================
@@ -421,6 +466,8 @@ jobs:
     name: 📊 Deployment Report
     runs-on: ubuntu-latest
     needs: [validate, build, deploy]
+    environment:
+      name: production
     if: always()
     
     steps:
