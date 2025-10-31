@@ -234,7 +234,7 @@ jobs:
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           AUTH_TRUST_HOST=true
           AUTH_URL=${{ vars.APP_URL }}
           NEXTAUTH_URL=${{ vars.APP_URL }}
