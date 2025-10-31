@@ -311,7 +311,7 @@ jobs:
           NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
           
           # Google Analytics
-          NEXT_PUBLIC_GA_MEASUREMENT_ID=G-NB3EMB5GYG
+          NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
           
           # Docker Image
           IMAGE_NAME=${{ needs.build.outputs.image-uri }}
