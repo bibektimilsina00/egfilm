@@ -419,12 +419,23 @@ jobs:
             }
             
             echo "🚀 Starting deployment..."
+            # Export environment variables for docker compose
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            export TMDB_API_KEY="${{ secrets.TMDB_API_KEY }}"
+            export NEXT_PUBLIC_TMDB_API_KEY="${{ secrets.TMDB_API_KEY }}"
+            export AUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}"
+            export AUTH_TRUST_HOST="true"
+            
             # Start new container (database is healthy, port should be free)
-            DATABASE_URL="${{ secrets.DATABASE_URL }}" POSTGRES_USER="${{ secrets.POSTGRES_USER }}" POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" POSTGRES_DB="${{ secrets.POSTGRES_DB }}" docker compose up -d app
+            docker compose up -d app
             
             # Give container time to start before health checks
             echo "⏳ Waiting for container to initialize..."
             sleep 10
+            
+            # Regenerate Prisma client in the running container to ensure compatibility
+            echo "🔧 Ensuring Prisma client is properly generated..."
+            docker compose exec -T app npx prisma generate || echo "⚠️ Prisma client generation failed, but continuing..."
             
             # Check if container is running
             if ! docker compose ps app | grep -q "Up"; then
