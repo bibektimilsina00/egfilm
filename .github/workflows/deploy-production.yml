@@ -41,7 +41,7 @@ jobs:
     name: 🔍 Pre-Deployment Validation
     runs-on: ubuntu-latest
     outputs:
-      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+      should-deploy: ${{ steps.version.outputs.should-deploy }}
       version: ${{ steps.version.outputs.version }}
       is-rollback: ${{ github.event.inputs.rollback_version != '' }}
     
