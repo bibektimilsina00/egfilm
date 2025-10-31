@@ -1,116 +1,99 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
-# Remote deployment script executed on the production server.
-# This script assumes the following are present in ~/egfilm:
-# - .env (copied from CI as production.env)
-# - docker-compose.yml
+set -Eeuo pipefail
+# ===================================================================
+#  EGFilm – zero-downtime remote deployment script  (appleboy-ready)
+# ===================================================================
+#  Requires in ~/egfilm:
+#    .env   (loaded below)
+#    docker-compose.yml
+# ===================================================================
 
 cd ~/egfilm
 
-# Load environment variables from .env into the shell
-if [ -f .env ]; then
+# ---------- colours ------------------------------------------------
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; NC='\033[0m'
+
+# ---------- trap: show app logs on error -----------------------------
+trap 'echo -e "${RED}❌ Script failed – dumping app logs:${NC}"; docker compose logs app --tail=40' ERR
+
+# ---------- load .env ----------------------------------------------
+if [[ -f .env ]]; then
   # shellcheck disable=SC1091
-  set -a
-  # Use bash source to preserve exported vars
-  . ./.env
-  set +a
+  set -a; source .env; set +a
 else
-  echo "❌ .env file not found in ~/egfilm. Aborting."
+  echo -e "${RED}❌ .env file not found in $(pwd). Aborting.${NC}"
   exit 1
 fi
 
-echo "🧹 Pre-deployment cleanup to prevent port conflicts..."
-# Stop and remove only app containers (keep database running)
+# ---------- helper: print step -------------------------------------
+step() { echo -e "\n${GREEN}▶${NC} $*"; }
+
+# ---------- pre-deploy cleanup -------------------------------------
+step "Pre-deployment cleanup to prevent port conflicts"
 docker compose stop app || true
-docker compose rm -f app || true
+docker compose rm -f app    || true
 
-# Remove any orphaned containers that might be using port 8000 (but not database)
-docker ps -a --filter "expose=8000" --filter "name!=postgres" --format "{{.ID}}" | xargs -r docker rm -f || true
+# Remove orphaned containers on port 8000 (but never postgres)
+docker ps -aq --filter "expose=8000" --filter "name!=postgres" | xargs -r docker rm -f || true
 
-# Remove old app images to save space (keep database images)
-docker images | grep egfilm | grep -v latest | awk '{print $3}' | xargs -r docker rmi || true
+# Keep last image for instant rollback
+docker images --format 'table {{.Repository}}:{{.Tag}}\t{{.ID}}' \
+  | grep -E "^${IMAGE_NAME:-egfilm}" | tail -n +3 | awk '{print $2}' | xargs -r docker rmi || true
 
-echo "🔐 Logging into container registry..."
-if [ -n "${REGISTRY_TOKEN:-}" ]; then
-  echo "${REGISTRY_TOKEN}" | docker login "${REGISTRY:-ghcr.io}" -u "${DEPLOY_USER:-deploy}" --password-stdin || true
+# ---------- registry login -----------------------------------------
+step "Logging into container registry"
+if [[ -n "${REGISTRY_TOKEN:-}" ]]; then
+  echo "$REGISTRY_TOKEN" | docker login "${REGISTRY:-ghcr.io}" -u "${DEPLOY_USER:-deploy}" --password-stdin || true
 else
-  echo "⚠️ REGISTRY_TOKEN not set; skipping docker login (will rely on public image or existing auth)"
+  echo -e "${YELLOW}⚠️  REGISTRY_TOKEN not set; skipping docker login${NC}"
 fi
 
-echo "📥 Pulling new image..."
+# ---------- pull new image -----------------------------------------
+step "Pulling new image"
 docker compose pull app || true
 
-echo "🗄️ Ensuring database is running and healthy..."
-# Start postgres service if not running
+# ---------- database: start & health --------------------------------
+step "Ensuring database is running and healthy"
 docker compose up -d postgres || true
 
-echo "⏳ Waiting for database to be ready..."
-timeout 60 bash -c "until docker compose exec postgres pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} > /dev/null 2>&1; do sleep 2; echo -n .; done" || {
-  echo "❌ Database failed to start, attempting recovery..."
+echo -n "⏳ Waiting for Postgres …"
+timeout 60 bash -c "until docker compose exec -T postgres pg_isready -U '$POSTGRES_USER' -d '$POSTGRES_DB' >/dev/null 2>&1; do sleep 2; echo -n .; done" || {
+  echo -e "\n${RED}DB failed to start – attempting recovery${NC}"
   docker compose logs postgres || true
 
-  echo "🔧 Stopping postgres and cleaning corrupted data..."
   docker compose stop postgres || true
   docker compose rm -f postgres || true
+  docker volume rm egfilm_postgres_data || true   # destructive reset
 
-  echo "🗑️ Removing corrupted database volume..."
-  docker volume rm egfilm_postgres_data || true
-
-  echo "🔄 Restarting postgres with fresh data..."
   docker compose up -d postgres || true
-
-  echo "⏳ Waiting for fresh database to initialize..."
-  timeout 120 bash -c "until docker compose exec postgres pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} > /dev/null 2>&1; do sleep 3; echo -n .; done" || {
-    echo "❌ Database recovery failed, showing logs..."
-    docker compose logs postgres || true
-    exit 1
+  echo -n "⏳ Re-waiting for fresh Postgres …"
+  timeout 120 bash -c "until docker compose exec -T postgres pg_isready -U '$POSTGRES_USER' -d '$POSTGRES_DB' >/dev/null 2>&1; do sleep 3; echo -n .; done" || {
+    echo -e "\n${RED}Database recovery failed${NC}"; exit 1
   }
+}
+echo -e " ${GREEN}✅ Postgres ready${NC}"
 
-  echo "✅ Database recovered successfully!"
+# ---------- Prisma: generate & migrate -----------------------------
+step "Running Prisma generate & migrate"
+docker compose run --rm app sh -c 'npx prisma generate && npx prisma migrate deploy' || {
+  echo -e "${YELLOW}⚠️  Prisma migration failed – continuing anyway${NC}"
 }
 
-echo "🔄 Running database setup..."
-echo "⏳ Ensuring database is fully ready for Prisma..."
-timeout 30 bash -c "until docker compose exec postgres pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} > /dev/null 2>&1; do sleep 1; echo -n .; done" || {
-  echo "❌ Database not ready for Prisma setup"
-  exit 1
-}
+# ---------- start app (with health-check built-in) -----------------
+step "Starting application container"
+docker compose up -d --wait app   # --wait returns when healthy (Compose ≥ v2.20)
 
-echo "🔧 Generate Prisma client and apply migrations"
-docker compose run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
-  echo "⚠️ Database setup (prisma migrate) failed, but continuing deployment..."
-  echo "This might cause runtime errors - check Prisma configuration"
-}
+# ---------- final smoke test ---------------------------------------
+echo -n "⏳ Final health hit …"
+timeout 60 bash -c 'until curl -sf http://localhost:8000/api/health >/dev/null; do sleep 2; echo -n .; done'
+echo -e " ${GREEN}✅ App healthy${NC}"
 
-echo "🚀 Starting application container..."
-docker compose up -d app
-
-echo "⏳ Waiting for container to initialize..."
-sleep 10
-
-if ! docker compose ps app | grep -q "Up"; then
-  echo "❌ App container failed to start, checking logs..."
-  docker compose logs app || true
-  exit 1
-fi
-
-echo "⏳ Waiting for application to be ready via /api/health..."
-timeout 120 bash -c "until curl -sf http://localhost:8000/api/health > /dev/null; do sleep 2; echo -n .; done" || {
-  echo "❌ Health check failed, showing app logs..."
-  docker compose logs app --tail=50 || true
-  exit 1
-}
-
-echo "✅ Container is healthy and ready!"
-
-echo "🧹 Post-deploy cleanup"
+# ---------- post-deploy tidy-up ------------------------------------
+step "Post-deploy cleanup"
 docker container prune -f || true
-docker image prune -af --filter "until=24h" || true
-docker network prune -f || true
-docker volume prune -f --filter "label!=keep" || true
-docker builder prune -af --filter "until=24h" || true
+docker image prune -af --filter "until=24h" --filter "label!=keep" || true
+docker network   prune -f || true
+docker volume    prune -f --filter "label!=keep" || true
+docker builder   prune -af --filter "until=24h" || true
 
-echo "📊 Deployment completed"
-
-exit 0
+step "Deployment completed successfully"

@@ -224,9 +224,9 @@ jobs:
           sparse-checkout-cone-mode: false
 
       # 1.  Create production.env on the runner
-      - name: 📝 Create production.env
+      - name: 📝 Create .env
         run: |
-          cat > production.env <<EOF
+          cat > .env <<EOF
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
           DATABASE_URL=${{ secrets.DATABASE_URL }}
@@ -252,16 +252,17 @@ jobs:
           IMAGE_NAME=${{ needs.build.outputs.image-uri }}
           EOF
 
-      # 2.  Ship files to server (appleboy/scp-action)
+      #  Ship files to server (appleboy/scp-action)
       - name: 📤 Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.SERVER_HOST }}
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ vars.SSH_PORT || '22' }}
-          source: "production.env,scripts/deploy.sh,docker-compose.yml"
+          port: ${{ vars.SSH_PORT || 22 }}
+          source: ".env,deploy.sh,docker-compose.yml"   # ← renamed file
           target: "~/egfilm/"
+          strip_components: 1 
 
       # 3.  Run deployment script (appleboy/ssh-action)
       - name: 🚀 Execute deploy.sh
@@ -270,9 +271,11 @@ jobs:
           host: ${{ vars.SERVER_HOST }}
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ vars.SSH_PORT || '22' }}
+          port: ${{ vars.SSH_PORT || 22 }}
           script: |
-            bash ~/egfilm/deploy.sh
+            cd ~/egfilm
+            bash deploy.sh
+
 
       # 4.  Health-check & smoke tests (still via appleboy/ssh-action)
       - name: 🏥 Post-deploy health check
