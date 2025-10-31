@@ -62,7 +62,7 @@ export const structuredData = {
         '@type': 'Organization',
         name: siteConfig.name,
         url: siteConfig.url,
-        logo: `${siteConfig.url}/logo.png`,
+        logo: `${siteConfig.url}/egfilm.png`,
         description: siteConfig.description,
         sameAs: [
             siteConfig.links.twitter,

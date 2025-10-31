@@ -140,7 +140,7 @@ export default function RootLayout({
         url: siteConfig.url,
         logo: {
           '@type': 'ImageObject',
-          url: `${siteConfig.url}/logo.png`,
+          url: `${siteConfig.url}/egfilm.png`,
           width: 512,
           height: 512,
         },
