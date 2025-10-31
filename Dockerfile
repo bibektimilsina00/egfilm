@@ -3,10 +3,15 @@ FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Dependencies
+# Dependencies - Production only
 FROM base AS deps
 COPY package*.json ./
 RUN npm ci --only=production --frozen-lockfile
+
+# Dependencies - All (including dev for building)
+FROM base AS deps-dev
+COPY package*.json ./
+RUN npm ci --frozen-lockfile
 
 # Builder
 FROM base AS builder
@@ -39,7 +44,7 @@ ENV NEXT_PUBLIC_BUILD_VERSION=$NEXT_PUBLIC_BUILD_VERSION
 ENV NEXT_PUBLIC_GIT_SHA=$NEXT_PUBLIC_GIT_SHA
 
 COPY package*.json ./
-RUN npm ci --frozen-lockfile
+COPY --from=deps-dev /app/node_modules ./node_modules
 COPY . .
 # Generate Prisma client before building
 RUN npx prisma generate
