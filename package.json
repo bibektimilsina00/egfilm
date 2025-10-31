@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 8000 --turbo",
+    "dev": "TURBOPACK=1 NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 8000 --turbo",
     "dev:webpack": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 8000",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "next start",

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen } from 'lucide-react';
+import { Film, Search, Menu, X, Home, Tv, Heart, LogIn, LogOut, User, ChevronDown, BookOpen } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { searchMulti } from '@/lib/tmdb';
 
@@ -113,13 +114,13 @@ export default function Navigation() {
                 <div className="flex items-center justify-between gap-3">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group shrink-0">
-                        <div className="relative">
-                            <Play className="w-7 h-7 text-blue-500 group-hover:text-blue-400 transition-all duration-300 group-hover:scale-110" fill="currentColor" />
-                            <div className="absolute inset-0 bg-blue-500 blur-xl opacity-0 group-hover:opacity-30 transition-opacity" />
-                        </div>
-                        <span className="text-white text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text">
-                            Egfilm
-                        </span>
+                        <Image
+                            src="/logo.svg"
+                            alt="Egfilm"
+                            width={48}
+                            height={48}
+                            className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+                        />
                     </Link>
 
                     {/* Desktop Navigation - Compact */}
@@ -127,7 +128,7 @@ export default function Navigation() {
                         {navLinks.map((link) => {
                             const Icon = link.icon;
                             const isActive = mounted && pathname === link.href && !link.external;
-                            
+
                             if (link.external) {
                                 return (
                                     <a
@@ -142,7 +143,7 @@ export default function Navigation() {
                                     </a>
                                 );
                             }
-                            
+
                             return (
                                 <Link
                                     key={link.href}
@@ -324,7 +325,7 @@ export default function Navigation() {
                             {navLinks.map((link) => {
                                 const Icon = link.icon;
                                 const isActive = mounted && pathname === link.href && !link.external;
-                                
+
                                 if (link.external) {
                                     return (
                                         <a
@@ -340,7 +341,7 @@ export default function Navigation() {
                                         </a>
                                     );
                                 }
-                                
+
                                 return (
                                     <Link
                                         key={link.href}

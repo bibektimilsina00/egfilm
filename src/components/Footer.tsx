@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Play, Github, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
+import Image from 'next/image';
+import { Github, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
 
 const BLOG_SITE_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
 
@@ -12,11 +13,14 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Brand */}
                     <div className="space-y-4">
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <Play className="w-8 h-8 text-blue-500 transition-transform group-hover:scale-110" fill="currentColor" />
-                            <span className="text-white text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                                EGFilm
-                            </span>
+                        <Link href="/" className="flex items-center group">
+                            <Image
+                                src="/logo.svg"
+                                alt="EGFilm"
+                                width={48}
+                                height={48}
+                                className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+                            />
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed">
                             Stream unlimited movies and TV shows. Watch together, discover together.

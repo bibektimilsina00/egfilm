@@ -26,6 +26,15 @@ const nextConfig: NextConfig = {
     // Speed up webpack compilation
     webpackBuildWorker: true,
   },
+  // Turbopack configuration (new location)
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
   // Compression and optimization
   compress: true,
   // Enhanced headers for SEO, security, and performance
@@ -208,8 +217,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Webpack performance optimizations
-  webpack: (config, { dev, isServer }) => {
+  // Webpack performance optimizations (only when not using Turbopack)
+  webpack: (config, { dev, isServer, nextRuntime }) => {
+    // Skip Webpack config when using Turbopack
+    if (process.env.TURBOPACK) {
+      return config;
+    }
     // Suppress unnecessary logging and warnings
     if (!isServer) {
       config.infrastructureLogging = {

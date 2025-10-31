@@ -152,7 +152,7 @@ export default function RootLayout({
         url: siteConfig.url,
         logo: {
           '@type': 'ImageObject',
-          url: `${siteConfig.url}/logo.png`,
+          url: `${siteConfig.url}/egfilm.png`,
           width: 512,
           height: 512,
         },
@@ -191,7 +191,6 @@ export default function RootLayout({
 
         {/* Enhanced Web App Manifest */}
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
