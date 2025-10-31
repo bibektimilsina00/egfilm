@@ -348,9 +348,14 @@ jobs:
           scp -i ~/.ssh/deploy_key docker-compose.yml ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST  }}:~/egfilm/
           
           # Execute zero-downtime deployment
-          ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST }} << 'DEPLOY_SCRIPT'
+          ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST }} << DEPLOY_SCRIPT
             set -e
             cd ~/egfilm
+            
+            # Source the environment file to set variables
+            if [ -f .env ]; then
+              export \$(grep -v '^#' .env | xargs)
+            fi
             
             echo "🧹 Pre-deployment cleanup to prevent port conflicts..."
             # Stop and remove only app containers (keep database running)
@@ -361,7 +366,7 @@ jobs:
             docker ps -a --filter "expose=8000" --filter "name!=postgres" --format "{{.ID}}" | xargs -r docker rm -f || true
             
             # Remove old app images to save space (keep database images)
-            docker images | grep egfilm | grep -v latest | awk '{print $3}' | xargs -r docker rmi || true
+            docker images | grep egfilm | grep -v latest | awk '{print \$3}' | xargs -r docker rmi || true
             
             echo "🔐 Logging into container registry..."
             echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
@@ -371,11 +376,11 @@ jobs:
             
             echo "🗄️ Ensuring database is running and healthy..."
             # Try to start postgres first
-            docker compose up -d postgres
+            DATABASE_URL="${{ secrets.DATABASE_URL }}" POSTGRES_USER="${{ secrets.POSTGRES_USER }}" POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" POSTGRES_DB="${{ secrets.POSTGRES_DB }}" docker compose up -d postgres
             
             # Wait for database to be healthy, with recovery on failure
             echo "⏳ Waiting for database to be ready..."
-            timeout 60 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 2; echo -n .; done' || {
+            PGPASSWORD="${{ secrets.POSTGRES_PASSWORD }}" timeout 60 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 2; echo -n .; done' || {
               echo "❌ Database failed to start, attempting recovery..."
               docker compose logs postgres
               
@@ -387,10 +392,10 @@ jobs:
               docker volume rm egfilm_postgres_data || true
               
               echo "🔄 Restarting postgres with fresh data..."
-              docker compose up -d postgres
+              DATABASE_URL="${{ secrets.DATABASE_URL }}" POSTGRES_USER="${{ secrets.POSTGRES_USER }}" POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" POSTGRES_DB="${{ secrets.POSTGRES_DB }}" docker compose up -d postgres
               
               echo "⏳ Waiting for fresh database to initialize..."
-              timeout 120 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 3; echo -n .; done' || {
+              PGPASSWORD="${{ secrets.POSTGRES_PASSWORD }}" timeout 120 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 3; echo -n .; done' || {
                 echo "❌ Database recovery failed, showing logs..."
                 docker compose logs postgres
                 exit 1
@@ -402,20 +407,20 @@ jobs:
             echo "🔄 Running database setup..."
             # Wait for database to be fully ready before running Prisma commands
             echo "⏳ Ensuring database is fully ready for Prisma..."
-            timeout 30 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 1; echo -n .; done' || {
+            PGPASSWORD="${{ secrets.POSTGRES_PASSWORD }}" timeout 30 bash -c 'until docker compose exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} > /dev/null 2>&1; do sleep 1; echo -n .; done' || {
               echo "❌ Database not ready for Prisma setup"
               exit 1
             }
             
             # Generate Prisma client and run migrations
-            docker compose run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
+            DATABASE_URL="${{ secrets.DATABASE_URL }}" POSTGRES_USER="${{ secrets.POSTGRES_USER }}" POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" POSTGRES_DB="${{ secrets.POSTGRES_DB }}" docker compose run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
               echo "⚠️ Database setup failed, but continuing deployment..."
               echo "This might cause runtime errors - check Prisma configuration"
             }
             
-            echo " Starting deployment..."
+            echo "🚀 Starting deployment..."
             # Start new container (database is healthy, port should be free)
-            docker compose up -d app
+            DATABASE_URL="${{ secrets.DATABASE_URL }}" POSTGRES_USER="${{ secrets.POSTGRES_USER }}" POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" POSTGRES_DB="${{ secrets.POSTGRES_DB }}" docker compose up -d app
             
             # Give container time to start before health checks
             echo "⏳ Waiting for container to initialize..."
@@ -455,8 +460,8 @@ jobs:
             
             # Show final cleanup summary
             echo "📊 Cleanup summary:"
-            echo "Containers: $(docker ps -a --format 'table {{.Names}}\t{{.Status}}')"
-            echo "Images: $(docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}')"
+            echo "Containers: \$(docker ps -a --format 'table {{.Names}}\t{{.Status}}')"
+            echo "Images: \$(docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}')"
             
             echo "✅ Deployment and cleanup completed successfully!"
           DEPLOY_SCRIPT
