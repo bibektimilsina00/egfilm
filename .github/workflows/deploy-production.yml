@@ -260,9 +260,8 @@ jobs:
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ vars.SSH_PORT || 22 }}
-          source: ".env,scripts/deploy.sh,docker-compose.yml"   # ← renamed file
+          source: ".env,scripts/deploy.sh,docker-compose.yml"
           target: "~/egfilm/"
-          strip_components: 1 
           overwrite: true
 
       # 3.  Run deployment script (appleboy/ssh-action)
