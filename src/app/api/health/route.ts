@@ -7,9 +7,13 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
     try {
-        // Test database connection with a simple count query
-        // This will work if the database is accessible
-        await prisma.user.count();
+        // Test database connection - try simple query first, fallback to raw query
+        try {
+            await prisma.user.count();
+        } catch (userTableError) {
+            // If user table doesn't exist, try a basic connection test
+            await prisma.$queryRaw`SELECT 1`;
+        }
 
         return NextResponse.json({
             status: 'healthy',

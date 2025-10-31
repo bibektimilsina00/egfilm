@@ -464,7 +464,7 @@ jobs:
           fi
           
           # Test API health
-          if curl -sf "${BASE_URL}/api/health" | grep -q "ok"; then
+          if curl -sf "${BASE_URL}/api/health" | grep -q "healthy"; then
             echo "✅ API health check passed"
           else
             echo "❌ API health check failed"
