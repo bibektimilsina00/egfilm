@@ -23,7 +23,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: bibektimilsina00/egfilm
+  IMAGE_NAME: ${{ github.repository }}
   NODE_VERSION: "18"
   HEALTH_CHECK_TIMEOUT: 120
   DEPLOYMENT_TIMEOUT: 600
@@ -184,7 +184,7 @@ jobs:
         if: needs.validate.outputs.is-rollback != 'true'
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=${{ needs.validate.outputs.version }}
             type=raw,value=latest,enable={{is_default_branch}}
@@ -204,8 +204,8 @@ jobs:
       - name: 🔐 Login to Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.repository_owner }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐳 Build & Push Image
