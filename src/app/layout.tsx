@@ -231,8 +231,15 @@ export default function RootLayout({
             />
             <Script id="google-analytics" strategy="afterInteractive">
               {`
+                /**
+                 * @type {any[]}
+                 */
                 window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
+                /**
+                 * Google Analytics gtag function
+                 * @param {...any} args
+                 */
+                function gtag(...args) { window.dataLayer.push(arguments); }
                 gtag('js', new Date());
                 gtag('config', '${validGAId}');
               `}
