@@ -8,7 +8,8 @@ name: 🚀 EGFilm Main App - Production Deploy
 
 on:
   push:
-    branches: [main]
+    # Run deployment when commits are pushed to `main` or `deploy` branches
+    branches: [main, deploy]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
