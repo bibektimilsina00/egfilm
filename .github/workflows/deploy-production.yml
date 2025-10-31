@@ -385,18 +385,33 @@ jobs:
               echo "✅ Database recovered successfully!"
             }
             
-            echo "� Running database migrations..."
+            echo "🔄 Running database migrations..."
             # Run migrations to ensure schema is up to date
             docker compose run --rm app npx prisma migrate deploy || {
               echo "⚠️ Migration failed, but continuing deployment..."
             }
             
-            echo "�🚀 Starting deployment..."
+            echo " Starting deployment..."
             # Start new container (database is healthy, port should be free)
             docker compose up -d app
             
-            echo "⏳ Waiting for new container to be ready..."
-            timeout 120 bash -c 'until curl -sf http://localhost:3000/api/health > /dev/null; do sleep 2; echo -n .; done'
+            # Give container time to start before health checks
+            echo "⏳ Waiting for container to initialize..."
+            sleep 10
+            
+            # Check if container is running
+            if ! docker compose ps app | grep -q "Up"; then
+              echo "❌ App container failed to start, checking logs..."
+              docker compose logs app
+              exit 1
+            fi
+            
+            echo "⏳ Waiting for application to be ready..."
+            timeout 120 bash -c 'until curl -sf http://localhost:3000/api/health > /dev/null; do sleep 2; echo -n .; done' || {
+              echo "❌ Health check failed, showing app logs..."
+              docker compose logs app --tail=50
+              exit 1
+            }
             
             echo "✅ Container is healthy and ready!"
             
