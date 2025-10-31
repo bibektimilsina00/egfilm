@@ -1,5 +1,4 @@
 // Service Worker for caching and offline functionality
-const CACHE_NAME = 'egfilm-v1'
 const STATIC_CACHE = 'egfilm-static-v1'
 const DYNAMIC_CACHE = 'egfilm-dynamic-v1'
 

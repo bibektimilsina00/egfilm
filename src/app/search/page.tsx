@@ -21,7 +21,6 @@ function SearchContent() {
     const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState(query);
     const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [suggestLoading, setSuggestLoading] = useState(false);
     const [highlighted, setHighlighted] = useState<number>(-1);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const suggestDebounceRef = useRef<number | undefined>(undefined);

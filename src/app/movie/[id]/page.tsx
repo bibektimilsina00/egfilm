@@ -23,7 +23,7 @@ export default function MovieDetailPage() {
   const params = useParams();
   const router = useRouter();
   const movieId = Number(params?.id as string);
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   // React Query hook for movie details
   const {

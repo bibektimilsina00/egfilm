@@ -19,7 +19,7 @@ export default function TVDetailPage() {
     const params = useParams();
     const router = useRouter();
     const tvId = params?.id as string;
-    const { data: session, status } = useSession();
+    const { status } = useSession();
 
     const [tv, setTv] = useState<MediaDetail | null>(null);
     const [loading, setLoading] = useState(true);

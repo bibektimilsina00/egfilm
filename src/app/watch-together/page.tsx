@@ -166,7 +166,7 @@ function WatchTogetherContent() {
                         const userData = await userResponse.json();
                         userId = userData.id;
                     }
-                } catch (_error) {
+                } catch {
                     // Failed to fetch user ID, will join as guest
                 }
             }
@@ -182,7 +182,7 @@ function WatchTogetherContent() {
                 socket.emit('join-watch-together', { roomCode, username, userId });
             });
 
-            socket.on('connect_error', (error) => {
+            socket.on('connect_error', () => {
                 setError('Failed to connect to server');
                 setIsConnecting(false);
             });

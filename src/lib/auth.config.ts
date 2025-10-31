@@ -23,7 +23,6 @@ export const authConfig = {
         },
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
-            const userRole = (auth?.user as any)?.role;
 
             const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
             const isOnWatchlist = nextUrl.pathname.startsWith('/watchlist');
