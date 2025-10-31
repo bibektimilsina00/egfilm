@@ -111,6 +111,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Validate Google Analytics Measurement ID format (G-XXXXXXXXXX)
+  const isValidGAId = (id: string | undefined): boolean => {
+    if (!id) return false;
+    // GA4 format: G- followed by 10 alphanumeric characters
+    const ga4Pattern = /^G-[A-Z0-9]{10}$/;
+    return ga4Pattern.test(id);
+  };
+
+  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const validGAId = isValidGAId(gaMeasurementId) ? gaMeasurementId : null;
+
   // Enhanced structured data combining website and organization schemas
   const structuredData = {
     '@context': 'https://schema.org',
@@ -212,10 +223,10 @@ export default function RootLayout({
         </SessionProvider>
 
         {/* Google Analytics */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+        {validGAId && (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${validGAId}`}
               strategy="afterInteractive"
             />
             <Script id="google-analytics" strategy="afterInteractive">
@@ -223,7 +234,7 @@ export default function RootLayout({
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
+                gtag('config', '${validGAId}');
               `}
             </Script>
           </>
