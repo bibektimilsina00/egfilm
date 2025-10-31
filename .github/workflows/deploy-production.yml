@@ -385,10 +385,10 @@ jobs:
               echo "✅ Database recovered successfully!"
             }
             
-            echo "🔄 Running database migrations..."
-            # Run migrations to ensure schema is up to date
-            docker compose run --rm app npx prisma migrate deploy || {
-              echo "⚠️ Migration failed, but continuing deployment..."
+            echo "🔄 Running database setup..."
+            # Generate Prisma client and run migrations
+            docker compose run --rm app sh -c "npx prisma generate && npx prisma migrate deploy" || {
+              echo "⚠️ Database setup failed, but continuing deployment..."
             }
             
             echo " Starting deployment..."
