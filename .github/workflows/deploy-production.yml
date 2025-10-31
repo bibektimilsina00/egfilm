@@ -73,6 +73,7 @@ jobs:
               - 'Dockerfile'
               - 'docker-compose.*'
               - 'prisma/**'
+              - '.github/workflows/**'
 
       - name: 🏷️ Determine Version
         id: version
