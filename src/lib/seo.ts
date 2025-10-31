@@ -187,8 +187,6 @@ export async function generateMovieMetadata(id: string): Promise<Metadata> {
 
         const title = `Watch ${movie.title} (${new Date(movie.release_date).getFullYear()}) Free Online`
         const description = `Watch ${movie.title} free online in HD. ${movie.overview.length > 120 ? `${movie.overview.substring(0, 117)}...` : movie.overview} Stream now without subscription.`
-
-        const imageUrl = getImageUrl(movie.backdrop_path || movie.poster_path, 'w1280')
         const ogImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'}/og?title=${encodeURIComponent(movie.title)}&subtitle=${encodeURIComponent(`Watch Free • ${new Date(movie.release_date).getFullYear()} • ⭐ ${movie.vote_average.toFixed(1)}`)}`
 
         return {
@@ -228,13 +226,13 @@ export async function generateMovieMetadata(id: string): Promise<Metadata> {
                 images: [ogImageUrl],
             },
             other: {
-                'article:author': movie.credits?.crew.find((c: any) => c.job === 'Director')?.name || '',
+                'article:author': movie.credits?.crew.find((c: { job: string; name: string }) => c.job === 'Director')?.name || '',
                 'article:published_time': movie.release_date,
                 'video:duration': movie.runtime ? (movie.runtime * 60).toString() : '',
                 'video:release_date': movie.release_date,
             },
         }
-    } catch (error) {
+    } catch {
         return {
             title: 'Movie Not Found | Egfilm',
             description: 'The requested movie could not be found.',
@@ -248,8 +246,6 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
 
         const title = `Watch ${show.name} (${new Date(show.first_air_date).getFullYear()}) Free Online - TV Series`
         const description = `Watch ${show.name} free online in HD. ${show.overview.length > 100 ? `${show.overview.substring(0, 97)}...` : show.overview} Stream all ${show.number_of_seasons} season${show.number_of_seasons !== 1 ? 's' : ''} without subscription.`
-
-        const imageUrl = getImageUrl(show.backdrop_path || show.poster_path, 'w1280')
         const ogImageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000'}/og?title=${encodeURIComponent(show.name)}&subtitle=${encodeURIComponent(`Watch Free • TV Series • ⭐ ${show.vote_average.toFixed(1)} • ${show.number_of_seasons} Season${show.number_of_seasons !== 1 ? 's' : ''}`)}`
 
         return {
@@ -264,8 +260,8 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
                 'free series online',
                 'hd tv shows free',
                 'no subscription',
-                ...show.genres.map((g: any) => `free ${g.name.toLowerCase()} series`),
-                ...show.credits?.cast.slice(0, 3).map((actor: any) => actor.name) || [],
+                ...show.genres.map((g: { name: string }) => `free ${g.name.toLowerCase()} series`),
+                ...show.credits?.cast.slice(0, 3).map((actor: { name: string }) => actor.name) || [],
                 show.created_by?.[0]?.name || '',
             ].filter(Boolean),
             openGraph: {
@@ -295,7 +291,7 @@ export async function generateTVMetadata(id: string): Promise<Metadata> {
                 'video:series': show.name,
             },
         }
-    } catch (error) {
+    } catch {
         return {
             title: 'TV Show Not Found | Egfilm',
             description: 'The requested TV show could not be found.',
@@ -316,13 +312,13 @@ export async function generateMovieJSONLD(id: string) {
             datePublished: movie.release_date,
             director: movie.credits?.crew.find((c: any) => c.job === 'Director') ? {
                 '@type': 'Person',
-                name: movie.credits.crew.find((c: any) => c.job === 'Director').name,
+                name: movie.credits.crew.find((c: { job: string; name: string }) => c.job === 'Director').name,
             } : undefined,
-            actor: movie.credits?.cast?.slice(0, 5).map((actor: any) => ({
+            actor: movie.credits?.cast?.slice(0, 5).map((actor: { name: string }) => ({
                 '@type': 'Person',
                 name: actor.name,
             })),
-            genre: movie.genres?.map((genre: any) => genre.name),
+            genre: movie.genres?.map((genre: { name: string }) => genre.name),
             aggregateRating: movie.vote_average ? {
                 '@type': 'AggregateRating',
                 ratingValue: movie.vote_average,
@@ -331,7 +327,7 @@ export async function generateMovieJSONLD(id: string) {
             } : undefined,
             duration: movie.runtime ? `PT${movie.runtime}M` : undefined,
         }
-    } catch (error) {
+    } catch {
         return null
     }
 }
@@ -351,12 +347,12 @@ export async function generateTVJSONLD(id: string) {
                 '@type': 'Person',
                 name: creator.name,
             })),
-            actor: show.credits?.cast.slice(0, 5).map((actor: any) => ({
+            actor: show.credits?.cast.slice(0, 5).map((actor: { name: string; id: number }) => ({
                 '@type': 'Person',
                 name: actor.name,
                 sameAs: `https://www.themoviedb.org/person/${actor.id}`
             })),
-            genre: show.genres.map((g: any) => g.name),
+            genre: show.genres.map((g: { name: string }) => g.name),
             aggregateRating: {
                 '@type': 'AggregateRating',
                 ratingValue: show.vote_average,
@@ -368,7 +364,7 @@ export async function generateTVJSONLD(id: string) {
             numberOfEpisodes: show.number_of_episodes,
             sameAs: `https://www.themoviedb.org/tv/${show.id}`,
         }
-    } catch (error) {
+    } catch {
         return null
     }
 }
