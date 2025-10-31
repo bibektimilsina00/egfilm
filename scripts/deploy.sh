@@ -2,10 +2,8 @@
 set -Eeuo pipefail
 # ===================================================================
 #  EGFilm – zero-downtime remote deployment script  (appleboy-ready)
-# ===================================================================
-#  Requires in ~/egfilm:
-#    .env   (loaded below)
-#    docker-compose.yml
+#  - retries pull until new image is available
+#  - optionally pins to exact digest built by CI
 # ===================================================================
 
 cd ~/egfilm
@@ -48,9 +46,20 @@ else
   echo -e "${YELLOW}⚠️  REGISTRY_TOKEN not set; skipping docker login${NC}"
 fi
 
-# ---------- pull new image -----------------------------------------
+# ---------- pull new image (with retry) ----------------------------
 step "Pulling new image"
-docker compose pull app || true
+for i in {1..5}; do
+  docker compose pull app && break
+  echo -e "${YELLOW}Retry pull ($i/5)…${NC}"
+  sleep 5
+done
+
+# Optional: pin to exact digest built by CI
+if [[ -n "${IMAGE_DIGEST:-}" ]]; then
+  step "Pinning to digest ${IMAGE_DIGEST}"
+  export IMAGE_NAME="${IMAGE_NAME%@*}@${IMAGE_DIGEST}"
+  docker compose pull app
+fi
 
 # ---------- database: start & health --------------------------------
 step "Ensuring database is running and healthy"
