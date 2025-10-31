@@ -31,7 +31,6 @@ AUTH_URL=https://your-domain.com
 
 # Optional: Analytics & Error Tracking
 SENTRY_DSN=your_sentry_dsn
-NEXT_PUBLIC_UMAMI_WEBSITE_ID=your_umami_id
 ```
 
 ### Deployment

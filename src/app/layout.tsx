@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
@@ -110,6 +111,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Validate Google Analytics Measurement ID format (G-XXXXXXXXXX)
+  const isValidGAId = (id: string | undefined): boolean => {
+    if (!id) return false;
+    // GA4 format: G- followed by 10 alphanumeric characters
+    const ga4Pattern = /^G-[A-Z0-9]{10}$/;
+    return ga4Pattern.test(id);
+  };
+
+  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const validGAId = isValidGAId(gaMeasurementId) ? gaMeasurementId : null;
+
   // Enhanced structured data combining website and organization schemas
   const structuredData = {
     '@context': 'https://schema.org',
@@ -209,6 +221,31 @@ export default function RootLayout({
             {children}
           </QueryProvider>
         </SessionProvider>
+
+        {/* Google Analytics */}
+        {validGAId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${validGAId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                /**
+                 * @type {any[]}
+                 */
+                window.dataLayer = window.dataLayer || [];
+                /**
+                 * Google Analytics gtag function
+                 * @param {...any} args
+                 */
+                function gtag(...args) { window.dataLayer.push(arguments); }
+                gtag('js', new Date());
+                gtag('config', '${validGAId}');
+              `}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );
