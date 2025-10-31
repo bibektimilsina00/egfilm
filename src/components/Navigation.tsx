@@ -115,11 +115,11 @@ export default function Navigation() {
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group shrink-0">
                         <Image
-                            src="/egfilm.svg"
+                            src="/logo.svg"
                             alt="Egfilm"
                             width={48}
                             height={48}
-                            className="h-20 w-auto group-hover:scale-105 transition-transform duration-300"
+                            className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
                         />
                     </Link>
 
@@ -128,7 +128,7 @@ export default function Navigation() {
                         {navLinks.map((link) => {
                             const Icon = link.icon;
                             const isActive = mounted && pathname === link.href && !link.external;
-                            
+
                             if (link.external) {
                                 return (
                                     <a
@@ -143,7 +143,7 @@ export default function Navigation() {
                                     </a>
                                 );
                             }
-                            
+
                             return (
                                 <Link
                                     key={link.href}
@@ -325,7 +325,7 @@ export default function Navigation() {
                             {navLinks.map((link) => {
                                 const Icon = link.icon;
                                 const isActive = mounted && pathname === link.href && !link.external;
-                                
+
                                 if (link.external) {
                                     return (
                                         <a
@@ -341,7 +341,7 @@ export default function Navigation() {
                                         </a>
                                     );
                                 }
-                                
+
                                 return (
                                     <Link
                                         key={link.href}
