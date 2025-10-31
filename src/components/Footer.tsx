@@ -1,106 +1,135 @@
 import Link from 'next/link';
-import { Play, Github, Twitter, Mail } from 'lucide-react';
+import { Play, Github, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
+
+const BLOG_SITE_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
 
 export default function Footer() {
+    const currentYear = new Date().getFullYear();
+
     return (
         <footer className="bg-gray-900 border-t border-gray-800 mt-20">
             <div className="container mx-auto px-4 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Brand */}
                     <div className="space-y-4">
-                        <Link href="/" className="flex items-center gap-2">
-                            <Play className="w-8 h-8 text-blue-500" fill="currentColor" />
+                        <Link href="/" className="flex items-center gap-2 group">
+                            <Play className="w-8 h-8 text-blue-500 transition-transform group-hover:scale-110" fill="currentColor" />
                             <span className="text-white text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                                Egfilm
+                                EGFilm
                             </span>
                         </Link>
-                        <p className="text-gray-400 text-sm">
-                            Stream unlimited movies and TV shows with P2P technology. Watch together, anywhere.
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Stream unlimited movies and TV shows. Watch together, discover together.
                         </p>
+                        <div className="flex gap-3">
+                            <SocialLink href="https://github.com/bibektimilsina00" icon={Github} label="GitHub" />
+                            <SocialLink href="https://twitter.com/egfilm" icon={Twitter} label="Twitter" />
+                            <SocialLink href="mailto:contact@egfilm.xyz" icon={Mail} label="Email" />
+                        </div>
                     </div>
 
                     {/* Browse */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Browse</h3>
-                        <ul className="space-y-2">
-                            <li>
-                                <Link href="/" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    Home
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/movies" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    Movies
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/tv" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    TV Shows
-                                </Link>
-                            </li>
+                        <h3 className="text-white font-semibold mb-4 text-lg">Browse</h3>
+                        <ul className="space-y-3">
+                            <FooterLink href="/" icon={Home} text="Home" />
+                            <FooterLink href="/movies" icon={Film} text="Movies" />
+                            <FooterLink href="/tv" icon={Tv} text="TV Shows" />
+                            <FooterLink href={BLOG_SITE_URL} icon={BookOpen} text="Blog" external />
                         </ul>
                     </div>
 
-                    {/* Help */}
+                    {/* Discover */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Help</h3>
-                        <ul className="space-y-2">
-                            <li>
-                                <a href="#" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    FAQ
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    Help Center
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    Terms of Service
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" className="text-gray-400 hover:text-blue-400 transition text-sm">
-                                    Privacy Policy
-                                </a>
-                            </li>
+                        <h3 className="text-white font-semibold mb-4 text-lg">Discover</h3>
+                        <ul className="space-y-3">
+                            <FooterLink href="/trending" text="Trending" />
+                            <FooterLink href="/genres" text="Genres" />
+                            <FooterLink href="/watchlist" text="Watchlist" />
+                            <FooterLink href="/search" text="Search" />
                         </ul>
                     </div>
 
-                    {/* Social */}
+                    {/* Help & Legal */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Connect</h3>
-                        <div className="flex gap-3">
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-gray-800 hover:bg-blue-500 rounded-full flex items-center justify-center transition-colors"
-                            >
-                                <Github className="w-5 h-5 text-white" />
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-gray-800 hover:bg-blue-500 rounded-full flex items-center justify-center transition-colors"
-                            >
-                                <Twitter className="w-5 h-5 text-white" />
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-gray-800 hover:bg-blue-500 rounded-full flex items-center justify-center transition-colors"
-                            >
-                                <Mail className="w-5 h-5 text-white" />
-                            </a>
+                        <h3 className="text-white font-semibold mb-4 text-lg">Support</h3>
+                        <ul className="space-y-3">
+                            <FooterLink href="/help" text="Help Center" />
+                            <FooterLink href="/faq" text="FAQ" />
+                            <FooterLink href="/terms" text="Terms of Service" />
+                            <FooterLink href="/privacy" text="Privacy Policy" />
+                        </ul>
+                    </div>
+                </div>
+
+                {/* Bottom Bar */}
+                <div className="mt-12 pt-8 border-t border-gray-800">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-gray-500 text-sm">
+                            © {currentYear} EGFilm. Built with ❤️ using Next.js
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                            <span>Powered by TMDB API</span>
+                            <span>•</span>
+                            <span>Made in Nepal 🇳🇵</span>
                         </div>
                     </div>
                 </div>
-
-                {/* Bottom */}
-                <div className="mt-12 pt-8 border-t border-gray-800 text-center">
-                    <p className="text-gray-500 text-sm">
-                        © {new Date().getFullYear()} Egfilm. Built with Next.js and TMDb API.
-                    </p>
-                </div>
             </div>
         </footer>
+    );
+}
+
+// Helper Components
+function SocialLink({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
+    return (
+        <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-10 h-10 bg-gray-800 hover:bg-blue-500 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+            aria-label={label}
+        >
+            <Icon className="w-4 h-4 text-white" />
+        </a>
+    );
+}
+
+function FooterLink({
+    href,
+    text,
+    icon: Icon,
+    external = false
+}: {
+    href: string;
+    text: string;
+    icon?: any;
+    external?: boolean;
+}) {
+    const className = "text-gray-400 hover:text-blue-400 transition-colors text-sm flex items-center gap-2 group";
+
+    const content = (
+        <>
+            {Icon && <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+            <span>{text}</span>
+        </>
+    );
+
+    if (external) {
+        return (
+            <li>
+                <a href={href} className={className} target="_blank" rel="noopener noreferrer">
+                    {content}
+                </a>
+            </li>
+        );
+    }
+
+    return (
+        <li>
+            <Link href={href} className={className}>
+                {content}
+            </Link>
+        </li>
     );
 }

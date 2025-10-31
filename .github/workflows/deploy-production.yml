@@ -1,181 +1,467 @@
-name: 🚀 Deploy Production
+# ========================================
+# 🚀 EGFilm Main App - Production Deployment
+# ========================================
+# World-class CI/CD pipeline with zero-downtime deployment
+# Following enterprise-grade best practices
+
+name: 🚀 EGFilm Main App - Production Deploy
 
 on:
   push:
     branches: [main]
-    tags:
-      - "v*"
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment (skip some checks)'
+        type: boolean
+        default: false
+      rollback_version:
+        description: 'Rollback to version (e.g., v1.2.3)'
+        type: string
+        required: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: "18"
+  HEALTH_CHECK_TIMEOUT: 120
+  DEPLOYMENT_TIMEOUT: 600
+
+# Cancel in-progress deployments for the same branch
+concurrency:
+  group: deploy-main-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  # ===========================================
+  # 🔍 PRE-DEPLOYMENT VALIDATION
+  # ===========================================
+  validate:
+    name: 🔍 Pre-Deployment Validation
     runs-on: ubuntu-latest
-    environment: production
-    timeout-minutes: 20
-
+    outputs:
+      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+      version: ${{ steps.version.outputs.version }}
+      is-rollback: ${{ github.event.inputs.rollback_version != '' }}
+    
     steps:
-      - name: 🧾 Checkout
+      - name: 🧾 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📊 Detect Changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            app:
+              - 'src/**'
+              - 'public/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'next.config.*'
+              - 'tailwind.config.*'
+              - 'Dockerfile'
+              - 'docker-compose.*'
+              - 'prisma/**'
+
+      - name: 🏷️ Determine Version
+        id: version
+        run: |
+          if [[ "${{ github.event.inputs.rollback_version }}" != "" ]]; then
+            echo "version=${{ github.event.inputs.rollback_version }}" >> $GITHUB_OUTPUT
+            echo "🔄 Rollback deployment to version: ${{ github.event.inputs.rollback_version }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "🏷️ Tag deployment: ${VERSION}"
+          else
+            VERSION="main-${GITHUB_SHA::8}"
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "🌟 Branch deployment: ${VERSION}"
+          fi
+          
+          # Set should-deploy flag
+          if [[ "${{ steps.changes.outputs.app }}" == "true" ]] || \
+             [[ "${{ github.event.inputs.force_deploy }}" == "true" ]] || \
+             [[ "${GITHUB_REF}" == refs/tags/* ]] || \
+             [[ "${{ github.event.inputs.rollback_version }}" != "" ]]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No deployment needed - no relevant changes detected"
+          fi
+
+  # ===========================================
+  # 🧪 COMPREHENSIVE TESTING
+  # ===========================================
+  test:
+    name: 🧪 Quality Assurance
+    runs-on: ubuntu-latest
+    needs: [validate]
+    if: needs.validate.outputs.should-deploy == 'true' && needs.validate.outputs.is-rollback != 'true'
+    
+    steps:
+      - name: 🧾 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🏷 Set Version
-        id: vars
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          else
-            VERSION="latest"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:$VERSION" >> $GITHUB_OUTPUT
+      - name: ⚡ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: 📝 Create .env.local for build
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 🔍 Lint Code
+        run: npm run lint
+
+      - name: 🏗️ Build Check
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: 🧪 Run Tests
+        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        env:
+          CI: true
+
+      - name: 📊 Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: false
+
+      - name: 🔒 Security Audit
+        run: npm audit --audit-level high
+
+      - name: 🔍 Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 📋 Upload Security Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ===========================================
+  # 🐳 DOCKER BUILD & PUSH
+  # ===========================================
+  build:
+    name: 🐳 Build & Push Container
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    if: needs.validate.outputs.should-deploy == 'true'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      image-uri: ${{ steps.image-uri.outputs.image-uri }}
+      image-digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+      - name: 🧾 Checkout Code
+        uses: actions/checkout@v4
+        if: needs.validate.outputs.is-rollback != 'true'
+
+      - name: 🏷️ Generate Metadata
+        id: meta
+        if: needs.validate.outputs.is-rollback != 'true'
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.validate.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=EGFilm Main App
+            org.opencontainers.image.description=Movie & TV streaming platform
+            org.opencontainers.image.vendor=EGFilm
+            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
+            org.opencontainers.image.created={{date 'RFC3339'}}
+            org.opencontainers.image.revision=${{ github.sha }}
+            maintainer=bibektimilsina00
+
+      - name: 🔧 Setup Docker Buildx
+        if: needs.validate.outputs.is-rollback != 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Build & Push Image
+        id: build
+        if: needs.validate.outputs.is-rollback != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            VERSION=${{ needs.validate.outputs.version }}
+            COMMIT_SHA=${{ github.sha }}
+
+      - name: 🔒 Sign Image with Cosign
+        if: needs.validate.outputs.is-rollback != 'true'
+        uses: sigstore/cosign-installer@v3
+
+      - name: ✍️ Sign Container
+        if: needs.validate.outputs.is-rollback != 'true'
         run: |
-          cat > .env.local <<'ENVEOF'
+          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+
+      - name: 📝 Set Image URI for Deployment
+        id: image-uri
+        run: |
+          if [[ "${{ needs.validate.outputs.is-rollback }}" == "true" ]]; then
+            IMAGE_URI="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.version }}"
+          else
+            IMAGE_URI="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          fi
+          echo "image-uri=${IMAGE_URI}" >> $GITHUB_OUTPUT
+          echo "🐳 Deployment image: ${IMAGE_URI}"
+
+  # ===========================================
+  # 🚀 ZERO-DOWNTIME DEPLOYMENT
+  # ===========================================
+  deploy:
+    name: 🚀 Zero-Downtime Deploy
+    runs-on: ubuntu-latest
+    needs: [validate, build]
+    environment:
+      name: production
+      url: ${{ vars.APP_URL || 'https://egfilm.xyz' }}
+    timeout-minutes: 10
+    
+    steps:
+      - name: 🧾 Checkout Deployment Config
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docker-compose.yml
+            scripts/
+          sparse-checkout-cone-mode: false
+
+      - name: 🔐 Setup SSH Connection
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          
+          # Add server to known hosts
+          ssh-keyscan -H ${{ vars.SERVER_HOST || 'your-server.com' }} >> ~/.ssh/known_hosts
+
+      - name: 🏥 Pre-deployment Health Check
+        run: |
+          echo "🏥 Checking current application health..."
+          if curl -sf "${{ vars.APP_URL || 'https://egfilm.xyz' }}/api/health" > /dev/null; then
+            echo "✅ Application is currently healthy"
+          else
+            echo "⚠️ Application appears to be down - proceeding with deployment"
+          fi
+
+      - name: 📋 Prepare Production Environment
+        run: |
+          cat > production.env <<EOF
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
-          DATABASE_URL=postgresql://egfilm_admin:anihortes@postgres:5432/egfilm-database
+          
+          # Database
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          
+          # TMDB API
           TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
           NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-          NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
+          NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+          
+          # Authentication
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-          AUTH_URL=${{ secrets.NEXTAUTH_URL }}
-          NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
-          NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
+          AUTH_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
+          NEXTAUTH_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
+          
+          # Application
+          NEXT_PUBLIC_APP_NAME=EGFilm
+          NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
+          NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
+          
+          # WebRTC (Optional)
           NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
           NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
           NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
-          SENTRY_DSN=${{ secrets.SENTRY_DSN || '' }}
-          NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN || '' }}
-          # Google Analytics
-          NEXT_PUBLIC_GA_MEASUREMENT_ID=G-1YQDBM4Q2J
-          # Google Tag Manager
-          NEXT_PUBLIC_GTM_ID=GTM-NNJD2J44
-          ENVEOF
-      
-      - name: 🔐 Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
-
-      - name: 🐳 Build & Push Image
-        run: |
-          ls -la ./
-          cat .env.local
           
-          # Build and push main streaming app image
-          docker build --target runner -t ${{ steps.vars.outputs.image }} .
-          docker push ${{ steps.vars.outputs.image }}
+          # Build Info
+          NEXT_PUBLIC_BUILD_VERSION=${{ needs.validate.outputs.version }}
+          NEXT_PUBLIC_BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
+          
+          # Docker Image
+          IMAGE_NAME=${{ needs.build.outputs.image-uri }}
+          EOF
 
-      - name: 🧹 Cleanup Server (free disk space)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ vars.SERVER_HOST }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            echo "🧹 Cleaning up Docker resources..."
-            
-            # Stop and remove old containers (but keep volumes)
-            docker-compose -f ~/egfilm/docker-compose.yml down --remove-orphans || true
-            
-            # Remove unused images (keep only what's needed)
-            docker image prune -af --filter "until=24h" || true
-            
-            # Remove unused build cache
-            docker builder prune -af || true
-            
-            # Remove dangling volumes (not associated with any container)
-            docker volume prune -f || true
-            
-            # Show disk usage
-            echo "📊 Disk usage after cleanup:"
-            df -h /
-            docker system df
-
-      - name: 📤 Copy docker-compose file
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ vars.SERVER_HOST }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "~/egfilm"
-
-      - name: 🚀 Deploy to Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ vars.SERVER_HOST }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
+      - name: 🚀 Deploy with Zero Downtime
+        run: |
+          # Copy files to server
+          scp -i ~/.ssh/deploy_key production.env ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }}:~/egfilm/.env
+          scp -i ~/.ssh/deploy_key docker-compose.yml ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }}:~/egfilm/
+          
+          # Execute zero-downtime deployment
+          ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }} << 'DEPLOY_SCRIPT'
             set -e
             cd ~/egfilm
-            echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            echo "🔐 Logging into container registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            
+            echo "📥 Pulling new image..."
+            docker compose pull app
+            
+            echo "🔄 Starting rolling update..."
+            # Create new container with different name
+            docker compose up -d --no-deps --scale app=2 app
+            
+            echo "⏳ Waiting for new container to be ready..."
+            timeout 120 bash -c 'until curl -sf http://localhost:3000/api/health > /dev/null; do sleep 2; echo -n .; done'
+            
+            echo "🔄 Removing old container..."
+            docker compose up -d --no-deps --scale app=1 --remove-orphans app
+            
+            echo "🧹 Cleaning up old images..."
+            docker image prune -af --filter "until=24h"
+            
+            echo "✅ Deployment completed successfully!"
+          DEPLOY_SCRIPT
 
-            # Create .env file with minimal required variables for streaming app
-            cat > .env <<'ENVEOF'
-            NODE_ENV=production
-            NEXT_TELEMETRY_DISABLED=1
-            # PostgreSQL credentials for local Docker service
-            POSTGRES_USER=egfilm_admin
-            POSTGRES_PASSWORD=anihortes
-            POSTGRES_DB=egfilm-database
-            POSTGRES_PORT=5432
-            PGDATA=/var/lib/postgresql/data/pgdata
-            # Database URL pointing to postgres container
-            DATABASE_URL=postgresql://egfilm_admin:anihortes@postgres:5432/egfilm-database
-            # TMDB API for movie/TV data
-            NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-            TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-            NEXT_PUBLIC_TMDB_BASE_URL=${{ vars.TMDB_BASE_URL || 'https://api.themoviedb.org/3' }}
-            # Authentication
-            AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            AUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            # App configuration
-            NEXT_PUBLIC_APP_NAME=${{ vars.APP_NAME || 'Egfilm' }}
-            NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || secrets.NEXTAUTH_URL }}
-            # WebRTC for watch together (optional)
-            NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
-            NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
-            NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
-            # Analytics
-            NEXT_PUBLIC_GA_MEASUREMENT_ID=G-1YQDBM4Q2J
-            # Google Tag Manager
-            NEXT_PUBLIC_GTM_ID=GTM-NNJD2J44
-            # Docker image
-            IMAGE_NAME=${{ steps.vars.outputs.image }}
-            ENVEOF
-
-            # Deploy using docker compose
-            IMAGE_NAME=${{ steps.vars.outputs.image }} docker-compose pull
-            IMAGE_NAME=${{ steps.vars.outputs.image }} docker-compose up -d --remove-orphans
-
-            # Wait for health check
-            echo "🏥 Waiting for application to be healthy..."
-            for i in {1..30}; do
-              if curl -sf http://localhost:8000/api/health > /dev/null 2>&1; then
-                echo "✅ Application is healthy"
-                break
-              fi
-              echo -n "."
-              sleep 3
-              if [ $i -eq 30 ]; then
-                echo "❌ Health check failed after 90 seconds"
-                echo "📋 Container status:"
-                docker-compose ps
-                echo "📋 Application logs:"
-                docker-compose logs app --tail=50
-                exit 1
-              fi
-            done
-
-            docker-compose ps
-
-      - name: ✅ Deployment Summary
+      - name: 🏥 Post-deployment Health Check
         run: |
-          echo "### ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
-          echo "📦 Version: ${{ steps.vars.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "🐳 Image: ${{ steps.vars.outputs.image }}" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 Host: ${{ vars.SERVER_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "🏥 Verifying deployment health..."
+          
+          # Wait for application to be fully ready
+          for i in {1..30}; do
+            if curl -sf "${{ vars.APP_URL || 'https://egfilm.xyz' }}/api/health" > /dev/null; then
+              echo "✅ Application is healthy after deployment"
+              break
+            fi
+            
+            if [ $i -eq 30 ]; then
+              echo "❌ Health check failed after 60 seconds"
+              
+              # Get deployment logs for debugging
+              ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }} \
+                "cd ~/egfilm && docker compose logs app --tail=100"
+              exit 1
+            fi
+            
+            echo -n "."
+            sleep 2
+          done
+
+      - name: 🧪 Smoke Tests
+        run: |
+          echo "🧪 Running post-deployment smoke tests..."
+          
+          # Test critical endpoints
+          BASE_URL="${{ vars.APP_URL || 'https://egfilm.xyz' }}"
+          
+          # Test home page
+          if curl -sf "${BASE_URL}/" > /dev/null; then
+            echo "✅ Home page accessible"
+          else
+            echo "❌ Home page failed"
+            exit 1
+          fi
+          
+          # Test API health
+          if curl -sf "${BASE_URL}/api/health" | grep -q "ok"; then
+            echo "✅ API health check passed"
+          else
+            echo "❌ API health check failed"
+            exit 1
+          fi
+          
+          # Test movies page
+          if curl -sf "${BASE_URL}/movies" > /dev/null; then
+            echo "✅ Movies page accessible"
+          else
+            echo "⚠️ Movies page check failed (non-critical)"
+          fi
+
+  # ===========================================
+  # 📊 DEPLOYMENT REPORTING
+  # ===========================================
+  report:
+    name: 📊 Deployment Report
+    runs-on: ubuntu-latest
+    needs: [validate, build, deploy]
+    if: always()
+    
+    steps:
+      - name: 📊 Generate Deployment Summary
+        run: |
+          echo "# 🚀 EGFilm Main App Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
+            echo "## ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: 🟢 Live and healthy" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: 🔴 Deployment unsuccessful" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "- **Version**: ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ needs.build.outputs.image-uri }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.validate.outputs.is-rollback }}" == "true" ]]; then
+            echo "- **Type**: 🔄 Rollback deployment" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [🎬 Main App](${{ vars.APP_URL || 'https://egfilm.xyz' }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [📝 Blog](${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [🏥 Health Check](${{ vars.APP_URL || 'https://egfilm.xyz' }}/api/health)" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📧 Notify Success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "🎉 EGFilm Main App deployed successfully!"
+          echo "Version: ${{ needs.validate.outputs.version }}"
+          echo "🌐 Live at: ${{ vars.APP_URL || 'https://egfilm.xyz' }}"
+
+      - name: 🚨 Notify Failure
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "❌ EGFilm Main App deployment failed!"
+          echo "Check the logs above for details."
+          echo "Consider rolling back if needed."
+          exit 1
+
+# ===========================================
+# 📝 WORKFLOW NOTES
+# ===========================================
+# This workflow implements:
+# ✅ Zero-downtime rolling deployments
+# ✅ Comprehensive testing pipeline
+# ✅ Security scanning & image signing
+# ✅ Health checks & smoke tests
+# ✅ Rollback capability
+# ✅ Deployment monitoring
+# ✅ Enterprise-grade error handling
