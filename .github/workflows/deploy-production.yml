@@ -226,6 +226,15 @@ jobs:
             NODE_ENV=production
             VERSION=${{ needs.validate.outputs.version }}
             COMMIT_SHA=${{ github.sha }}
+            NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+            NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
+            NEXT_PUBLIC_APP_NAME=EGFilm
+            NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
+            NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
+            NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
+            NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
+            NEXT_PUBLIC_BUILD_VERSION=${{ needs.validate.outputs.version }}
+            NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
 
       - name: 🔒 Sign Image with Cosign
         if: needs.validate.outputs.is-rollback != 'true'
@@ -246,6 +255,7 @@ jobs:
           fi
           echo "image-uri=${IMAGE_URI}" >> $GITHUB_OUTPUT
           echo "🐳 Deployment image: ${IMAGE_URI}"
+
 
   # ===========================================
   # 🚀 ZERO-DOWNTIME DEPLOYMENT
@@ -313,7 +323,7 @@ jobs:
           NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
           NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
           
-          # WebRTC (Optional)
+          # WebRTC 
           NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
           NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
           NEXT_PUBLIC_TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
@@ -332,12 +342,12 @@ jobs:
 
       - name: 🚀 Deploy with Zero Downtime
         run: |
-          # Copy files to server
-          scp -i ~/.ssh/deploy_key production.env ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }}:~/egfilm/.env
-          scp -i ~/.ssh/deploy_key docker-compose.yml ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }}:~/egfilm/
+          # Copy files to server (override existing)
+          scp -i ~/.ssh/deploy_key production.env ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST  }}:~/egfilm/.env
+          scp -i ~/.ssh/deploy_key docker-compose.yml ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST  }}:~/egfilm/
           
           # Execute zero-downtime deployment
-          ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST || 'your-server.com' }} << 'DEPLOY_SCRIPT'
+          ssh -i ~/.ssh/deploy_key ${{ vars.SERVER_USER || 'deploy' }}@${{ vars.SERVER_HOST }} << 'DEPLOY_SCRIPT'
             set -e
             cd ~/egfilm
             
