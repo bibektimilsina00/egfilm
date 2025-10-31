@@ -260,7 +260,7 @@ jobs:
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ vars.SSH_PORT || 22 }}
-          source: ".env,deploy.sh,docker-compose.yml"   # ← renamed file
+          source: ".env,scripts/deploy.sh,docker-compose.yml"   # ← renamed file
           target: "~/egfilm/"
           strip_components: 1 
 
