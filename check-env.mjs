@@ -6,8 +6,10 @@
  * Usage: node check-env.js
  */
 
-require('dotenv').config({ path: '.env.local' });
-require('dotenv').config({ path: '.env' });
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 console.log('🔍 Checking Environment Variables...\n');
 

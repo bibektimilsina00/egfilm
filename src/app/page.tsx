@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Info, TrendingUp, Star, Tv, Film, Clock } from 'lucide-react';
+import { Info, TrendingUp, Star, Tv, Film, Clock } from 'lucide-react';
 
 // Note: For client components, SEO metadata is handled in layout.tsx
 // This component focuses on structured data and content optimization

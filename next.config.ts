@@ -218,7 +218,7 @@ const nextConfig: NextConfig = {
     ];
   },
   // Webpack performance optimizations (only when not using Turbopack)
-  webpack: (config, { dev, isServer, nextRuntime }) => {
+  webpack: (config, { dev, isServer }) => {
     // Skip Webpack config when using Turbopack
     if (process.env.TURBOPACK) {
       return config;

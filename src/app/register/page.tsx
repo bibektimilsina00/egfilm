@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Play, Loader2, Mail, Lock, User as UserIcon, Sparkles, CheckCircle2, Film, Users, Tv, Star } from 'lucide-react';
+import { Loader2, Mail, Lock, User as UserIcon, Sparkles, CheckCircle2, Film, Users, Tv, Star } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 
 export default function RegisterPage() {
