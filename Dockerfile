@@ -1,94 +1,38 @@
-# Egfilm Production Dockerfile - Optimized for Performance
-# Multi-stage build to minimize image size
-
+# Production-Only Dockerfile - Minimal & Lightweight
 FROM node:20-alpine AS base
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init libc6-compat
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 
-# Dependencies layer
+# Dependencies
 FROM base AS deps
-WORKDIR /app
 COPY package*.json ./
-# Use npm ci for reproducible builds + clean install
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production --frozen-lockfile
 
-# Build dependencies layer
-FROM base AS build-deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci && npm cache clean --force
-
-
-# Builder layer
+# Builder
 FROM base AS builder
-WORKDIR /app
-COPY --from=build-deps /app/node_modules ./node_modules
+COPY package*.json ./
+RUN npm ci --frozen-lockfile
 COPY . .
-
-# Generate Prisma Client
 RUN npx prisma generate
-
-# Build Next.js app with optimizations
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-
-# Copy .env.local created by GitHub Actions workflow
-COPY .env.local .env.local
-
 RUN npm run build
 
-# Production runtime layer - minimal and secure
+# Runner
 FROM base AS runner
-WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Security: Run as non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Copy only what's needed for production
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
-
-# Copy Next.js build output (standalone mode)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy Prisma runtime files only
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copy production dependencies only
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Make entrypoint executable
-RUN chmod +x ./entrypoint.sh && \
-    chown -R nextjs:nodejs /app
-
-# Security: Create .next directory with proper permissions
-RUN mkdir -p .next && chown -R nextjs:nodejs .next
-
-# Switch to non-root user
 USER nextjs
+EXPOSE 3000
+ENV PORT=3000
 
-# Expose port
-EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
 
-# Set environment for production
-ENV NODE_ENV=production
-ENV PORT=8000
-ENV HOSTNAME=0.0.0.0
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8000/ || exit 1
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start application with entrypoint
-CMD ["./entrypoint.sh"]
-
-# Final image is now just the streaming application - no worker
+CMD ["node", "server.js"]
 
