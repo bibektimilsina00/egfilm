@@ -23,7 +23,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: bibektimilsina00/egfilm
   NODE_VERSION: "18"
   HEALTH_CHECK_TIMEOUT: 120
   DEPLOYMENT_TIMEOUT: 600
@@ -37,6 +37,8 @@ permissions:
   contents: read
   security-events: write
   packages: write
+  id-token: write
+  actions: read
 
 jobs:
   # ===========================================
@@ -202,7 +204,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐳 Build & Push Image
