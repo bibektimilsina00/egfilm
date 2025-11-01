@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
     try {
         const session = await auth();
-        
+
         // Check if user is admin
         if (!session || session.user?.role !== 'admin') {
             return NextResponse.json(

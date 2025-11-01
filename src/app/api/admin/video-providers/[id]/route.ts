@@ -13,7 +13,7 @@ export async function GET(
     try {
         const params = await context.params;
         const session = await auth();
-        
+
         if (!session || session.user?.role !== 'admin') {
             return NextResponse.json(
                 { error: 'Unauthorized' },
@@ -52,7 +52,7 @@ export async function PATCH(
 ) {
     try {
         const params = await context.params;
-        const session = await auth();        if (!session || session.user?.role !== 'admin') {
+        const session = await auth(); if (!session || session.user?.role !== 'admin') {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
