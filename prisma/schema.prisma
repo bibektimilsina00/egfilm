@@ -15,40 +15,45 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      String   @default("user")  // 'user', 'admin', 'moderator'
+  role      String   @default("user") // 'user', 'admin', 'moderator'
   isActive  Boolean  @default(true)
   isBanned  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // AI Configuration for User Settings
-  geminiApiKey       String?  // User's Gemini API key
-  openaiApiKey       String?  // User's OpenAI API key
-  anthropicApiKey    String?  // User's Anthropic API key
-  tmdbApiKey         String?  // User's TMDb API key
-  preferredAiModel   String?  @default("gemini-2.5-flash") // Default AI model
-  
+  geminiApiKey     String? // User's Gemini API key
+  openaiApiKey     String? // User's OpenAI API key
+  anthropicApiKey  String? // User's Anthropic API key
+  tmdbApiKey       String? // User's TMDb API key
+  preferredAiModel String? @default("gemini-2.5-flash") // Default AI model
+
   // Streaming App Relations
-  watchlist        WatchlistItem[]
-  continueWatching ContinueWatching[]
-  watchRooms       WatchRoom[]
-  sentNotifications     Notification[] @relation("SentNotifications")
-  receivedNotifications Notification[] @relation("ReceivedNotifications")
+  watchlist             WatchlistItem[]
+  continueWatching      ContinueWatching[]
+  watchRooms            WatchRoom[]
+  sentNotifications     Notification[]       @relation("SentNotifications")
+  receivedNotifications Notification[]       @relation("ReceivedNotifications")
   createdNotifications  SystemNotification[] @relation("CreatedNotifications")
+
+  // Blog/Admin Relations
+  blogPosts    BlogPost[]    @relation("BlogPosts")
+  blogComments BlogComment[]
+  blogLikes    BlogLike[]
 }
 
 model WatchlistItem {
   id         String   @id @default(cuid())
   userId     String
   mediaId    Int
-  mediaType  String   // 'movie' or 'tv'
+  mediaType  String // 'movie' or 'tv'
   title      String
   posterPath String?
   addedAt    DateTime @default(now())
-  
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, mediaId, mediaType])
   @@index([userId])
 }
@@ -57,82 +62,82 @@ model ContinueWatching {
   id         String   @id @default(cuid())
   userId     String
   mediaId    Int
-  mediaType  String   // 'movie' or 'tv'
+  mediaType  String // 'movie' or 'tv'
   title      String
   posterPath String?
-  progress   Int      // percentage 0-100
-  season     Int?     // for TV shows
-  episode     Int?     // for TV shows
+  progress   Int // percentage 0-100
+  season     Int? // for TV shows
+  episode    Int? // for TV shows
   updatedAt  DateTime @updatedAt
-  
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, mediaId, mediaType])
   @@index([userId])
 }
 
 model WatchRoom {
-  id          String   @id @default(cuid())
-  roomCode    String   @unique
-  creatorId   String
-  mediaId     Int
-  mediaType   String   // 'movie' or 'tv'
-  mediaTitle  String
-  embedUrl    String?  // URL for embedded video player
-  posterPath  String?
-  season      Int?     // for TV shows
-  episode     Int?     // for TV shows
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  roomCode     String   @unique
+  creatorId    String
+  mediaId      Int
+  mediaType    String // 'movie' or 'tv'
+  mediaTitle   String
+  embedUrl     String? // URL for embedded video player
+  posterPath   String?
+  season       Int? // for TV shows
+  episode      Int? // for TV shows
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
   lastActiveAt DateTime @default(now())
-  
+
   // Relations
-  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
+  creator      User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
   participants RoomParticipant[]
-  
+
   @@index([roomCode])
   @@index([creatorId])
   @@index([isActive])
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  type        String   // 'watch_invite', 'room_join', 'system'
-  title       String
-  message     String
-  fromUserId  String
-  toUserId    String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  type       String // 'watch_invite', 'room_join', 'system'
+  title      String
+  message    String
+  fromUserId String
+  toUserId   String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
   // Watch Together specific fields
-  roomCode    String?
-  mediaId     Int?
-  mediaType   String?  // 'movie' or 'tv'
-  mediaTitle  String?
-  embedUrl    String?
-  
+  roomCode   String?
+  mediaId    Int?
+  mediaType  String? // 'movie' or 'tv'
+  mediaTitle String?
+  embedUrl   String?
+
   // Relations
   fromUser User @relation("SentNotifications", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUser   User @relation("ReceivedNotifications", fields: [toUserId], references: [id], onDelete: Cascade)
-  
+
   @@index([toUserId, isRead])
   @@index([toUserId, createdAt])
 }
 
 model RoomParticipant {
-  id        String   @id @default(cuid())
-  roomId    String
-  userId    String?  // null for guests
-  username  String
-  joinedAt  DateTime @default(now())
-  leftAt    DateTime?
-  
+  id       String    @id @default(cuid())
+  roomId   String
+  userId   String? // null for guests
+  username String
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
   // Relations
   room WatchRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  
+
   @@index([roomId])
   @@index([userId])
 }
@@ -140,34 +145,178 @@ model RoomParticipant {
 model ChatMessage {
   id        String   @id @default(cuid())
   roomId    String
-  userId    String?  // null for system messages
+  userId    String? // null for system messages
   username  String
   message   String
   createdAt DateTime @default(now())
-  
+
   // Relations
   room WatchRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  
+
   @@index([roomId])
   @@index([createdAt])
 }
 
 model SystemNotification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
   message   String
-  type      String   // 'info', 'warning', 'error', 'maintenance'
+  type      String // 'info', 'warning', 'error', 'maintenance'
   creatorId String
-  isActive  Boolean  @default(true)
+  isActive  Boolean   @default(true)
   expiresAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
   // Relations
   creator User @relation("CreatedNotifications", fields: [creatorId], references: [id], onDelete: Cascade)
-  
+
   @@index([isActive])
   @@index([createdAt])
 }
 
+model VideoProvider {
+  id        String  @id @default(cuid())
+  name      String  @unique // Display name (e.g., "VidLink Pro", "VidSrc")
+  slug      String  @unique // URL-friendly identifier
+  baseUrl   String // Base embed URL template
+  quality   String // Quality label (e.g., "1080p", "4K", "HD")
+  isEnabled Boolean @default(true)
+  isDefault Boolean @default(false)
+  sortOrder Int     @default(0) // Lower number = higher priority
 
+  // URL Template patterns - use {tmdbId}, {season}, {episode} placeholders
+  movieTemplate String // e.g., "https://vidlink.pro/movie/{tmdbId}"
+  tvTemplate    String // e.g., "https://vidlink.pro/tv/{tmdbId}/{season}/{episode}"
+
+  // Optional: Support for different ID types
+  supportsImdb Boolean @default(false)
+  supportsTmdb Boolean @default(true)
+
+  // Provider-specific features
+  hasMultiQuality Boolean @default(true)
+  hasSubtitles    Boolean @default(true)
+  hasAutoplay     Boolean @default(false)
+  requiresAuth    Boolean @default(false)
+
+  // Metadata
+  description String?
+  logoUrl     String?
+  homepage    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isEnabled, sortOrder])
+  @@index([isDefault])
+}
+
+// ============================================
+// BLOG MODELS (Used by Admin App)
+// ============================================
+
+model BlogPost {
+  id                 String    @id @default(cuid())
+  slug               String    @unique
+  title              String
+  excerpt            String
+  content            String
+  metaTitle          String?
+  metaDescription    String?
+  keywords           String[]
+  ogImage            String?
+  canonicalUrl       String?
+  schemaMarkup       String?
+  customCss          String?
+  customJs           String?
+  priority           String    @default("normal")
+  isSponsored        Boolean   @default(false)
+  sponsorInfo        String?
+  socialMediaPreview Json?
+  robotsMeta         String    @default("index,follow")
+  twitterCardType    String    @default("summary_large_image")
+  articleType        String    @default("BlogPosting")
+  mediaId            Int?
+  mediaType          String?
+  mediaTitle         String?
+  mediaPosterPath    String?
+  mediaBackdropPath  String?
+  mediaReleaseDate   String?
+  mediaGenres        String[]
+  mediaRating        Float?
+  mediaOverview      String?
+  mediaCast          Json?
+  authorId           String
+  category           String    @default("review")
+  tags               String[]
+  featuredImage      String?
+  readingTime        Int       @default(5)
+  viewCount          Int       @default(0)
+  status             String    @default("draft")
+  publishedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  author   User          @relation("BlogPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  comments BlogComment[]
+  likes    BlogLike[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([category])
+  @@index([mediaId, mediaType])
+}
+
+model BlogLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String
+  parentId  String?
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent  BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlogComment[] @relation("CommentReplies")
+  post    BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+model BlogGenerationProgress {
+  id             String   @id @default(cuid())
+  userId         String
+  mediaType      String
+  sortBy         String
+  currentPage    Int      @default(1)
+  currentIndex   Int      @default(0)
+  totalGenerated Int      @default(0)
+  lastMediaId    Int?
+  lastUpdated    DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, mediaType, sortBy])
+  @@index([userId])
+  @@index([mediaType, sortBy])
+}

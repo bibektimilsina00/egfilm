@@ -18,7 +18,7 @@ const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
 
         const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
             if (loading || isLoading || disabled) return;
-            
+
             setIsLoading(true);
             try {
                 await onClick?.(e);
