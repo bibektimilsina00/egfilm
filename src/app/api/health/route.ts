@@ -9,7 +9,7 @@ export async function GET() {
     const startTime = Date.now();
     console.log('[Health Check] Starting health check...');
     console.log('[Health Check] DATABASE_URL present:', !!process.env.DATABASE_URL);
-    console.log('[Health Check] DATABASE_URL value (masked):', 
+    console.log('[Health Check] DATABASE_URL value (masked):',
         process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':***@'));
 
     try {

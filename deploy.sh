@@ -18,6 +18,9 @@ trap 'echo -e "${RED}❌ Script failed – dumping app logs:${NC}"; docker compo
 if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   set -a; source .env; set +a
+  echo -e "${GREEN}✓ Loaded .env${NC}"
+  echo "  IMAGE_NAME: ${IMAGE_NAME:-<not set>}"
+  echo "  DATABASE_URL: ${DATABASE_URL:0:30}... (truncated)"
 else
   echo -e "${RED}❌ .env file not found in $(pwd). Aborting.${NC}"
   exit 1
@@ -48,11 +51,15 @@ fi
 
 # ---------- pull new image (with retry) ----------------------------
 step "Pulling new image"
-for i in {1..5}; do
-  docker compose pull app && break
-  echo -e "${YELLOW}Retry pull ($i/5)…${NC}"
-  sleep 5
-done
+echo "IMAGE_NAME=${IMAGE_NAME:-<not set>}"
+docker compose pull --no-cache app || {
+  echo -e "${YELLOW}First pull failed, retrying...${NC}"
+  for i in {1..5}; do
+    docker compose pull app && break
+    echo -e "${YELLOW}Retry pull ($i/5)…${NC}"
+    sleep 5
+  done
+}
 
 # Optional: pin to exact digest built by CI
 if [[ -n "${IMAGE_DIGEST:-}" ]]; then
