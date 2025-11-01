@@ -112,9 +112,17 @@ export default function WatchTVPage() {
 
   const currentSource = providers[currentSourceIndex];
   const embedUrl = currentSource.tvTemplate
-    .replace('{tmdbId}', tvId.toString())
-    .replace('{season}', selectedSeason.toString())
-    .replace('{episode}', selectedEpisode.toString());
+    .replace(/\{\{tmdbId\}\}/g, tvId.toString())
+    .replace(/\{tmdbId\}/g, tvId.toString())
+    .replace(/\{\{season\}\}/g, selectedSeason.toString())
+    .replace(/\{season\}/g, selectedSeason.toString())
+    .replace(/\{\{episode\}\}/g, selectedEpisode.toString())
+    .replace(/\{episode\}/g, selectedEpisode.toString());
+
+  console.log('Current Source:', currentSource.name);
+  console.log('Template:', currentSource.tvTemplate);
+  console.log('Generated Embed URL:', embedUrl);
+  console.log('TV ID:', tvId, 'Season:', selectedSeason, 'Episode:', selectedEpisode);
 
   // Get current season data
   const currentSeasonData = tv.seasons?.find(s => s.season_number === selectedSeason);
@@ -257,8 +265,7 @@ export default function WatchTVPage() {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={`${tv.name} - S${selectedSeason}E${selectedEpisode}`}
-          referrerPolicy="origin"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
+          referrerPolicy="no-referrer"
           onLoad={() => setIsPlayerLoading(false)}
           onError={() => setIsPlayerLoading(false)}
         />

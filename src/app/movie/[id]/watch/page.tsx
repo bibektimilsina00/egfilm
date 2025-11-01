@@ -90,7 +90,14 @@ export default function WatchMoviePage() {
   }
 
   const currentSource = providers[currentSourceIndex];
-  const embedUrl = currentSource.movieTemplate.replace('{tmdbId}', movieId.toString());
+  const embedUrl = currentSource.movieTemplate
+    .replace(/\{\{tmdbId\}\}/g, movieId.toString())
+    .replace(/\{tmdbId\}/g, movieId.toString());
+
+  console.log('Current Source:', currentSource.name);
+  console.log('Template:', currentSource.movieTemplate);
+  console.log('Generated Embed URL:', embedUrl);
+  console.log('Movie ID:', movieId);
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
@@ -180,14 +187,15 @@ export default function WatchMoviePage() {
           key={embedUrl} // Force re-render when source changes
           src={embedUrl}
           className="w-full h-full"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           title={movie.title}
-          referrerPolicy="origin"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
+          referrerPolicy="no-referrer"
           onLoad={() => setIsPlayerLoading(false)}
-          onError={() => setIsPlayerLoading(false)}
+          onError={() => {
+            setIsPlayerLoading(false);
+            console.error('Failed to load iframe:', embedUrl);
+          }}
         />
       </div>
     </div>

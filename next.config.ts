@@ -46,13 +46,10 @@ const nextConfig: NextConfig = {
           // Privacy and tracking prevention
           {
             key: 'Permissions-Policy',
-            value: 'interest-cohort=(), browsing-topics=(), camera=(), microphone=(), geolocation=()',
+            value: 'interest-cohort=(), browsing-topics=()',
           },
           // Enhanced security headers
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
+          // Note: X-Frame-Options removed to allow video player iframes
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
@@ -63,7 +60,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            value: 'no-referrer-when-downgrade',
           },
           {
             key: 'Strict-Transport-Security',
@@ -83,13 +80,10 @@ const nextConfig: NextConfig = {
             key: 'Accept-CH',
             value: 'Viewport-Width, Width, DPR, Save-Data',
           },
-          {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'credentialless',
-          },
+          // Note: Cross-Origin policies relaxed to allow video iframes
           {
             key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups',
+            value: 'unsafe-none',
           },
         ],
       },

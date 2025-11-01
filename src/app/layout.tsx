@@ -173,7 +173,7 @@ export default function RootLayout({
   const websiteSchema = generateWebsiteSchema(siteConfig.url);
 
   return (
-    <html lang="en" data-scroll-behavior="smooth" className="dark">
+    <html lang="en" data-scroll-behavior="smooth" className="dark" suppressHydrationWarning>
       <head>
         {/* Enhanced Structured Data */}
         <script
@@ -212,6 +212,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <SessionProvider>
           <QueryProvider>
