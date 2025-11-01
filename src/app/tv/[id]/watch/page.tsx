@@ -3,7 +3,7 @@
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTVDetails } from '@/lib/hooks/useTMDb';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Loader2 } from 'lucide-react';
 import { VIDEO_SOURCES } from '@/lib/videoSources';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,9 +33,11 @@ export default function WatchTVPage() {
   const [showSourceMenu, setShowSourceMenu] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
   const [selectedEpisode, setSelectedEpisode] = useState(initialEpisode);
+  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
 
   // Update URL when season/episode changes
   useEffect(() => {
+    setIsPlayerLoading(true);
     const newUrl = `/tv/${tvId}/watch?season=${selectedSeason}&episode=${selectedEpisode}`;
     router.replace(newUrl, { scroll: false });
   }, [selectedSeason, selectedEpisode, tvId, router]);
@@ -160,12 +162,13 @@ export default function WatchTVPage() {
                     <button
                       key={index}
                       onClick={() => {
+                        setIsPlayerLoading(true);
                         setCurrentSourceIndex(index);
                         setShowSourceMenu(false);
                       }}
                       className={`w-full text-left px-3 py-2 rounded hover:bg-gray-700 transition-colors ${currentSourceIndex === index
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-300'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300'
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -185,6 +188,15 @@ export default function WatchTVPage() {
 
       {/* Video Player */}
       <div className="flex-1 bg-black relative">
+        {isPlayerLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+              <p className="text-white text-lg">Loading player...</p>
+              <p className="text-gray-400 text-sm mt-2">If player doesn't load, try switching servers</p>
+            </div>
+          </div>
+        )}
         <iframe
           key={embedUrl} // Force re-render when source/episode changes
           src={embedUrl}
@@ -193,7 +205,10 @@ export default function WatchTVPage() {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={`${tv.name} - S${selectedSeason}E${selectedEpisode}`}
-          referrerPolicy="no-referrer"
+          referrerPolicy="origin"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
+          onLoad={() => setIsPlayerLoading(false)}
+          onError={() => setIsPlayerLoading(false)}
         />
       </div>
     </div>

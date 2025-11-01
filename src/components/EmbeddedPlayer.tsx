@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Maximize, Minimize, ChevronDown } from 'lucide-react';
+import { X, Maximize, Minimize, ChevronDown, Loader2 } from 'lucide-react';
 import { VIDEO_SOURCES } from '@/lib/videoSources';
 
 interface EmbeddedPlayerProps {
@@ -27,6 +27,7 @@ export default function EmbeddedPlayer({
     const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
     const [showSourceMenu, setShowSourceMenu] = useState(false);
     const [embedUrl, setEmbedUrl] = useState(initialUrl);
+    const [isPlayerLoading, setIsPlayerLoading] = useState(true);
 
     const handleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -39,6 +40,7 @@ export default function EmbeddedPlayer({
     };
 
     const changeSource = (index: number) => {
+        setIsPlayerLoading(true);
         setCurrentSourceIndex(index);
         const source = VIDEO_SOURCES[index];
         const newUrl = source.embed(tmdbId, type, season, episode);
@@ -128,14 +130,27 @@ export default function EmbeddedPlayer({
 
             {/* Video Player */}
             <div className="flex-1 bg-black relative">
+                {isPlayerLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                        <div className="text-center">
+                            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+                            <p className="text-white text-lg">Loading player...</p>
+                            <p className="text-gray-400 text-sm mt-2">If player doesn't load, try switching servers</p>
+                        </div>
+                    </div>
+                )}
                 <iframe
+                    key={embedUrl}
                     src={embedUrl}
                     className="w-full h-full"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                     title={title}
-                    referrerPolicy="no-referrer"
+                    referrerPolicy="origin"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
+                    onLoad={() => setIsPlayerLoading(false)}
+                    onError={() => setIsPlayerLoading(false)}
                 />
             </div>
         </div>

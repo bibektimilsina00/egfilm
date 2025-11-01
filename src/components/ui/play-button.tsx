@@ -1,10 +1,11 @@
 import * as React from "react"
-import { Play } from "lucide-react"
+import { Play, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface PlayButtonProps extends React.ComponentPropsWithoutRef<typeof Button> {
     children?: React.ReactNode
+    loading?: boolean
 }
 
 /**
@@ -12,15 +13,37 @@ interface PlayButtonProps extends React.ComponentPropsWithoutRef<typeof Button> 
  * Based on the movie detail page design with blue gradient
  */
 const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
-    ({ className, children = "Play Now", size = "lg", ...props }, ref) => {
+    ({ className, children = "Play Now", size = "lg", loading, disabled, onClick, ...props }, ref) => {
+        const [isLoading, setIsLoading] = React.useState(false);
+
+        const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+            if (loading || isLoading || disabled) return;
+            
+            setIsLoading(true);
+            try {
+                await onClick?.(e);
+            } finally {
+                // Keep loading state for a bit to show feedback
+                setTimeout(() => setIsLoading(false), 500);
+            }
+        };
+
+        const isButtonLoading = loading || isLoading;
+
         return (
             <Button
                 ref={ref}
                 className={cn("gap-2 bg-blue-600 hover:bg-blue-700 text-white", className)}
                 size={size}
+                disabled={disabled || isButtonLoading}
+                onClick={handleClick}
                 {...props}
             >
-                <Play className="w-5 h-5 fill-white" />
+                {isButtonLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                    <Play className="w-5 h-5 fill-white" />
+                )}
                 {children}
             </Button>
         )

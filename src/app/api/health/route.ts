@@ -14,7 +14,7 @@ export async function GET() {
     try {
         // Dynamically import prisma to avoid initialization issues
         const { prisma } = await import('@/lib/prisma');
-        
+
         // Test database connection - try simple query first, fallback to raw query
         console.log('[Health Check] Attempting database connection...');
         try {

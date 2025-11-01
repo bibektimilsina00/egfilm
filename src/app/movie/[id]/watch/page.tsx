@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
 import { useState } from 'react';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Loader2 } from 'lucide-react';
 import { VIDEO_SOURCES } from '@/lib/videoSources';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,7 @@ export default function WatchMoviePage() {
   const { data: movie, isLoading } = useMovieDetails(movieId);
   const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
   const [showSourceMenu, setShowSourceMenu] = useState(false);
+  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
 
   if (isLoading) {
     return (
@@ -91,6 +92,7 @@ export default function WatchMoviePage() {
                     <button
                       key={index}
                       onClick={() => {
+                        setIsPlayerLoading(true);
                         setCurrentSourceIndex(index);
                         setShowSourceMenu(false);
                       }}
@@ -116,6 +118,15 @@ export default function WatchMoviePage() {
 
       {/* Video Player */}
       <div className="flex-1 bg-black relative">
+        {isPlayerLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+              <p className="text-white text-lg">Loading player...</p>
+              <p className="text-gray-400 text-sm mt-2">If player doesn't load, try switching servers</p>
+            </div>
+          </div>
+        )}
         <iframe
           key={embedUrl} // Force re-render when source changes
           src={embedUrl}
@@ -124,7 +135,10 @@ export default function WatchMoviePage() {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           title={movie.title}
-          referrerPolicy="no-referrer"
+          referrerPolicy="origin"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
+          onLoad={() => setIsPlayerLoading(false)}
+          onError={() => setIsPlayerLoading(false)}
         />
       </div>
     </div>
