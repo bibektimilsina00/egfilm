@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 
 /**
  * Simple health check endpoint for Docker container monitoring
@@ -13,6 +12,9 @@ export async function GET() {
         process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':***@'));
 
     try {
+        // Dynamically import prisma to avoid initialization issues
+        const { prisma } = await import('@/lib/prisma');
+        
         // Test database connection - try simple query first, fallback to raw query
         console.log('[Health Check] Attempting database connection...');
         try {
