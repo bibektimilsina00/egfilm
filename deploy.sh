@@ -35,7 +35,7 @@ docker compose stop app || true
 docker compose rm -f app    || true
 
 # Remove orphaned containers on port 8000 (but never postgres)
-docker ps -aq --filter "expose=8000" --filter "name!=postgres" | xargs -r docker rm -f || true
+docker ps -aq --filter "expose=8000" | grep -v "$(docker ps -aq --filter 'name=postgres')" | xargs -r docker rm -f || true
 
 # Keep last image for instant rollback
 docker images --format 'table {{.Repository}}:{{.Tag}}\t{{.ID}}' \
