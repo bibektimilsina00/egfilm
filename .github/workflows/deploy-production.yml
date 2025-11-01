@@ -229,7 +229,7 @@ jobs:
           cat > .env <<EOF
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
-          DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?connection_limit=50&pool_timeout=60&connect_timeout=30
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
           POSTGRES_DB=${{ secrets.POSTGRES_DB }}
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
