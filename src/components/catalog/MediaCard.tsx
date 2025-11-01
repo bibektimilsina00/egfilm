@@ -89,8 +89,8 @@ export default function MediaCard({ item, type }: MediaCardProps) {
                         )}
                     </div>
 
-                    {/* Content overlay that appears on hover */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                    {/* Content info - always visible */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
                         <h3 className="text-sm font-semibold text-white line-clamp-2 mb-1">
                             {title}
                         </h3>
