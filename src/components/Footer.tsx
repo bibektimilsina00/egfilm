@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import React from 'react';
-import { Github, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
+import { Instagram, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
 
 const BLOG_SITE_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
 
@@ -27,7 +27,7 @@ export default function Footer() {
                             Stream unlimited movies and TV shows. Watch together, discover together.
                         </p>
                         <div className="flex gap-3">
-                            <SocialLink href="https://github.com/bibektimilsina00" icon={Github} label="GitHub" />
+                            <SocialLink href="https://instagram.com/egfilm" icon={Instagram} label="Instagram" />
                             <SocialLink href="https://twitter.com/egfilm" icon={Twitter} label="Twitter" />
                             <SocialLink href="mailto:contact@egfilm.xyz" icon={Mail} label="Email" />
                         </div>
@@ -71,12 +71,10 @@ export default function Footer() {
                 <div className="mt-12 pt-8 border-t border-gray-800">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <p className="text-gray-500 text-sm">
-                            © {currentYear} EGFilm. Built with ❤️ using Next.js
+                            © {currentYear} EGFilm. All rights reserved.
                         </p>
                         <div className="flex items-center gap-4 text-xs text-gray-600">
-                            <span>Powered by TMDB API</span>
-                            <span>•</span>
-                            <span>Made in Nepal 🇳🇵</span>
+                            <span>Powered by AI & Creativity</span>
                         </div>
                     </div>
                 </div>
