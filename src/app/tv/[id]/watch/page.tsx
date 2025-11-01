@@ -4,7 +4,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTVDetails } from '@/lib/hooks/useTMDb';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ChevronDown, Loader2 } from 'lucide-react';
-import { VIDEO_SOURCES } from '@/lib/videoSources';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -14,6 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
+interface VideoProvider {
+  id: string;
+  name: string;
+  slug: string;
+  quality: string;
+  isDefault: boolean;
+  movieTemplate: string;
+  tvTemplate: string;
+  description?: string | null;
+}
 
 /**
  * Dedicated TV show watch page with embedded player and episode selection
@@ -29,11 +39,38 @@ export default function WatchTVPage() {
   const initialEpisode = Number(searchParams?.get('episode')) || 1;
 
   const { data: tv, isLoading } = useTVDetails(tvId);
+  const [providers, setProviders] = useState<VideoProvider[]>([]);
   const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
   const [showSourceMenu, setShowSourceMenu] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
   const [selectedEpisode, setSelectedEpisode] = useState(initialEpisode);
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
+  const [providersLoading, setProvidersLoading] = useState(true);
+
+  // Fetch video providers
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        const response = await fetch('/api/video-providers');
+        if (response.ok) {
+          const data = await response.json();
+          setProviders(data);
+
+          // Set default provider as current
+          const defaultIndex = data.findIndex((p: VideoProvider) => p.isDefault);
+          if (defaultIndex !== -1) {
+            setCurrentSourceIndex(defaultIndex);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching video providers:', error);
+      } finally {
+        setProvidersLoading(false);
+      }
+    };
+
+    fetchProviders();
+  }, []);
 
   // Update URL when season/episode changes
   useEffect(() => {
@@ -42,7 +79,7 @@ export default function WatchTVPage() {
     router.replace(newUrl, { scroll: false });
   }, [selectedSeason, selectedEpisode, tvId, router]);
 
-  if (isLoading) {
+  if (isLoading || providersLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <Skeleton className="w-full h-full bg-gray-900" />
@@ -61,8 +98,23 @@ export default function WatchTVPage() {
     );
   }
 
-  const currentSource = VIDEO_SOURCES[currentSourceIndex];
-  const embedUrl = currentSource.embed(tvId, 'tv', selectedSeason, selectedEpisode);
+  if (providers.length === 0) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-white text-2xl mb-4">No video providers available</h1>
+          <p className="text-gray-400 mb-4">Please contact support</p>
+          <Button onClick={() => router.back()}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentSource = providers[currentSourceIndex];
+  const embedUrl = currentSource.tvTemplate
+    .replace('{tmdbId}', tvId.toString())
+    .replace('{season}', selectedSeason.toString())
+    .replace('{episode}', selectedEpisode.toString());
 
   // Get current season data
   const currentSeasonData = tv.seasons?.find(s => s.season_number === selectedSeason);
@@ -158,9 +210,9 @@ export default function WatchTVPage() {
                   <div className="text-xs text-gray-400 px-3 py-2">
                     Select Server
                   </div>
-                  {VIDEO_SOURCES.map((source, index) => (
+                  {providers.map((source, index) => (
                     <button
-                      key={index}
+                      key={source.id}
                       onClick={() => {
                         setIsPlayerLoading(true);
                         setCurrentSourceIndex(index);

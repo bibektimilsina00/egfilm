@@ -204,6 +204,11 @@ model VideoProvider {
   logoUrl     String?
   homepage    String?
 
+  // Health monitoring
+  lastChecked      DateTime?
+  lastResponseTime Int?      // Response time in milliseconds
+  lastStatus       String?   // 'healthy', 'degraded', 'offline'
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
