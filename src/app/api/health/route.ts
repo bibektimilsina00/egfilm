@@ -20,7 +20,7 @@ export async function GET() {
         try {
             const userCount = await prisma.user.count();
             console.log('[Health Check] Database query successful, user count:', userCount);
-        } catch (dbError) {
+        } catch {
             console.log('[Health Check] User count failed, trying raw query...');
             // If user table doesn't exist, try a basic connection test
             await prisma.$queryRaw`SELECT 1`;

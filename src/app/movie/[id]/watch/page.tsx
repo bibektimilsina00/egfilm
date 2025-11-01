@@ -172,7 +172,7 @@ export default function WatchMoviePage() {
             <div className="text-center">
               <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
               <p className="text-white text-lg">Loading player...</p>
-              <p className="text-gray-400 text-sm mt-2">If player doesn't load, try switching servers</p>
+              <p className="text-gray-400 text-sm mt-2">If player doesn&apos;t load, try switching servers</p>
             </div>
           </div>
         )}

@@ -8,9 +8,10 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const params = await context.params;
         const session = await auth();
         
         if (!session || session.user?.role !== 'admin') {
@@ -47,9 +48,10 @@ export async function GET(
  */
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const params = await context.params;
         const session = await auth();        if (!session || session.user?.role !== 'admin') {
             return NextResponse.json(
                 { error: 'Unauthorized' },
@@ -76,19 +78,21 @@ export async function PATCH(
         });
 
         return NextResponse.json(provider);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error updating video provider:', error);
-        if (error.code === 'P2025') {
-            return NextResponse.json(
-                { error: 'Provider not found' },
-                { status: 404 }
-            );
-        }
-        if (error.code === 'P2002') {
-            return NextResponse.json(
-                { error: 'Provider with this name or slug already exists' },
-                { status: 400 }
-            );
+        if (error && typeof error === 'object' && 'code' in error) {
+            if (error.code === 'P2025') {
+                return NextResponse.json(
+                    { error: 'Provider not found' },
+                    { status: 404 }
+                );
+            }
+            if (error.code === 'P2002') {
+                return NextResponse.json(
+                    { error: 'Provider with this name or slug already exists' },
+                    { status: 400 }
+                );
+            }
         }
         return NextResponse.json(
             { error: 'Failed to update video provider' },
@@ -103,9 +107,10 @@ export async function PATCH(
  */
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const params = await context.params;
         const session = await auth();
 
         if (!session || session.user?.role !== 'admin') {
@@ -120,9 +125,9 @@ export async function DELETE(
         });
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error deleting video provider:', error);
-        if (error.code === 'P2025') {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
             return NextResponse.json(
                 { error: 'Provider not found' },
                 { status: 404 }
