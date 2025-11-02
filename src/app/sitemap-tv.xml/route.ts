@@ -5,7 +5,17 @@ import { siteConfig } from '@/lib/seo'
 export const dynamic = 'force-dynamic'
 export const revalidate = 43200 // Revalidate twice per day for better freshness
 
-// Helper functions for additional TV data
+// Helper function to escape XML special characters
+function escapeXml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+// Helper functions for additional TV show data
 async function getOnTheAir(page: number = 1) {
     const response = await tmdbApi.get('/tv/on_the_air', { params: { page } });
     return response.data.results;
@@ -75,6 +85,7 @@ ${uniqueShows
                     // Add image information for better SEO
                     const imageUrl = show.poster_path ?
                         `https://image.tmdb.org/t/p/w500${show.poster_path}` : ''
+                    const showName = escapeXml(show.name || 'TV Show')
 
                     return `  <url>
     <loc>${baseUrl}/tv/${show.id}</loc>
@@ -83,8 +94,8 @@ ${uniqueShows
     <priority>${priority}</priority>${imageUrl ? `
     <image:image>
       <image:loc>${imageUrl}</image:loc>
-      <image:title>${show.name || 'TV Show Poster'}</image:title>
-      <image:caption>Official poster for ${show.name}</image:caption>
+      <image:title>${showName} Poster</image:title>
+      <image:caption>Official poster for ${showName}</image:caption>
     </image:image>` : ''}
   </url>`
                 })

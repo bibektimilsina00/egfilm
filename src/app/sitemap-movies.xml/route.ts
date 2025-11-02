@@ -5,6 +5,16 @@ import { siteConfig } from '@/lib/seo'
 export const dynamic = 'force-dynamic'
 export const revalidate = 43200 // Revalidate twice per day for better freshness
 
+// Helper function to escape XML special characters
+function escapeXml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
 // Helper functions for additional movie data
 async function getUpcoming(page: number = 1) {
     const response = await tmdbApi.get('/movie/upcoming', { params: { page } });
@@ -75,6 +85,7 @@ ${uniqueMovies
                     // Add image information for better SEO
                     const imageUrl = movie.poster_path ?
                         `https://image.tmdb.org/t/p/w500${movie.poster_path}` : ''
+                    const movieTitle = escapeXml(movie.title || 'Movie')
 
                     return `  <url>
     <loc>${baseUrl}/movie/${movie.id}</loc>
@@ -83,8 +94,8 @@ ${uniqueMovies
     <priority>${priority}</priority>${imageUrl ? `
     <image:image>
       <image:loc>${imageUrl}</image:loc>
-      <image:title>${movie.title || 'Movie Poster'}</image:title>
-      <image:caption>Official poster for ${movie.title}</image:caption>
+      <image:title>${movieTitle} Poster</image:title>
+      <image:caption>Official poster for ${movieTitle}</image:caption>
     </image:image>` : ''}
   </url>`
                 })
