@@ -247,7 +247,7 @@ jobs:
             NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
             NEXT_PUBLIC_BUILD_VERSION=${{ needs.validate.outputs.version }}
             NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
-            NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID_MAIN }}
+            NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
 
       - uses: sigstore/cosign-installer@v3
         if: needs.validate.outputs.is-rollback != 'true'
@@ -304,7 +304,7 @@ jobs:
           NEXT_PUBLIC_BUILD_VERSION=${{ needs.validate.outputs.version }}
           NEXT_PUBLIC_BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
-          NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID_MAIN }}
+          NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
           REGISTRY_TOKEN=${{ secrets.REGISTRY_TOKEN }}
           DEPLOY_USER=${{ github.actor }}
           IMAGE_NAME=${{ needs.build.outputs.image-uri }}
