@@ -122,7 +122,6 @@ export default function RootLayout({
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const validGAId = isValidGAId(gaMeasurementId) ? gaMeasurementId : null;
 
-  // Enhanced structured data combining website and organization schemas
   const structuredData = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -132,9 +131,6 @@ export default function RootLayout({
         url: siteConfig.url,
         name: siteConfig.name,
         description: siteConfig.description,
-        publisher: {
-          '@id': `${siteConfig.url}/#organization`,
-        },
         potentialAction: {
           '@type': 'SearchAction',
           target: {
@@ -166,7 +162,7 @@ export default function RootLayout({
         },
       },
     ],
-  }
+  };
 
   // Enhanced structured data
   const organizationSchema = generateOrganizationSchema();
@@ -198,6 +194,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="preconnect" href="https://api.themoviedb.org" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
         {/* RSS Feed Discovery */}
         <link
