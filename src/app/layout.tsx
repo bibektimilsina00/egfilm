@@ -101,6 +101,14 @@ export const metadata: Metadata = {
     google: process.env.GOOGLE_SITE_VERIFICATION,
     yandex: process.env.YANDEX_VERIFICATION,
   },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/icon.svg',
+  },
   alternates: {
     canonical: "/",
   },
@@ -187,8 +195,12 @@ export default function RootLayout({
 
         {/* Enhanced Web App Manifest */}
         <link rel="manifest" href="/manifest.json" />
+        
+        {/* Favicons - Multiple formats for better compatibility */}
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
 
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://image.tmdb.org" />
