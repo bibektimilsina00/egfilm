@@ -17,7 +17,7 @@ interface Review {
 // Site Configuration
 export const siteConfig = {
     name: 'Egfilm',
-    url: process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://egfilm.xyz',
+    url: (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://egfilm.xyz').replace(/^http:/, 'https:'),
     description: 'Watch movies and TV shows online free. Stream unlimited content, discover trending releases, and enjoy HD quality entertainment with Egfilm. No subscription required.',
     links: {
         twitter: 'https://twitter.com/egfilm',

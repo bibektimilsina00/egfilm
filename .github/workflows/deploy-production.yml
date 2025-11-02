@@ -237,6 +237,7 @@ jobs:
             NODE_ENV=production
             VERSION=${{ needs.validate.outputs.version }}
             COMMIT_SHA=${{ github.sha }}
+            TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
             NEXT_PUBLIC_APP_NAME=EGFilm
