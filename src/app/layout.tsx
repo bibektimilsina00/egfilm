@@ -195,7 +195,7 @@ export default function RootLayout({
 
         {/* Enhanced Web App Manifest */}
         <link rel="manifest" href="/manifest.json" />
-        
+
         {/* Favicons - Multiple formats for better compatibility */}
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
