@@ -213,6 +213,29 @@ export interface SearchResult {
     popularity: number;
 }
 
+export interface Episode {
+    id: number;
+    name: string;
+    overview: string;
+    episode_number: number;
+    season_number: number;
+    still_path: string | null;
+    air_date: string;
+    vote_average: number;
+    vote_count: number;
+    runtime: number | null;
+}
+
+export interface SeasonDetails {
+    id: number;
+    name: string;
+    overview: string;
+    poster_path: string | null;
+    season_number: number;
+    air_date: string;
+    episodes: Episode[];
+}
+
 export type MediaItem = BaseMovie | BaseTVShow;
 
 // =============================================================================
@@ -345,6 +368,19 @@ export async function getGenres(mediaType: 'movie' | 'tv'): Promise<Genre[]> {
         `/genre/${mediaType}/list`
     );
     return response.data.genres;
+}
+
+/**
+ * Fetch season details with all episodes
+ */
+export async function getSeasonDetails(
+    tvId: number,
+    seasonNumber: number
+): Promise<SeasonDetails> {
+    const response: AxiosResponse<SeasonDetails> = await tmdbAxios.get(
+        `/tv/${tvId}/season/${seasonNumber}`
+    );
+    return response.data;
 }
 
 /**

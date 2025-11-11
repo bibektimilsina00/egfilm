@@ -12,15 +12,16 @@ export interface VideoSource {
 /**
  * Popular video source providers - UPDATED 2025
  * Ordered by ad experience: Minimal ads first, then standard
- * These are the latest working embed patterns used by streaming sites
+ * These are verified working providers as of November 2025
  */
 export const VIDEO_SOURCES: VideoSource[] = [
+    // ⭐ MINIMAL ADS - Best User Experience
     {
         name: 'VidSrc ICU',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidSrc.icu - MINIMAL ADS ✨
-            // Best user experience, also supports anime
+            // VidSrc.icu - BEST with minimal ads
+            // Clean interface, supports anime & manga
             if (type === 'tv' && season && episode) {
                 return `https://vidsrc.icu/embed/tv/${tmdbId}/${season}/${episode}`;
             }
@@ -31,8 +32,8 @@ export const VIDEO_SOURCES: VideoSource[] = [
         name: 'VidSrc.cc',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidSrc.cc - Latest generation v2 player
-            // Clean interface, supports custom subtitles and player events
+            // VidSrc.cc - V2 player with custom subtitles & events
+            // Clean interface, supports player events
             if (type === 'tv' && season && episode) {
                 return `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`;
             }
@@ -40,11 +41,23 @@ export const VIDEO_SOURCES: VideoSource[] = [
         }
     },
     {
+        name: 'VidLink Pro',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // VidLink.pro - Biggest library: 51K+ movies, 36K+ shows
+            // Supports customization, watch progress tracking
+            if (type === 'tv' && season && episode) {
+                return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
+            }
+            return `https://vidlink.pro/movie/${tmdbId}`;
+        }
+    },
+    {
         name: 'VidSrc.to',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidSrc.to - Next generation streaming API
-            // Auto-update links, responsive, high quality
+            // VidSrc.to - Next-gen API with auto-update links
+            // Responsive, high quality, minimal ads
             if (type === 'tv' && season && episode) {
                 return `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`;
             }
@@ -52,29 +65,31 @@ export const VIDEO_SOURCES: VideoSource[] = [
         }
     },
     {
-        name: 'AutoEmbed',
+        name: 'VidSrc.net',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // AutoEmbed.cc - Supports both IMDB and TMDB IDs
-            // Can select default server with ?server=2 parameter
+            // VidSrc.net - Official VidSrc mirror
+            // Reliable uptime, minimal ads
             if (type === 'tv' && season && episode) {
-                return `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`;
+                return `https://vidsrc.net/embed/tv/${tmdbId}/${season}/${episode}`;
             }
-            return `https://player.autoembed.cc/embed/movie/${tmdbId}`;
+            return `https://vidsrc.net/embed/movie/${tmdbId}`;
         }
     },
     {
-        name: 'VidLink Pro',
+        name: 'VidSrc.me',
         quality: '1080p',
         embed: (tmdbId, type, season, episode) => {
-            // VidLink.pro - Biggest streaming API with 99K+ movies, 69K+ shows
-            // Supports customization, watch progress tracking, player events
+            // VidSrc.me - Original VidSrc with query params
+            // Query-based URL structure, minimal ads
             if (type === 'tv' && season && episode) {
-                return `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`;
+                return `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
             }
-            return `https://vidlink.pro/movie/${tmdbId}`;
+            return `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`;
         }
     },
+
+    // 📺 STANDARD ADS - Acceptable Experience
     {
         name: 'VidSrc NEW',
         quality: '1080p',
@@ -85,6 +100,66 @@ export const VIDEO_SOURCES: VideoSource[] = [
                 return `https://vidsrcme.ru/embed/tv/${tmdbId}/${season}/${episode}`;
             }
             return `https://vidsrcme.ru/embed/movie/${tmdbId}`;
+        }
+    },
+    {
+        name: 'VidSrc.xyz',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // VidSrc.xyz - Legacy VidSrc domain
+            // May redirect, standard ads
+            if (type === 'tv' && season && episode) {
+                return `https://vidsrc.xyz/embed/tv/${tmdbId}/${season}/${episode}`;
+            }
+            return `https://vidsrc.xyz/embed/movie/${tmdbId}`;
+        }
+    },
+    {
+        name: '2Embed',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // 2Embed - Popular embed with multiple servers
+            // Standard ads, multiple server options
+            if (type === 'tv' && season && episode) {
+                return `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`;
+            }
+            return `https://www.2embed.cc/embed/${tmdbId}`;
+        }
+    },
+    {
+        name: 'SuperEmbed',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // SuperEmbed - Multi-source aggregator
+            // Aggregates multiple sources, standard ads
+            if (type === 'tv' && season && episode) {
+                return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`;
+            }
+            return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
+        }
+    },
+    {
+        name: 'MoviesAPI',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // MoviesAPI - RESTful API with embed support
+            // Good compatibility, standard ads
+            if (type === 'tv' && season && episode) {
+                return `https://moviesapi.club/tv/${tmdbId}-${season}-${episode}`;
+            }
+            return `https://moviesapi.club/movie/${tmdbId}`;
+        }
+    },
+    {
+        name: 'Smashystream',
+        quality: '1080p',
+        embed: (tmdbId, type, season, episode) => {
+            // Smashystream - Alternative embed with good compatibility
+            // PHP-based player, standard ads
+            if (type === 'tv' && season && episode) {
+                return `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
+            }
+            return `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}`;
         }
     }
 ];

@@ -25,8 +25,6 @@ export default function TVDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [inWatchlist, setInWatchlist] = useState(false);
-    const [selectedSeason, setSelectedSeason] = useState(1);
-    const [selectedEpisode, setSelectedEpisode] = useState(1);
     const [showWatchTogether, setShowWatchTogether] = useState(false);
 
     async function loadTVDetails() {
@@ -178,42 +176,9 @@ export default function TVDetailPage() {
                                     {tv.overview}
                                 </p>
 
-                                {/* Season and Episode Selectors */}
-                                <div className="flex flex-wrap gap-4 mb-6">
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-sm text-gray-400">Season</label>
-                                        <select
-                                            value={selectedSeason}
-                                            onChange={(e) => setSelectedSeason(Number(e.target.value))}
-                                            className="px-4 py-2 bg-gray-800/80 backdrop-blur-sm text-white rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            {Array.from({ length: tv.number_of_seasons || 1 }, (_, i) => i + 1).map((season) => (
-                                                <option key={season} value={season}>
-                                                    Season {season}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-sm text-gray-400">Episode</label>
-                                        <select
-                                            value={selectedEpisode}
-                                            onChange={(e) => setSelectedEpisode(Number(e.target.value))}
-                                            className="px-4 py-2 bg-gray-800/80 backdrop-blur-sm text-white rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            {Array.from({ length: 20 }, (_, i) => i + 1).map((episode) => (
-                                                <option key={episode} value={episode}>
-                                                    Episode {episode}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <div className="flex flex-wrap gap-4">
                                     <PlayButton
-                                        onClick={() => router.push(`/tv/${tvId}/watch?season=${selectedSeason}&episode=${selectedEpisode}`)}
+                                        onClick={() => router.push(`/tv/${tvId}/watch`)}
                                     >
                                         Watch Now
                                     </PlayButton>
@@ -346,9 +311,9 @@ export default function TVDetailPage() {
                 <WatchTogetherModal
                     isOpen={showWatchTogether}
                     onClose={() => setShowWatchTogether(false)}
-                    movieTitle={`${tv.name || tv.title} - S${selectedSeason}E${selectedEpisode}`}
+                    movieTitle={`${tv.name || tv.title} - S1E1`}
                     movieId={Number(tvId)}
-                    embedUrl={getTVEmbedUrl(Number(tvId), selectedSeason, selectedEpisode)}
+                    embedUrl={getTVEmbedUrl(Number(tvId), 1, 1)}
                     type="tv"
                 />
             )}
