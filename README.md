@@ -1,12 +1,16 @@
-# EGFilm - Modern Movie & TV Streaming Platform
-
 <div align="center">
 
-![EGFilm Logo](public/icon.svg)
+![EGFilm Logo](public/logo.svg)
 
-**A Next.js-powered streaming platform with real-time features, social watching, and comprehensive movie/TV show discovery**
+**🎬 A Next.js-powered streaming platform with real-time features, social watching, and comprehensive movie/TV show discovery**
 
-[Live Site](https://egfilm.xyz) • [Blog](https://blog.egfilm.xyz) • [Report Bug](https://github.com/bibektimilsina00/egfilm/issues) • [Request Feature](https://github.com/bibektimilsina00/egfilm/issues)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.1.0-blue?style=flat&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue?style=flat&logo=postgresql)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+[🌐 Live Demo](https://egfilm.xyz) • [📝 Blog](https://blog.egfilm.xyz) • [🐛 Report Bug](https://github.com/bibektimilsina00/egfilm/issues) • [✨ Request Feature](https://github.com/bibektimilsina00/egfilm/issues)
 
 </div>
 
@@ -14,395 +18,672 @@
 
 ## 📋 Table of Contents
 
-- [About](#about)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Database Setup](#database-setup)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Project Structure](#project-structure)
-- [API Documentation](#api-documentation)
-- [Contributing](#contributing)
-- [License](#license)
+- [✨ Overview](#-overview)
+- [🚀 Key Features](#-key-features)
+- [🎯 Live Demo](#-live-demo)
+- [🛠 Tech Stack](#-tech-stack)
+- [📦 Quick Start](#-quick-start)
+- [⚙️ Configuration](#️-configuration)
+- [🗄️ Database Setup](#️-database-setup)
+- [💻 Development](#-development)
+- [🐳 Docker Deployment](#-docker-deployment)
+- [🔄 CI/CD Pipeline](#-cicd-pipeline)
+- [📁 Project Structure](#-project-structure)
+- [🔌 API Reference](#-api-reference)
+- [🎨 UI Components](#-ui-components)
+- [🧪 Testing](#-testing)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [🙏 Acknowledgments](#-acknowledgments)
+- [📞 Support](#-support)
 
 ---
 
-## 🎬 About
+## ✨ Overview
 
-EGFilm is a modern, full-featured streaming platform built with Next.js 15 that provides:
-- **Extensive Content Library**: Browse thousands of movies and TV shows powered by TMDB API
-- **Real-time Social Features**: Watch together with friends using synchronized playback
-- **Personalized Experience**: Custom watchlists, viewing history, and AI-powered recommendations
-- **Advanced Search & Discovery**: Filter by genre, year, rating, and more
-- **SEO Optimized**: Dynamic sitemaps, structured data, and optimized metadata
-- **PWA Support**: Install as a progressive web app for offline access
+**EGFilm** is a cutting-edge streaming platform that revolutionizes how people discover and watch movies and TV shows together. Built with modern web technologies, it offers a seamless, fast, and social viewing experience.
+
+### 🎯 What Makes EGFilm Special?
+
+- 🎥 **50,000+ Movies & TV Shows** - Powered by TMDB API with real-time updates
+- 👥 **Watch Together** - Synchronized playback with WebRTC video calling
+- ⚡ **Blazing Fast** - Next.js 15 with Turbopack and React 19 Server Components
+- 📱 **Progressive Web App** - Install on any device, works offline
+- 🎨 **Beautiful UI** - Modern, responsive design with Radix UI and Tailwind CSS
+- 🔒 **Secure** - NextAuth.js with role-based access control
+- 🚀 **Production Ready** - Docker, CI/CD, zero-downtime deployments
 
 ---
 
-## ✨ Features
+## 🚀 Key Features
 
-### 🎥 Content Discovery
-- **Advanced Search**: Full-text search with filters (genre, year, rating, popularity)
-- **Dynamic Sitemaps**: Auto-generated XML sitemaps for movies, TV shows, and blog posts
-- **Rich Media Cards**: Lazy-loaded images with optimized thumbnails
-- **Detailed Information**: Cast, crew, ratings, reviews, trailers, and more
-- **Multi-Provider Video Sources**: Automatic failover between video providers
+### 🎬 Content Discovery & Streaming
+
+<table>
+<tr>
+<td width="50%">
+
+**Advanced Search & Filters**
+- Full-text search across 50k+ titles
+- Filter by genre, year, rating, popularity
+- Real-time search suggestions
+- Trending & popular content
+
+</td>
+<td width="50%">
+
+**Multi-Source Video Players**
+- 5+ embedded video providers
+- Automatic failover & health checks
+- Episode thumbnail previews
+- Season & episode navigation
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Rich Content Details**
+- High-quality posters & backdrops
+- Cast & crew information
+- Trailers & video clips
+- User ratings & reviews
+- Similar content recommendations
+
+</td>
+<td width="50%">
+
+**Smart Personalization**
+- Custom watchlists
+- Continue watching history
+- Viewing statistics
+- Content recommendations
+
+</td>
+</tr>
+</table>
 
 ### 👥 Social Features
-- **Watch Together**: Synchronized video playback with friends
-- **Real-time Chat**: Socket.io-powered chat rooms during watch parties
-- **User Profiles**: Customizable profiles with viewing statistics
-- **Watchlist Management**: Save and organize favorite content
-- **Session Sharing**: Share watch sessions via unique links
+
+- **🎭 Watch Together Rooms** - Create private rooms, invite friends, synchronized playback
+- **💬 Real-time Chat** - Socket.IO-powered messaging during watch sessions
+- **📹 Video Calling** - WebRTC peer-to-peer video connections
+- **🔗 Share Sessions** - Unique room codes for easy joining
+- **🔔 Notifications** - Real-time updates for activities
 
 ### 🔐 Authentication & Security
-- **NextAuth.js Integration**: Secure authentication with session management
-- **Role-Based Access Control**: User, moderator, and admin roles
-- **Password Encryption**: bcrypt-powered secure password storage
-- **Session Persistence**: Automatic session refresh and management
 
-### 📊 Analytics & Monitoring
-- **Google Analytics 4**: Comprehensive tracking and user insights
-- **Performance Monitoring**: Web Vitals tracking with real-time metrics
-- **Error Tracking**: Integrated error logging and monitoring
-- **Health Checks**: Video provider health monitoring and automatic failover
+- **NextAuth.js v5** - Secure JWT-based authentication
+- **Role-Based Access** - User, Moderator, Admin roles
+- **Password Encryption** - bcrypt with salt rounds
+- **Session Management** - Automatic refresh & persistence
+- **Admin Panel** - User management & moderation tools
+
+### 📊 Analytics & Performance
+
+- **Google Analytics 4** - Comprehensive user insights
+- **Web Vitals Tracking** - LCP, FID, CLS monitoring
+- **Sentry Integration** - Error tracking & performance monitoring
+- **Provider Health Checks** - Automatic video source monitoring
+- **SEO Optimized** - Dynamic sitemaps, meta tags, structured data
 
 ### 🎨 User Experience
-- **Responsive Design**: Mobile-first design with Tailwind CSS
-- **Dark Mode**: Eye-friendly dark theme
-- **Lazy Loading**: Intersection Observer-based lazy loading for images and content
-- **Infinite Scroll**: Seamless content browsing experience
-- **Service Worker**: Offline support and background sync
 
-### 🚀 Performance
-- **Next.js 15**: Latest features including Turbopack for faster builds
-- **React 19**: Concurrent features and optimized rendering
-- **Image Optimization**: Next.js Image component with WebP support
-- **Code Splitting**: Automatic code splitting for optimal load times
-- **CDN Integration**: Static assets served via CDN
+- **Responsive Design** - Mobile-first, tablet, and desktop optimized
+- **Dark Theme** - Eye-friendly color scheme
+- **Lazy Loading** - Intersection Observer for images and content
+- **Infinite Scroll** - Seamless browsing experience
+- **Accessibility** - WCAG 2.1 compliant with Radix UI
+- **PWA Support** - Install, offline mode, push notifications
+
+---
+
+## 🎯 Live Demo
+
+🌐 **Website**: [egfilm.xyz](https://egfilm.xyz)  
+📝 **Blog**: [blog.egfilm.xyz](https://blog.egfilm.xyz)
+
+### Test Credentials
+
+To explore the platform, you can create a test account or use the admin script to elevate your user:
+
+```bash
+npm run make-admin your@email.com
+```
 
 ---
 
 ## 🛠 Tech Stack
 
-### Frontend
-- **Framework**: Next.js 15.5.4 (App Router)
-- **React**: 19.1.0 with Server Components
-- **Styling**: Tailwind CSS 3.4 + CSS Modules
-- **UI Components**: Radix UI + Custom Components
-- **State Management**: TanStack Query (React Query) v5
-- **Real-time**: Socket.io Client v4.8
-- **Icons**: Lucide React
+### Frontend Architecture
 
-### Backend
-- **Runtime**: Node.js with Next.js API Routes
-- **Database**: PostgreSQL 14+ with Prisma ORM
-- **Authentication**: NextAuth.js v5 (beta)
-- **Real-time Server**: Socket.io v4.8
-- **API Integration**: Axios + TMDB API
-- **Caching**: Redis for session storage
+<table>
+<tr>
+<td width="33%">
 
-### DevOps & Deployment
-- **CI/CD**: GitHub Actions (parallel jobs for 40-50% faster deploys)
-- **Containerization**: Docker + Docker Compose
-- **Hosting**: Self-hosted on Ubuntu VPS
-- **Database**: PostgreSQL (production + separate admin DB)
-- **Reverse Proxy**: Nginx
-- **SSL**: Let's Encrypt
+**Core Framework**
+- Next.js 15.5.4
+- React 19.1.0
+- TypeScript 5.6+
+- Turbopack
+
+</td>
+<td width="33%">
+
+**Styling & UI**
+- Tailwind CSS 4.0
+- Radix UI Components
+- Lucide React Icons
+- CSS Modules
+
+</td>
+<td width="33%">
+
+**State & Data**
+- TanStack Query v5
+- Axios HTTP Client
+- Socket.IO Client
+- LocalForage
+
+</td>
+</tr>
+</table>
+
+### Backend & Infrastructure
+
+<table>
+<tr>
+<td width="33%">
+
+**Server & API**
+- Next.js API Routes
+- Socket.IO v4.8
+- NextAuth.js v5
+- TMDB API
+
+</td>
+<td width="33%">
+
+**Database**
+- PostgreSQL 14+
+- Prisma ORM 6.17
+- Redis (optional)
+- Connection Pooling
+
+</td>
+<td width="33%">
+
+**DevOps**
+- Docker & Compose
+- GitHub Actions
+- Nginx Reverse Proxy
+- Let's Encrypt SSL
+
+</td>
+</tr>
+</table>
 
 ### Development Tools
-- **TypeScript**: 5.6+ with strict mode
-- **Linting**: ESLint with Next.js config
-- **Git Hooks**: Husky + lint-staged
-- **Testing**: Jest + React Testing Library (configured)
-- **Package Manager**: npm
+
+- **TypeScript** - Strict mode with full type safety
+- **ESLint** - Next.js recommended config
+- **Prettier** - Code formatting (integrated)
+- **Husky** - Git hooks for quality checks
+- **ts-node** - TypeScript script execution
 
 ---
 
-## 🚀 Getting Started
+## 📦 Quick Start
 
 ### Prerequisites
 
-- **Node.js**: 18.x or higher
-- **npm**: 9.x or higher
-- **PostgreSQL**: 14.x or higher
-- **Redis**: 6.x or higher (optional, for caching)
-- **TMDB API Key**: [Get one here](https://www.themoviedb.org/settings/api)
+Ensure you have the following installed:
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| [Node.js](https://nodejs.org/) | 18.x+ | JavaScript runtime |
+| [npm](https://www.npmjs.com/) | 9.x+ | Package manager |
+| [PostgreSQL](https://www.postgresql.org/) | 14.x+ | Database |
+| [TMDB API Key](https://www.themoviedb.org/settings/api) | - | Movie/TV data |
+| [Git](https://git-scm.com/) | 2.x+ | Version control |
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/bibektimilsina00/egfilm.git
-   cd egfilm
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Set up the database**
-   ```bash
-   # Generate Prisma Client
-   npm run db:generate
-   
-   # Run migrations
-   npm run db:migrate
-   
-   # Seed database (optional)
-   npm run db:seed
-   ```
-
-5. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Open your browser**
-   Navigate to [http://localhost:8000](http://localhost:8000)
-
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
+1️⃣ **Clone the repository**
 
 ```bash
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/egfilm"
-
-# NextAuth Configuration
-NEXTAUTH_SECRET="your-secret-key-here"
-NEXTAUTH_URL="http://localhost:8000"
-
-# TMDB API
-TMDB_API_KEY="your-tmdb-api-key"
-TMDB_BASE_URL="https://api.themoviedb.org/3"
-
-# App Configuration
-NEXT_PUBLIC_APP_URL="http://localhost:8000"
-NEXT_PUBLIC_BASE_URL="http://localhost:8000"
-
-# Google Analytics (Production)
-NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
-
-# Redis (Optional)
-REDIS_URL="redis://localhost:6379"
-
-# Video Provider Configuration
-VIDSRC_API_URL="https://vidsrc.xyz/embed"
-VIDSRC_PRO_API_URL="https://vidsrc.pro/embed"
-
-# Sentry (Optional)
-SENTRY_DSN="your-sentry-dsn"
-NEXT_PUBLIC_SENTRY_DSN="your-public-sentry-dsn"
+git clone https://github.com/bibektimilsina00/egfilm.git
+cd egfilm
 ```
 
-### Environment Variable Details
+2️⃣ **Install dependencies**
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | ✅ Yes |
-| `NEXTAUTH_SECRET` | Secret for NextAuth.js session encryption | ✅ Yes |
-| `NEXTAUTH_URL` | Base URL of your application | ✅ Yes |
-| `TMDB_API_KEY` | The Movie Database API key | ✅ Yes |
-| `NEXT_PUBLIC_APP_URL` | Public-facing app URL (for sitemaps, SEO) | ✅ Yes |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 measurement ID | ⚪ Optional |
-| `REDIS_URL` | Redis connection string for caching | ⚪ Optional |
-| `SENTRY_DSN` | Sentry error tracking DSN | ⚪ Optional |
+```bash
+npm install
+```
 
----
+3️⃣ **Configure environment**
 
-## 🗄️ Database Setup
+```bash
+cp .env.example .env.local
+# Edit .env.local with your configuration (see Configuration section)
+```
 
-### Using Prisma
-
-The project uses Prisma as the ORM for database management.
-
-#### Available Database Commands
+4️⃣ **Setup database**
 
 ```bash
 # Generate Prisma Client
 npm run db:generate
 
-# Create and apply migrations
+# Run migrations
 npm run db:migrate
 
-# Deploy migrations (production)
+# (Optional) Seed with initial data
+npm run db:seed
+```
+
+5️⃣ **Start development server**
+
+```bash
+npm run dev
+```
+
+6️⃣ **Open your browser**
+
+Navigate to [http://localhost:8000](http://localhost:8000) 🎉
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# ==================
+# 🗄️ DATABASE
+# ==================
+DATABASE_URL="postgresql://user:password@localhost:5432/egfilm"
+
+# ==================
+# 🔐 AUTHENTICATION
+# ==================
+# Generate with: openssl rand -base64 32
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:8000"
+
+# ==================
+# 🎬 TMDB API
+# ==================
+TMDB_API_KEY="your-tmdb-api-key"
+NEXT_PUBLIC_TMDB_API_KEY="your-tmdb-api-key"
+NEXT_PUBLIC_TMDB_BASE_URL="https://api.themoviedb.org/3"
+
+# ==================
+# 🌐 APPLICATION
+# ==================
+NEXT_PUBLIC_APP_URL="http://localhost:8000"
+NEXT_PUBLIC_BASE_URL="http://localhost:8000"
+
+# ==================
+# 📊 ANALYTICS (Optional)
+# ==================
+NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
+NEXT_PUBLIC_UMAMI_WEBSITE_ID="your-umami-id"
+NEXT_PUBLIC_UMAMI_URL="https://analytics.umami.is"
+
+# ==================
+# 🔴 ERROR TRACKING (Optional)
+# ==================
+SENTRY_DSN="your-sentry-dsn"
+NEXT_PUBLIC_SENTRY_DSN="your-public-sentry-dsn"
+SENTRY_AUTH_TOKEN="your-sentry-auth-token"
+
+# ==================
+# 📹 VIDEO PROVIDERS
+# ==================
+VIDSRC_API_URL="https://vidsrc.xyz/embed"
+VIDSRC_PRO_API_URL="https://vidsrc.pro/embed"
+
+# ==================
+# 🗄️ CACHING (Optional)
+# ==================
+REDIS_URL="redis://localhost:6379"
+```
+
+### Configuration Reference
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string | - |
+| `NEXTAUTH_SECRET` | ✅ | JWT secret (32+ characters) | - |
+| `NEXTAUTH_URL` | ✅ | Base URL of your app | http://localhost:8000 |
+| `TMDB_API_KEY` | ✅ | The Movie Database API key | - |
+| `NEXT_PUBLIC_APP_URL` | ✅ | Public app URL for SEO | - |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | ⚪ | Google Analytics 4 ID | - |
+| `SENTRY_DSN` | ⚪ | Sentry error tracking | - |
+| `REDIS_URL` | ⚪ | Redis cache connection | - |
+
+### Getting API Keys
+
+**TMDB API Key:**
+1. Visit [themoviedb.org](https://www.themoviedb.org/signup)
+2. Create an account
+3. Go to Settings → API
+4. Request an API key (free)
+
+**Google Analytics:**
+1. Visit [analytics.google.com](https://analytics.google.com/)
+2. Create a property
+3. Get your GA4 Measurement ID
+
+---
+
+## 🗄️ Database Setup
+
+### Prisma ORM Commands
+
+```bash
+# 🔧 Generate Prisma Client (after schema changes)
+npm run db:generate
+
+# 🚀 Create and apply migrations (development)
+npm run db:migrate
+
+# 📦 Deploy migrations (production)
 npm run db:migrate:deploy
 
-# Open Prisma Studio (GUI for database)
+# 🎨 Open Prisma Studio (visual database editor)
 npm run db:studio
 
-# Seed the database with initial data
+# 🌱 Seed database with initial data
 npm run db:seed
 
-# Reset database (development only)
+# ⚠️ Reset database (CAUTION: deletes all data)
 npm run db:reset
 ```
 
-### Database Schema
+### Database Schema Overview
 
-The database includes the following main models:
+**Core Models:**
 
-- **User**: User accounts with authentication
-- **Watchlist**: User's saved movies and TV shows
-- **WatchHistory**: Viewing history tracking
-- **WatchParty**: Watch together sessions
-- **Notification**: User notifications
-- **VideoProvider**: Video source providers
-- **ProviderHealthLog**: Provider uptime monitoring
-- **BlogPost**: Blog posts (shared with admin app)
+- **User** - Authentication, profiles, roles
+- **Watchlist** - User's saved content
+- **ContinueWatching** - Viewing progress tracking
+- **WatchRoom** - Watch Together sessions
+- **Notification** - User notifications
+- **BlogGenerationProgress** - Blog automation tracking
 
-For the complete schema, see [`prisma/schema.prisma`](./prisma/schema.prisma).
+**Admin Models:**
+
+- **VideoProvider** - Video source configuration
+- **ProviderHealthLog** - Provider uptime monitoring
+- **BlogPost** - Content management
+
+📖 **Full Schema**: See [`prisma/schema.prisma`](./prisma/schema.prisma)
+
+### Database Migrations
+
+Migrations are version-controlled in `prisma/migrations/`. Key migrations:
+
+- `20251016065259_init_database_with_watchlist_and_rooms` - Initial schema
+- `20251016071256_add_notifications_system` - Notifications feature
 
 ---
 
 ## 💻 Development
 
-### Development Scripts
+### Available Scripts
 
 ```bash
-# Start development server with Turbopack
+# 🚀 Start development server (Turbopack)
 npm run dev
 
-# Start with Webpack (fallback)
+# 🔧 Start with Webpack (fallback)
 npm run dev:webpack
 
-# Build for production
+# 🏗️ Build for production
 npm run build
 
-# Start production server
+# ▶️ Start production server
 npm start
 
-# Run linting
+# 🧹 Run ESLint
 npm run lint
 
-# Run tests
+# 🧪 Run tests
 npm test
+
+# 👤 Promote user to admin
+npm run make-admin user@example.com
 ```
 
 ### Development Workflow
 
-1. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+#### 1. Create Feature Branch
 
-2. **Make your changes**
-   - Follow TypeScript best practices
-   - Use existing UI components from `src/components/ui/`
-   - Update types in `src/types/` as needed
+```bash
+git checkout -b feature/amazing-feature
+```
 
-3. **Test your changes**
-   ```bash
-   npm run lint
-   npm run build
-   ```
+#### 2. Make Changes
 
-4. **Commit and push**
-   ```bash
-   git add .
-   git commit -m "feat: your feature description"
-   git push origin feature/your-feature-name
-   ```
+- **Components**: Follow Server Component patterns
+- **Styling**: Use Tailwind utility classes
+- **Types**: Add to `src/types/`
+- **API**: Use TanStack Query hooks in `src/lib/hooks/`
 
-5. **Create a Pull Request**
+#### 3. Code Quality
 
-### Code Style
+```bash
+# Lint your code
+npm run lint
 
-- **TypeScript**: Strict mode enabled
-- **Formatting**: ESLint with Next.js config
-- **Component Structure**: Use Server Components by default, Client Components when needed
-- **File Naming**: kebab-case for files, PascalCase for components
-- **CSS**: Tailwind utility classes with CSS modules for complex styles
+# Type check
+npx tsc --noEmit
+
+# Build to catch errors
+npm run build
+```
+
+#### 4. Commit & Push
+
+```bash
+git add .
+git commit -m "feat: add amazing feature"
+git push origin feature/amazing-feature
+```
+
+#### 5. Create Pull Request
+
+Open a PR on GitHub with:
+- Clear description
+- Screenshots (if UI changes)
+- Testing notes
+
+### Code Style Guidelines
+
+**TypeScript**
+```typescript
+// ✅ Good - Strict typing
+interface MovieDetails {
+  id: number;
+  title: string;
+  releaseDate: string;
+}
+
+// ❌ Avoid - Any types
+const movie: any = fetchMovie();
+```
+
+**React Components**
+```typescript
+// ✅ Good - Server Component (default)
+export default async function MoviePage({ params }: { params: { id: string } }) {
+  const movie = await getMovieDetails(params.id);
+  return <MovieView movie={movie} />;
+}
+
+// ✅ Good - Client Component (when needed)
+'use client';
+export function InteractiveButton() {
+  const [clicked, setClicked] = useState(false);
+  return <button onClick={() => setClicked(true)}>Click</button>;
+}
+```
+
+**API Fetching**
+```typescript
+// ✅ Good - React Query hook
+export function useMovieDetails(id: number) {
+  return useQuery({
+    queryKey: tmdbKeys.movieDetails(id),
+    queryFn: () => getMovieDetails(id),
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+}
+
+// ❌ Avoid - Direct fetch in components
+useEffect(() => {
+  fetch(`/api/movie/${id}`).then(/* ... */);
+}, [id]);
+```
+
+**File Naming**
+- Components: `PascalCase.tsx` (e.g., `MovieCard.tsx`)
+- Utilities: `camelCase.ts` (e.g., `formatDate.ts`)
+- Pages: `kebab-case/page.tsx` (e.g., `movie/[id]/watch/page.tsx`)
 
 ---
 
-## 🚀 Deployment
+## 🐳 Docker Deployment
 
-### Production Deployment with Docker
+### Quick Deploy with Docker Compose
 
-1. **Build the Docker image**
-   ```bash
-   docker build -t egfilm:latest .
-   ```
+```bash
+# Build and start containers
+docker-compose up -d
 
-2. **Run with Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
+# View logs
+docker-compose logs -f
 
-### GitHub Actions CI/CD
+# Stop containers
+docker-compose down
+```
 
-The project includes automated deployment via GitHub Actions:
+### Manual Docker Build
 
-- **Parallel Jobs**: Lint, test, audit, and security scan run in parallel (40-50% faster)
-- **Automated Builds**: Docker images built and pushed to GitHub Container Registry
-- **Zero-Downtime Deployment**: Automated deployment to production server
-- **Health Checks**: Post-deployment health verification
+```bash
+# Build image
+docker build -t egfilm:latest .
 
-#### Required GitHub Secrets
+# Run container
+docker run -d \
+  --name egfilm \
+  -p 8000:8000 \
+  --env-file .env \
+  egfilm:latest
+```
 
-Set these in your repository settings (Settings → Secrets and variables → Actions):
+### Production Docker Build Script
+
+```bash
+# Build and push to GitHub Container Registry
+./build.sh --env production --version v1.0.0 --push
+```
+
+### Docker Configuration
+
+**Dockerfile Highlights:**
+- Multi-stage build for optimization
+- Node.js 18 Alpine base
+- Prisma client generation
+- Production dependencies only
+- Health checks included
+
+**docker-compose.yml Services:**
+- `app` - Next.js application (port 8000)
+- `db` - PostgreSQL 14 (port 5432)
+- `redis` - Redis cache (port 6379, optional)
+
+---
+
+## 🔄 CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+Automated deployment on push to `main` or `production` branches:
+
+```yaml
+Trigger: Push to main/production
+  ↓
+[Parallel Jobs - 40-50% Faster]
+  ├── Lint & Type Check
+  ├── Security Audit
+  ├── Build & Test
+  └── Dependency Check
+  ↓
+Build Docker Image
+  ↓
+Push to GHCR (GitHub Container Registry)
+  ↓
+Deploy to Production Server (SSH)
+  ↓
+Blue-Green Deployment
+  ├── Start new container (port 8001)
+  ├── Health check
+  ├── Switch traffic to new container
+  └── Clean up old container
+  ↓
+✅ Zero-Downtime Deployment Complete
+```
+
+### Required GitHub Secrets
+
+**Settings → Secrets and variables → Actions**
 
 **Secrets:**
-- `SSH_PRIVATE_KEY`: SSH key for server access
-- `REGISTRY_TOKEN`: GitHub Container Registry token
-- `NEXTAUTH_SECRET`: NextAuth secret key
-- `TMDB_API_KEY`: TMDB API key
-- `SENTRY_DSN`: Sentry DSN (optional)
+```
+SSH_PRIVATE_KEY      - SSH key for server access
+REGISTRY_TOKEN       - GitHub Container Registry token
+NEXTAUTH_SECRET      - NextAuth JWT secret
+TMDB_API_KEY         - TMDB API key
+SENTRY_DSN          - Sentry error tracking (optional)
+```
 
 **Variables:**
-- `SERVER_HOST`: Production server IP/domain
-- `SERVER_USER`: SSH username (e.g., ubuntu)
-- `APP_URL`: Production URL (e.g., https://egfilm.xyz)
-- `GA_MEASUREMENT_ID_MAIN`: Google Analytics ID
+```
+SERVER_HOST              - Production server IP/domain
+SERVER_USER              - SSH username (e.g., ubuntu)
+APP_URL                  - Production URL (https://egfilm.xyz)
+GA_MEASUREMENT_ID_MAIN   - Google Analytics ID
+```
 
-For detailed deployment optimization guide, see [DEPLOYMENT_OPTIMIZATION.md](./DEPLOYMENT_OPTIMIZATION.md).
+### Server Setup
 
-### Manual Deployment
+**Prerequisites on production server:**
+```bash
+# Install Docker & Docker Compose
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
 
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
+# Create deployment directory
+mkdir -p ~/egfilm
+cd ~/egfilm
 
-2. **Start the production server**
-   ```bash
-   npm start
-   ```
+# Upload deploy.sh script
+# (Handles blue-green deployment)
+```
 
-3. **Set up Nginx reverse proxy**
-   ```nginx
-   server {
-       listen 80;
-       server_name egfilm.xyz;
-       
-       location / {
-           proxy_pass http://localhost:8000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
+**Deploy Script** (`deploy.sh` on server):
+- Pulls latest Docker image from GHCR
+- Starts new container on port 8001
+- Runs health checks
+- Switches Nginx to new container
+- Cleans up old deployment
 
-4. **Set up SSL with Let's Encrypt**
-   ```bash
-   sudo certbot --nginx -d egfilm.xyz
-   ```
+📖 **Full Setup Guide**: See [CICD_SETUP.md](.github/copilot-instructions.md)
 
 ---
 
@@ -410,157 +691,561 @@ For detailed deployment optimization guide, see [DEPLOYMENT_OPTIMIZATION.md](./D
 
 ```
 egfilm/
-├── .github/
-│   └── workflows/              # CI/CD workflows
-│       └── deploy-production.yml
-├── prisma/
-│   ├── schema.prisma           # Database schema
-│   ├── migrations/             # Database migrations
-│   └── seed-video-providers.ts # Database seeding
-├── public/
-│   ├── icon.svg                # App icon
-│   ├── manifest.json           # PWA manifest
-│   ├── sw.js                   # Service worker
-│   ├── robots.txt              # SEO robots file
-│   └── ads.txt                 # Ads configuration
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── layout.tsx          # Root layout
-│   │   ├── page.tsx            # Home page
-│   │   ├── globals.css         # Global styles
-│   │   ├── api/                # API routes
-│   │   ├── movie/              # Movie pages
-│   │   ├── tv/                 # TV show pages
-│   │   ├── search/             # Search page
-│   │   ├── watchlist/          # Watchlist page
-│   │   ├── watch-together/     # Watch party feature
-│   │   ├── sitemap-*.xml/      # Dynamic sitemaps
-│   │   └── robots.ts           # Dynamic robots.txt
-│   ├── components/             # React components
-│   │   ├── ui/                 # Reusable UI components
-│   │   ├── catalog/            # Content catalog components
-│   │   ├── player/             # Video player components
-│   │   ├── Navigation.tsx      # Main navigation
-│   │   ├── Footer.tsx          # Site footer
-│   │   ├── media-card.tsx      # Movie/TV card component
+├── 📂 .github/
+│   └── workflows/
+│       └── deploy-production.yml    # CI/CD workflow
+│
+├── 📂 prisma/
+│   ├── schema.prisma                # Database schema
+│   ├── migrations/                  # Version-controlled migrations
+│   └── seed.ts                      # Database seeding
+│
+├── 📂 public/
+│   ├── logo.svg                     # Brand logo
+│   ├── icon.svg                     # Favicon
+│   ├── manifest.json                # PWA manifest
+│   ├── sw.js                        # Service worker
+│   └── robots.txt                   # SEO robots
+│
+├── 📂 src/
+│   ├── 📂 app/                      # Next.js App Router
+│   │   ├── layout.tsx               # Root layout
+│   │   ├── page.tsx                 # Home page
+│   │   ├── globals.css              # Global styles
+│   │   ├── api/                     # API routes
+│   │   │   ├── auth/                # NextAuth endpoints
+│   │   │   ├── watchlist/           # Watchlist CRUD
+│   │   │   ├── socketio.ts          # Socket.IO handler
+│   │   │   └── ...
+│   │   ├── movie/
+│   │   │   └── [id]/
+│   │   │       ├── page.tsx         # Movie details
+│   │   │       └── watch/
+│   │   │           └── page.tsx     # Movie player
+│   │   ├── tv/
+│   │   │   └── [id]/
+│   │   │       ├── page.tsx         # TV details
+│   │   │       └── watch/
+│   │   │           └── page.tsx     # TV player
+│   │   ├── search/                  # Search page
+│   │   ├── watchlist/               # User watchlist
+│   │   ├── watch-together/          # WebRTC rooms
+│   │   └── sitemap-*.xml/           # Dynamic sitemaps
+│   │
+│   ├── 📂 components/
+│   │   ├── ui/                      # Radix UI wrappers
+│   │   │   ├── button.tsx
+│   │   │   ├── modal.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   └── ...
+│   │   ├── catalog/
+│   │   │   ├── MediaCard.tsx        # Content cards
+│   │   │   ├── MediaGrid.tsx        # Grid layouts
+│   │   │   └── ...
+│   │   ├── player/
+│   │   │   ├── EmbeddedPlayer.tsx   # Video player
+│   │   │   └── ...
+│   │   ├── Navigation.tsx           # Main navbar
+│   │   ├── Footer.tsx               # Site footer
+│   │   ├── NotificationBell.tsx     # Notifications
 │   │   └── ...
-│   ├── lib/                    # Utility libraries
-│   │   ├── auth.ts             # NextAuth configuration
-│   │   ├── prisma.ts           # Prisma client
-│   │   ├── tmdb.ts             # TMDB API client
-│   │   ├── seo.ts              # SEO utilities
-│   │   ├── videoSources.ts     # Video provider logic
-│   │   ├── utils.ts            # Utility functions
-│   │   ├── api/                # API helpers
-│   │   └── hooks/              # Custom React hooks
-│   └── types/                  # TypeScript type definitions
-├── scripts/                    # Deployment scripts
-├── Dockerfile                  # Docker configuration
-├── docker-compose.yml          # Docker Compose setup
-├── next.config.ts              # Next.js configuration
-├── tailwind.config.ts          # Tailwind CSS config
-├── tsconfig.json               # TypeScript config
-├── package.json                # Dependencies
-└── README.md                   # This file
+│   │
+│   ├── 📂 lib/
+│   │   ├── api/
+│   │   │   └── tmdb.ts              # TMDB API client
+│   │   ├── hooks/
+│   │   │   └── useTMDb.ts           # React Query hooks
+│   │   ├── services/
+│   │   │   ├── watchlistService.ts
+│   │   │   ├── notificationService.ts
+│   │   │   └── ...
+│   │   ├── auth.ts                  # NextAuth config
+│   │   ├── prisma.ts                # Prisma client
+│   │   ├── videoSources.ts          # Video providers
+│   │   ├── utils.ts                 # Utilities
+│   │   └── ...
+│   │
+│   ├── 📂 types/
+│   │   ├── tmdb.ts                  # TMDB types
+│   │   ├── user.ts                  # User types
+│   │   └── ...
+│   │
+│   └── 📂 pages/api/
+│       └── socketio.ts              # Socket.IO (Pages Router)
+│
+├── 📂 scripts/
+│   ├── make-admin.ts                # Admin promotion script
+│   └── README.md                    # Script documentation
+│
+├── 📄 Dockerfile                    # Docker config
+├── 📄 docker-compose.yml            # Compose services
+├── 📄 next.config.ts                # Next.js config
+├── 📄 tailwind.config.ts            # Tailwind config
+├── 📄 tsconfig.json                 # TypeScript config
+├── 📄 prisma/schema.prisma          # Database schema
+└── 📄 package.json                  # Dependencies
 ```
+
+### Key Directories Explained
+
+**`src/app/`** - Next.js App Router pages and API routes  
+**`src/components/ui/`** - Reusable Radix UI components  
+**`src/lib/api/`** - External API integrations (TMDB)  
+**`src/lib/hooks/`** - Custom React hooks with TanStack Query  
+**`src/lib/services/`** - Database operations via Prisma  
+**`prisma/migrations/`** - Version-controlled database changes
 
 ---
 
-## 📚 API Documentation
+## 🔌 API Reference
 
-### Internal API Routes
-
-The application exposes several API endpoints:
+### Internal REST Endpoints
 
 #### Authentication
-- `POST /api/auth/signin` - User login
-- `POST /api/auth/signup` - User registration
-- `GET /api/auth/session` - Get current session
-- `POST /api/auth/signout` - User logout
 
-#### Watchlist
-- `GET /api/watchlist` - Get user's watchlist
-- `POST /api/watchlist` - Add to watchlist
-- `DELETE /api/watchlist/[id]` - Remove from watchlist
+```http
+POST /api/auth/signin
+Content-Type: application/json
 
-#### Watch History
-- `GET /api/history` - Get watch history
-- `POST /api/history` - Add to history
-- `DELETE /api/history/[id]` - Remove from history
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+```http
+POST /api/auth/signup
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+#### Watchlist Management
+
+```http
+GET /api/watchlist
+Authorization: Bearer {session-token}
+```
+
+```http
+POST /api/watchlist
+Content-Type: application/json
+Authorization: Bearer {session-token}
+
+{
+  "tmdbId": 12345,
+  "mediaType": "movie",
+  "title": "Inception",
+  "posterPath": "/poster.jpg"
+}
+```
+
+```http
+DELETE /api/watchlist/[id]
+Authorization: Bearer {session-token}
+```
 
 #### Watch Together
-- `POST /api/watch-party/create` - Create watch party
-- `GET /api/watch-party/[id]` - Get party details
-- `POST /api/watch-party/[id]/join` - Join watch party
 
-#### Video Providers
-- `GET /api/video-providers` - Get available providers
-- `GET /api/video-providers/health` - Check provider health
+```http
+POST /api/watch-party/create
+Content-Type: application/json
+Authorization: Bearer {session-token}
+
+{
+  "mediaType": "movie",
+  "tmdbId": 12345,
+  "title": "Inception"
+}
+```
+
+### Socket.IO Events
+
+**Connection**
+```javascript
+socket.on('connect', () => {
+  console.log('Connected to Socket.IO server');
+});
+```
+
+**Watch Together Room**
+```javascript
+// Join room
+socket.emit('join-watch-together', { roomCode: 'ABC123' });
+
+// Leave room
+socket.emit('leave-watch-together', { roomCode: 'ABC123' });
+
+// Send chat message
+socket.emit('send-chat-message', {
+  roomCode: 'ABC123',
+  message: 'Hello!',
+  userId: 'user-id',
+  userName: 'John Doe'
+});
+
+// Receive chat message
+socket.on('chat-message', (data) => {
+  console.log(`${data.userName}: ${data.message}`);
+});
+```
+
+**WebRTC Signaling**
+```javascript
+// Send WebRTC offer
+socket.emit('webrtc-offer', {
+  roomCode: 'ABC123',
+  offer: rtcOffer,
+  userId: 'user-id'
+});
+
+// Receive WebRTC answer
+socket.on('webrtc-answer', (data) => {
+  peerConnection.setRemoteDescription(data.answer);
+});
+
+// Exchange ICE candidates
+socket.emit('webrtc-ice-candidate', {
+  roomCode: 'ABC123',
+  candidate: iceCandidate
+});
+```
 
 ### External APIs
 
-The application integrates with:
+**TMDB API Integration**
 
-- **TMDB API**: Movie and TV show data
-  - Base URL: `https://api.themoviedb.org/3`
-  - [Documentation](https://developers.themoviedb.org/3)
+All TMDB API calls are abstracted in `src/lib/api/tmdb.ts`:
 
-- **Video Providers**: Multiple video sources
-  - VidSrc, VidSrc Pro, and others
-  - Automatic failover on provider failure
+```typescript
+// Get movie details
+const movie = await getMovieDetails(movieId);
+
+// Get TV show details
+const tvShow = await getTVDetails(tvId);
+
+// Get season details with episodes
+const season = await getSeasonDetails(tvId, seasonNumber);
+
+// Search content
+const results = await searchMulti(query, page);
+
+// Get trending content
+const trending = await getTrending('movie', 'week');
+```
+
+📖 **TMDB API Docs**: [developers.themoviedb.org](https://developers.themoviedb.org/3)
+
+---
+
+## 🎨 UI Components
+
+### Component Library
+
+EGFilm uses **Radix UI** for accessible, unstyled components styled with **Tailwind CSS**.
+
+#### Button Component
+
+```tsx
+import { Button } from '@/components/ui/button';
+
+<Button variant="primary" size="lg">
+  Watch Now
+</Button>
+```
+
+**Variants:** `primary`, `secondary`, `outline`, `ghost`, `danger`  
+**Sizes:** `sm`, `md`, `lg`
+
+#### Modal/Dialog
+
+```tsx
+import { Dialog, DialogContent, DialogTrigger } from '@radix-ui/react-dialog';
+
+<Dialog>
+  <DialogTrigger asChild>
+    <Button>Open Modal</Button>
+  </DialogTrigger>
+  <DialogContent>
+    <h2>Modal Title</h2>
+    <p>Modal content goes here</p>
+  </DialogContent>
+</Dialog>
+```
+
+#### Media Card
+
+```tsx
+import { MediaCard } from '@/components/catalog/MediaCard';
+
+<MediaCard
+  id={movie.id}
+  title={movie.title}
+  posterPath={movie.poster_path}
+  rating={movie.vote_average}
+  mediaType="movie"
+/>
+```
+
+#### Tabs
+
+```tsx
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@radix-ui/react-tabs';
+
+<Tabs defaultValue="movies">
+  <TabsList>
+    <TabsTrigger value="movies">Movies</TabsTrigger>
+    <TabsTrigger value="tv">TV Shows</TabsTrigger>
+  </TabsList>
+  <TabsContent value="movies">Movie content</TabsContent>
+  <TabsContent value="tv">TV content</TabsContent>
+</Tabs>
+```
+
+### Available UI Components
+
+Located in `src/components/ui/`:
+
+- `button.tsx` - Button with variants
+- `modal.tsx` - Dialog/Modal
+- `tabs.tsx` - Tab navigation
+- `dropdown-menu.tsx` - Dropdown menus
+- `avatar.tsx` - User avatars
+- `separator.tsx` - Dividers
+- `select.tsx` - Select inputs
+
+📖 **Radix UI Docs**: [radix-ui.com](https://www.radix-ui.com/)
+
+---
+
+## 🧪 Testing
+
+### Test Structure
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Testing Guidelines
+
+**Unit Tests** - Test individual functions and utilities  
+**Component Tests** - Test React components in isolation  
+**Integration Tests** - Test API routes and database operations  
+**E2E Tests** - Test full user flows (planned)
+
+### Example Test
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { MediaCard } from '@/components/catalog/MediaCard';
+
+describe('MediaCard', () => {
+  it('renders movie title', () => {
+    render(
+      <MediaCard
+        id={123}
+        title="Inception"
+        posterPath="/poster.jpg"
+        mediaType="movie"
+      />
+    );
+    expect(screen.getByText('Inception')).toBeInTheDocument();
+  });
+});
+```
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+We welcome contributions from the community! Here's how you can help:
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/AmazingFeature`)
-3. **Commit your changes** (`git commit -m 'Add some AmazingFeature'`)
-4. **Push to the branch** (`git push origin feature/AmazingFeature`)
-5. **Open a Pull Request**
+### Ways to Contribute
 
-### Contribution Guidelines
+- 🐛 **Report Bugs** - [Open an issue](https://github.com/bibektimilsina00/egfilm/issues/new)
+- ✨ **Suggest Features** - Share your ideas
+- 📝 **Improve Documentation** - Fix typos, add examples
+- 🔧 **Submit Pull Requests** - Fix bugs or add features
+- ⭐ **Star the Repo** - Show your support
 
-- Follow the existing code style
-- Write meaningful commit messages
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting
+### Contribution Process
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'feat: add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+### Commit Convention
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: add watch together feature
+fix: resolve video playback issue
+docs: update API documentation
+style: format code with prettier
+refactor: reorganize component structure
+test: add unit tests for utils
+chore: update dependencies
+```
+
+### Pull Request Guidelines
+
+- ✅ Clear description of changes
+- ✅ Link to related issues
+- ✅ Screenshots for UI changes
+- ✅ Tests pass (`npm test`)
+- ✅ Linting passes (`npm run lint`)
+- ✅ Build succeeds (`npm run build`)
+
+### Code of Conduct
+
+- Be respectful and inclusive
+- Welcome newcomers
+- Focus on constructive feedback
+- Maintain professional communication
 
 ---
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2024 Egfilm Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+```
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **TMDB**: Movie and TV show data
-- **Next.js**: The React framework
-- **Vercel**: Next.js creators and contributors
-- **Radix UI**: Accessible component primitives
-- **Tailwind CSS**: Utility-first CSS framework
-- **Prisma**: Next-generation ORM
+EGFilm wouldn't be possible without these amazing technologies and services:
+
+### Core Technologies
+
+- **[Next.js](https://nextjs.org/)** - The React framework for production
+- **[React](https://react.dev/)** - A JavaScript library for building user interfaces
+- **[TypeScript](https://www.typescriptlang.org/)** - JavaScript with syntax for types
+- **[Tailwind CSS](https://tailwindcss.com/)** - A utility-first CSS framework
+
+### UI & Components
+
+- **[Radix UI](https://www.radix-ui.com/)** - Unstyled, accessible components
+- **[Lucide Icons](https://lucide.dev/)** - Beautiful & consistent icon toolkit
+- **[TanStack Query](https://tanstack.com/query)** - Powerful data synchronization
+
+### Backend & Database
+
+- **[Prisma](https://www.prisma.io/)** - Next-generation Node.js and TypeScript ORM
+- **[PostgreSQL](https://www.postgresql.org/)** - The world's most advanced open source database
+- **[NextAuth.js](https://next-auth.js.org/)** - Authentication for Next.js
+
+### APIs & Services
+
+- **[TMDB](https://www.themoviedb.org/)** - The Movie Database for content data
+- **[Socket.IO](https://socket.io/)** - Real-time bidirectional event-based communication
+- **[Sentry](https://sentry.io/)** - Error tracking and performance monitoring
+
+### DevOps & Hosting
+
+- **[Docker](https://www.docker.com/)** - Containerization platform
+- **[GitHub Actions](https://github.com/features/actions)** - CI/CD automation
+- **[Vercel](https://vercel.com/)** - Inspiration for modern web development
+
+### Community
+
+- **Contributors** - Everyone who has contributed to this project
+- **Open Source Community** - For creating amazing tools and libraries
+- **You** - For using and supporting EGFilm!
 
 ---
 
 ## 📞 Support
 
+Need help? Have questions? We're here for you!
+
+### 📧 Contact
+
 - **Website**: [egfilm.xyz](https://egfilm.xyz)
 - **Blog**: [blog.egfilm.xyz](https://blog.egfilm.xyz)
-- **Issues**: [GitHub Issues](https://github.com/bibektimilsina00/egfilm/issues)
 - **Email**: [support@egfilm.xyz](mailto:support@egfilm.xyz)
+
+### 🐛 Issues & Bugs
+
+Found a bug? Please report it:
+
+1. **Search** [existing issues](https://github.com/bibektimilsina00/egfilm/issues)
+2. **Create** a [new issue](https://github.com/bibektimilsina00/egfilm/issues/new) if not found
+3. **Include** details:
+   - Steps to reproduce
+   - Expected behavior
+   - Actual behavior
+   - Screenshots (if applicable)
+   - Environment (OS, browser, Node version)
+
+### ✨ Feature Requests
+
+Have an idea? We'd love to hear it!
+
+- [Open a feature request](https://github.com/bibektimilsina00/egfilm/issues/new?labels=enhancement)
+- Describe the feature and use case
+- Explain why it would be beneficial
+
+### 📚 Documentation
+
+- **Getting Started**: [Quick Start](#-quick-start)
+- **API Docs**: [API Reference](#-api-reference)
+- **Deployment**: [Docker Deployment](#-docker-deployment)
+- **CI/CD Setup**: `.github/copilot-instructions.md`
+
+### 💬 Community
+
+- **GitHub Discussions**: Coming soon
+- **Discord Server**: Coming soon
+- **Twitter**: [@egfilm](https://twitter.com/egfilm)
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by EgFilm Team**
+### 🌟 Star History
 
-[⬆ Back to Top](#egfilm---modern-movie--tv-streaming-platform)
+[![Star History Chart](https://api.star-history.com/svg?repos=bibektimilsina00/egfilm&type=Date)](https://star-history.com/#bibektimilsina00/egfilm&Date)
+
+---
+
+**Built with ❤️ by [Egfilm Team](https://github.com/bibektimilsina00)**
+
+If you find this project helpful, please consider giving it a ⭐ star on GitHub!
+
+[⬆ Back to Top](#readme)
 
 </div>
