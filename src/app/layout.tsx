@@ -257,13 +257,13 @@ export default function RootLayout({
         )}
 
         {/* Umami Analytics */}
-        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
-          <Script
-            src="https://cloud.umami.is/script.js"
-            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-            strategy="afterInteractive"
-          />
-        )}
+
+        <Script
+          src="https://cloud.umami.is/script.js"
+          data-website-id='ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53'
+          strategy="afterInteractive"
+        />
+
       </body>
     </html>
   );
