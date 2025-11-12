@@ -121,10 +121,11 @@
 
 ### 📊 Analytics & Performance
 
-- **Google Analytics 4** - Comprehensive user insights
-- **Web Vitals Tracking** - LCP, FID, CLS monitoring
-- **Sentry Integration** - Error tracking & performance monitoring
-- **Provider Health Checks** - Automatic video source monitoring
+- **Google Analytics 4** - Comprehensive user insights and behavior tracking
+- **Umami Analytics** - Privacy-focused, lightweight analytics alternative
+- **Web Vitals Tracking** - LCP, FID, CLS monitoring with real-time metrics
+- **Sentry Integration** - Error tracking and performance monitoring
+- **Provider Health Checks** - Automatic video source monitoring and failover
 - **SEO Optimized** - Dynamic sitemaps, meta tags, structured data
 
 ### 🎨 User Experience
@@ -362,6 +363,8 @@ REDIS_URL="redis://localhost:6379"
 | `TMDB_API_KEY` | ✅ | The Movie Database API key | - |
 | `NEXT_PUBLIC_APP_URL` | ✅ | Public app URL for SEO | - |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | ⚪ | Google Analytics 4 ID | - |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | ⚪ | Umami Analytics website ID | - |
+| `NEXT_PUBLIC_UMAMI_URL` | ⚪ | Umami Analytics server URL | https://analytics.umami.is |
 | `SENTRY_DSN` | ⚪ | Sentry error tracking | - |
 | `REDIS_URL` | ⚪ | Redis cache connection | - |
 
@@ -377,6 +380,12 @@ REDIS_URL="redis://localhost:6379"
 1. Visit [analytics.google.com](https://analytics.google.com/)
 2. Create a property
 3. Get your GA4 Measurement ID
+
+**Umami Analytics:**
+1. Visit [umami.is](https://umami.is/) or use [cloud.umami.is](https://cloud.umami.is/)
+2. Create an account and website
+3. Get your Website ID from the script tag
+4. Set `NEXT_PUBLIC_UMAMI_WEBSITE_ID` to your website ID
 
 ---
 
@@ -650,6 +659,7 @@ REGISTRY_TOKEN       - GitHub Container Registry token
 NEXTAUTH_SECRET      - NextAuth JWT secret
 TMDB_API_KEY         - TMDB API key
 SENTRY_DSN          - Sentry error tracking (optional)
+UMAMI_WEBSITE_ID    - Umami Analytics website ID (optional)
 ```
 
 **Variables:**
