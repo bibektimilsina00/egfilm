@@ -7,9 +7,7 @@ import { Star, Calendar, Clock, Loader2, Info, Server, Globe, Film, Users } from
 import Navigation from '@/components/Navigation';
 import { MediaCard } from '@/components/media-card';
 import Image from 'next/image';
-import { TheaterModeToggle } from '@/components/TheaterMode';
-import { LoadingSpinner, PageLoader } from '@/components/ui/loading-spinner';
-import { Button } from '@/components/ui/button';
+import { PageLoader } from '@/components/ui/loading-spinner';
 
 interface VideoProvider {
   id: string;
@@ -98,10 +96,6 @@ export default function WatchMoviePage() {
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     : '/placeholder-poster.jpg';
 
-  const backdropUrl = movie.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-    : null;
-
   const runtime = movie.runtime
     ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
     : null;
@@ -115,7 +109,7 @@ export default function WatchMoviePage() {
 
         {/* Video Player Section */}
         <div className="mb-8">
-          <div className="bg-gray-900/50 rounded-xl overflow-hidden shadow-2xl border border-gray-800/50 theater-mode-keep">
+          <div className="bg-gray-900/50 rounded-xl overflow-hidden shadow-2xl border border-gray-800/50">
             {/* Player */}
             <div className="aspect-video relative bg-black">
               {isPlayerLoading && (
@@ -150,7 +144,7 @@ export default function WatchMoviePage() {
               <div className="flex items-center justify-between gap-4 mb-3">
                 <p className="text-xs text-gray-400 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-blue-400" />
-                  <span>If current server doesn't work, try other servers</span>
+                  <span>If current server doesn&apos;t work, try other servers</span>
                 </p>
                 <span className="text-xs text-gray-500 font-medium">
                   {providers.length} servers

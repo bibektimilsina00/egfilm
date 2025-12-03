@@ -1026,6 +1026,7 @@ function WatchTogetherContent() {
                     <div className="flex-1 flex items-center justify-center relative">
                         {currentEmbedUrl ? (
                             <iframe
+                                scrolling='no'
                                 key={currentEmbedUrl}
                                 src={currentEmbedUrl}
                                 className="w-full h-full"

@@ -191,28 +191,22 @@
   animation: scale-in 0.3s ease-out;
 }
 
-/* Theater Mode - Lights Off Feature */
-body.theater-mode {
-  background: #000;
+/* Custom Scrollbar for Episode List */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
 
-body.theater-mode * :not(iframe):not(video):not(.theater-mode-keep) {
-  transition: opacity 0.3s ease, background-color 0.3s ease;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-body.theater-mode nav,
-body.theater-mode header,
-body.theater-mode footer,
-body.theater-mode .theater-mode-dim {
-  opacity: 0.3;
-  pointer-events: auto;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 3px;
 }
 
-body.theater-mode nav:hover,
-body.theater-mode header:hover,
-body.theater-mode footer:hover,
-body.theater-mode .theater-mode-dim:hover {
-  opacity: 1;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 
 /* Subtle Animations for Cards */

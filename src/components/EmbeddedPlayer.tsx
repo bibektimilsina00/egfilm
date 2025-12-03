@@ -193,6 +193,7 @@ export default function EmbeddedPlayer({
                     src={embedUrl}
                     className="w-full h-full"
                     frameBorder="0"
+                    scrolling='no'
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                     title={title}

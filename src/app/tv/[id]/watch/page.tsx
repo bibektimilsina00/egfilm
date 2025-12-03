@@ -8,7 +8,6 @@ import Navigation from '@/components/Navigation';
 import { MediaCard } from '@/components/media-card';
 import Image from 'next/image';
 import { getSeasonDetails, type Episode } from '@/lib/api/tmdb';
-import { TheaterModeToggle } from '@/components/TheaterMode';
 import { PageLoader } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 
@@ -156,18 +155,6 @@ export default function WatchTVPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 pt-8 pb-6 max-w-[1600px]">
-
-        {/* Back Button + Theater Mode Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            onClick={() => router.back()}
-            variant="outline"
-            className="gap-2"
-          >
-            ← Back
-          </Button>
-          <TheaterModeToggle className="theater-mode-keep" />
-        </div>
 
         {/* Video Player Section */}
         <div className="mb-8">
