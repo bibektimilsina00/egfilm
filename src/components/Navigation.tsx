@@ -146,14 +146,17 @@ export default function Navigation() {
             <div className="container mx-auto px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center group">
-                        <Image
-                            src="/logo.svg"
-                            alt="EGFilm"
-                            width={48}
-                            height={48}
-                            className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
-                        />
+                    <Link href="/" className="flex items-center gap-2 group shrink-0">
+                        <div className="relative">
+                            <Image
+                                src="/logo.svg"
+                                alt="EGFilm"
+                                width={48}
+                                height={48}
+                                className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+                                priority
+                            />
+                        </div>
                     </Link>
 
                     {/* Desktop Navigation - Compact */}
