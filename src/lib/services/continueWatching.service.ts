@@ -51,12 +51,23 @@ export async function saveContinueWatching(userId: string, data: ContinueWatchin
 }
 
 /**
- * Get continue watching list for user
+ * Get continue watching list for user (optimized with field selection)
  */
 export async function getContinueWatching(userId: string) {
     try {
         const continueWatching = await prisma.continueWatching.findMany({
             where: { userId },
+            select: {
+                id: true,
+                mediaId: true,
+                mediaType: true,
+                title: true,
+                posterPath: true,
+                progress: true,
+                season: true,
+                episode: true,
+                updatedAt: true,
+            },
             orderBy: { updatedAt: 'desc' },
             take: 20, // Limit to recent 20 items
         });

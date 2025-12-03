@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Info, TrendingUp, Star, Tv, Film, Clock } from 'lucide-react';
@@ -29,8 +29,9 @@ import type { ContinueWatchingItem } from '@/lib/storage';
 
 /**
  * Reusable section component with icon and title
+ * Memoized to prevent unnecessary re-renders
  */
-function Section({
+const Section = memo(function Section({
   title,
   icon,
   children
@@ -48,12 +49,13 @@ function Section({
       {children}
     </section>
   );
-}
+});
 
 /**
  * Hero section component with trending content
+ * Memoized to prevent re-renders when media doesn't change
  */
-function HeroSection({ media }: { media: MediaItem | undefined }) {
+const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | undefined }) {
   if (!media) return null;
 
   const heroTitle = 'title' in media ? media.title : media.name;
@@ -106,12 +108,13 @@ function HeroSection({ media }: { media: MediaItem | undefined }) {
       </div>
     </section>
   );
-}
+});
 
 /**
  * Media grid component with error handling and loading states
+ * Memoized to prevent re-renders when props don't change
  */
-function MediaGrid({
+const MediaGrid = memo(function MediaGrid({
   data,
   isLoading,
   error,
@@ -163,7 +166,7 @@ function MediaGrid({
       </div>
     </Section>
   );
-}
+});
 
 /**
  * Main homepage component with React Query integration
@@ -185,6 +188,18 @@ export default function HomePage() {
     setContinueWatching(continueData);
   }, []);
 
+  // Memoize retry callbacks to prevent re-creating functions
+  const handleTrendingMoviesRetry = useCallback(() => trendingMovies.refetch(), [trendingMovies]);
+  const handleTrendingTVRetry = useCallback(() => trendingTV.refetch(), [trendingTV]);
+  const handlePopularMoviesRetry = useCallback(() => popularMovies.refetch(), [popularMovies]);
+  const handleTopRatedMoviesRetry = useCallback(() => topRatedMovies.refetch(), [topRatedMovies]);
+
+  // Memoize hero media to prevent unnecessary recalculations
+  const heroMedia = useMemo(() => trendingAll.data?.[0], [trendingAll.data]);
+
+  // Memoize continue watching slice
+  const continueWatchingSlice = useMemo(() => continueWatching.slice(0, 10), [continueWatching]);
+
   // Show initial loading state when all critical data is loading
   const isInitialLoading = trendingAll.isLoading && trendingMovies.isLoading && trendingTV.isLoading;
 
@@ -197,8 +212,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  const heroMedia = trendingAll.data?.[0];
 
   return (
     <div className="min-h-screen bg-gray-950">
@@ -218,7 +231,7 @@ export default function HomePage() {
         {continueWatching.length > 0 && (
           <Section title="Continue Watching" icon={<Clock className="w-6 h-6" />}>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {continueWatching.slice(0, 10).map((item) => (
+              {continueWatchingSlice.map((item) => (
                 <div key={`${item.media_type}-${item.id}`} className="relative">
                   <MediaCard item={item} type={item.media_type} />
                   {/* Progress Bar */}
@@ -244,7 +257,7 @@ export default function HomePage() {
           title="Trending Movies"
           icon={<TrendingUp className="w-6 h-6" />}
           type="movie"
-          onRetry={() => trendingMovies.refetch()}
+          onRetry={handleTrendingMoviesRetry}
         />
 
         {/* Trending TV Shows */}
@@ -255,7 +268,7 @@ export default function HomePage() {
           title="Trending TV Shows"
           icon={<Tv className="w-6 h-6" />}
           type="tv"
-          onRetry={() => trendingTV.refetch()}
+          onRetry={handleTrendingTVRetry}
         />
 
         {/* Popular Movies */}
@@ -266,7 +279,7 @@ export default function HomePage() {
           title="Popular Movies"
           icon={<Film className="w-6 h-6" />}
           type="movie"
-          onRetry={() => popularMovies.refetch()}
+          onRetry={handlePopularMoviesRetry}
         />
 
         {/* Top Rated Movies */}
@@ -277,7 +290,7 @@ export default function HomePage() {
           title="Top Rated Movies"
           icon={<Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />}
           type="movie"
-          onRetry={() => topRatedMovies.refetch()}
+          onRetry={handleTopRatedMoviesRetry}
         />
       </main>
 

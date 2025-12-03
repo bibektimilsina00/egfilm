@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Add quality config for Next.js 16 compatibility
     qualities: [75, 85, 90, 95, 100],
+    // Minimize image loads
+    minimumCacheTTL: 31536000, // 1 year cache
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Enable standalone output for Docker
   output: 'standalone',
@@ -25,7 +30,17 @@ const nextConfig: NextConfig = {
     scrollRestoration: true,
     // Speed up webpack compilation
     webpackBuildWorker: true,
+    // Optimize package imports
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  // Minimize production bundle
+  productionBrowserSourceMaps: false,
+  // React compiler for better performance
+  reactStrictMode: true,
+  // Optimize fonts
+  optimizeFonts: true,
+  // Reduce bundle size by removing unused code
+  swcMinify: true,
   // Turbopack configuration (new location)
   turbopack: {
     rules: {
