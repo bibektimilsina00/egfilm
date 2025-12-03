@@ -84,7 +84,7 @@ function HeroSection({ media }: { media: MediaItem | undefined }) {
           <p className="mb-6 max-w-2xl text-lg text-gray-200 line-clamp-3">{media.overview}</p>
 
           <div className="flex flex-wrap gap-4">
-            <Link href={`/${heroType}/${media.id}`} prefetch={true}>
+            <Link href={`/${heroType}/${media.id}/watch`} prefetch={true}>
               <PlayButton />
             </Link>
             <Link href={`/${heroType}/${media.id}`} prefetch={true}>
