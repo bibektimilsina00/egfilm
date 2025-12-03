@@ -90,7 +90,7 @@ export default function RegisterPage() {
                             )}
 
                             <div className="space-y-2">
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-300 flex items-center gap-2">
+                                <label htmlFor="name" className="text-sm font-medium text-gray-300 flex items-center gap-2">
                                     <UserIcon className="w-4 h-4 text-blue-400" />
                                     Full Name
                                 </label>
@@ -106,7 +106,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-300 flex items-center gap-2">
+                                <label htmlFor="email" className="text-sm font-medium text-gray-300 flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-blue-400" />
                                     Email Address
                                 </label>
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-300 flex items-center gap-2">
+                                <label htmlFor="password" className="text-sm font-medium text-gray-300 flex items-center gap-2">
                                     <Lock className="w-4 h-4 text-blue-400" />
                                     Password
                                 </label>
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 flex items-center gap-2">
+                                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300 flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-blue-400" />
                                     Confirm Password
                                 </label>

@@ -62,7 +62,7 @@ const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | un
   const heroType = media.media_type || ('title' in media ? 'movie' : 'tv');
 
   return (
-    <section className="relative h-[70vh] md:h-[80vh] flex items-end">
+    <section className="relative h-[70vh] md:h-[80vh] flex items-end page-transition">
       <div className="absolute inset-0">
         <Image
           src={getImageUrl(media.backdrop_path || media.poster_path, 'original')}
@@ -85,12 +85,12 @@ const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | un
           <h1 className="mb-4 max-w-2xl text-5xl font-bold text-white md:text-6xl">{heroTitle}</h1>
           <p className="mb-6 max-w-2xl text-lg text-gray-200 line-clamp-3">{media.overview}</p>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 animate-in">
             <Link href={`/${heroType}/${media.id}/watch`} prefetch={true}>
-              <PlayButton />
+              <PlayButton className="btn-press" />
             </Link>
             <Link href={`/${heroType}/${media.id}`} prefetch={true}>
-              <Button variant="outline" size="lg" className="gap-2">
+              <Button variant="outline" size="lg" className="gap-2 btn-press">
                 <Info className="w-5 h-5" />
                 More Info
               </Button>

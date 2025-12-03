@@ -126,7 +126,7 @@ function SearchContent() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-950">
+        <div className="min-h-screen bg-gray-950 page-transition">
             {/* Navigation */}
             <Navigation />
 

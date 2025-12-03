@@ -8,6 +8,9 @@ import Navigation from '@/components/Navigation';
 import { MediaCard } from '@/components/media-card';
 import Image from 'next/image';
 import { getSeasonDetails, type Episode } from '@/lib/api/tmdb';
+import { TheaterModeToggle } from '@/components/TheaterMode';
+import { PageLoader } from '@/components/ui/loading-spinner';
+import { Button } from '@/components/ui/button';
 
 interface VideoProvider {
   id: string;
@@ -103,17 +106,7 @@ export default function WatchTVPage() {
 
   // Loading state
   if (isLoading || !tv) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="text-center space-y-4">
-            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
-            <p className="text-gray-400">Loading TV show...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader text="Loading TV show..." />;
   }
 
   // No providers available
@@ -164,9 +157,21 @@ export default function WatchTVPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 pt-8 pb-6 max-w-[1600px]">
 
+        {/* Back Button + Theater Mode Toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            onClick={() => router.back()}
+            variant="outline"
+            className="gap-2"
+          >
+            ← Back
+          </Button>
+          <TheaterModeToggle className="theater-mode-keep" />
+        </div>
+
         {/* Video Player Section */}
         <div className="mb-8">
-          <div className="bg-gray-900/50 rounded-xl overflow-hidden shadow-2xl border border-gray-800/50">
+          <div className="bg-gray-900/50 rounded-xl overflow-hidden shadow-2xl border border-gray-800/50 theater-mode-keep">
             {/* Player */}
             <div className="aspect-video relative bg-black">
               {isPlayerLoading && (

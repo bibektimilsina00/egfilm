@@ -40,7 +40,7 @@ const MediaCard = memo(function MediaCard({ item, type }: MediaCardProps) {
 
     return (
         <Link href={`/${type}/${item.id}`} className="group block" prefetch={true}>
-            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-blue-500/50 hover:bg-gray-900/80 py-0 gap-0">
+            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden card-hover py-0 gap-0">
                 <CardContent className="p-0 relative">
                     {/* Poster Image */}
                     <div className="relative aspect-[2/3] w-full h-full">

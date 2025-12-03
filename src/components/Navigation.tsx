@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen } from 'lucide-react';
+import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { searchMulti } from '@/lib/tmdb';
 
@@ -22,6 +22,7 @@ export default function Navigation() {
     const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
     const [highlighted, setHighlighted] = useState<number>(-1);
     const [mounted, setMounted] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
     const { data: session } = useSession();
@@ -124,10 +125,15 @@ export default function Navigation() {
         setUserMenuOpen(prev => !prev);
     }, []);
 
-    const handleSignOut = useCallback(() => {
-        signOut();
-        setUserMenuOpen(false);
-        setMobileMenuOpen(false);
+    const handleSignOut = useCallback(async () => {
+        setIsSigningOut(true);
+        try {
+            await signOut();
+            setUserMenuOpen(false);
+            setMobileMenuOpen(false);
+        } finally {
+            setIsSigningOut(false);
+        }
     }, []);
 
     const closeMobileMenu = useCallback(() => {
@@ -294,10 +300,15 @@ export default function Navigation() {
                                                 </div>
                                                 <button
                                                     onClick={handleSignOut}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all"
+                                                    disabled={isSigningOut}
+                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    <LogOut className="w-4 h-4" />
-                                                    Sign Out
+                                                    {isSigningOut ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <LogOut className="w-4 h-4" />
+                                                    )}
+                                                    {isSigningOut ? 'Signing Out...' : 'Sign Out'}
                                                 </button>
                                             </div>
                                         )}
