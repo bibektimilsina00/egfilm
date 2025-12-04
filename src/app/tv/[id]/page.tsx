@@ -88,7 +88,7 @@ export default function TVDetailPage() {
     );
 
     return (
-        <div className="min-h-screen bg-gray-950">
+        <div className="min-h-screen bg-gray-950 page-transition">
             <div className="fixed top-4 left-4 z-50">
                 <Button
                     onClick={() => router.back()}

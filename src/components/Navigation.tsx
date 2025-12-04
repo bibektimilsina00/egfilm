@@ -1,22 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Film, Search, Menu, X, Home, Tv, Heart, LogIn, LogOut, User, ChevronDown, BookOpen } from 'lucide-react';
+import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { searchMulti } from '@/lib/tmdb';
+
+
+interface SearchSuggestion {
+    id: number;
+    media_type: 'movie' | 'tv';
+    title: string;
+    poster_path: string | null;
+}
 
 export default function Navigation() {
     const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [suggestLoading, setSuggestLoading] = useState(false);
+    const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
     const [highlighted, setHighlighted] = useState<number>(-1);
     const [mounted, setMounted] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
     const { data: session } = useSession();
@@ -55,25 +63,28 @@ export default function Navigation() {
 
         if (!searchQuery || searchQuery.trim().length < 2) {
             setSuggestions([]);
-            setSuggestLoading(false);
             return;
         }
 
-        setSuggestLoading(true);
         // debounce 300ms
         suggestDebounceRef.current = window.setTimeout(async () => {
             try {
                 const res = await searchMulti(searchQuery.trim(), 1);
-                const items = (res.results || []).filter((it: any) => it.media_type === 'movie' || it.media_type === 'tv');
+                const items = (res.results || []).filter((it: { media_type: string }) => it.media_type === 'movie' || it.media_type === 'tv');
                 // Map to simplified suggestion items and dedupe by id
-                const uniques: any[] = [];
+                const uniques: SearchSuggestion[] = [];
                 const seen = new Set();
                 for (const it of items) {
-                    const title = it.media_type === 'movie' ? it.title : it.name;
+                    const title = it.media_type === 'movie' ? (it as { title: string }).title : (it as { name: string }).name;
                     const key = `${it.media_type}-${it.id}`;
                     if (!seen.has(key)) {
                         seen.add(key);
-                        uniques.push({ id: it.id, media_type: it.media_type, title, poster_path: it.poster_path });
+                        uniques.push({
+                            id: it.id,
+                            media_type: it.media_type as 'movie' | 'tv',
+                            title,
+                            poster_path: it.poster_path
+                        });
                     }
                     if (uniques.length >= 6) break; // limit suggestions to 6 for navbar
                 }
@@ -81,8 +92,6 @@ export default function Navigation() {
             } catch (err) {
                 console.error('Autosuggest error:', err);
                 setSuggestions([]);
-            } finally {
-                setSuggestLoading(false);
             }
         }, 300);
 
@@ -100,30 +109,54 @@ export default function Navigation() {
         }
     };
 
-    const navLinks = [
+    // Memoize navLinks to prevent recreation
+    const navLinks = useMemo(() => [
         { href: '/', label: 'Home', icon: Home },
         { href: '/movies', label: 'Movies', icon: Film },
         { href: '/tv', label: 'TV Shows', icon: Tv },
         { href: process.env.NEXT_PUBLIC_BLOG_URL || 'https://blog.egfilm.xyz', label: 'Blog', icon: BookOpen, external: true },
         { href: '/watchlist', label: 'Watchlist', icon: Heart },
-    ];
+    ], []);
+
+    // Memoize handlers to prevent recreation
+    const toggleMobileMenu = useCallback(() => {
+        setMobileMenuOpen(prev => !prev);
+    }, []);
+
+    const toggleUserMenu = useCallback(() => {
+        setUserMenuOpen(prev => !prev);
+    }, []);
+
+    const handleSignOut = useCallback(async () => {
+        setIsSigningOut(true);
+        try {
+            await signOut();
+            setUserMenuOpen(false);
+            setMobileMenuOpen(false);
+        } finally {
+            setIsSigningOut(false);
+        }
+    }, []);
+
+    const closeMobileMenu = useCallback(() => {
+        setMobileMenuOpen(false);
+    }, []);
 
     return (
         <header className="sticky top-0 z-50 bg-gray-950/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
             <div className="container mx-auto px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center group shrink-0 ml-2">
-                        <div className="relative flex items-center">
+                    <Link href="/" className="flex items-center gap-2 group shrink-0">
+                        <div className="relative">
                             <Image
                                 src="/logo.svg"
-                                alt="Egfilm"
+                                alt="EGFilm"
                                 width={48}
                                 height={48}
-                                className="h-8 w-auto group-hover:scale-105 transition-all duration-300"
+                                className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
                                 priority
                             />
-                            <div className="absolute inset-0 bg-blue-500 blur-xl opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" />
                         </div>
                     </Link>
 
@@ -230,6 +263,7 @@ export default function Navigation() {
                                             onMouseEnter={() => setHighlighted(idx)}
                                             className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-800 transition-colors ${highlighted === idx ? 'bg-gray-800' : ''}`}
                                         >
+                                            {/*  eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={sugg.poster_path ? `https://image.tmdb.org/t/p/w92${sugg.poster_path}` : '/placeholder-movie.jpg'}
                                                 alt={sugg.title}
@@ -254,7 +288,7 @@ export default function Navigation() {
                                 {session ? (
                                     <>
                                         <button
-                                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                            onClick={toggleUserMenu}
                                             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 rounded-full transition-all"
                                         >
                                             <User className="w-4 h-4 text-gray-300" />
@@ -270,14 +304,16 @@ export default function Navigation() {
                                                     <p className="text-sm text-white font-medium truncate">{session.user?.email}</p>
                                                 </div>
                                                 <button
-                                                    onClick={() => {
-                                                        signOut();
-                                                        setUserMenuOpen(false);
-                                                    }}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all"
+                                                    onClick={handleSignOut}
+                                                    disabled={isSigningOut}
+                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    <LogOut className="w-4 h-4" />
-                                                    Sign Out
+                                                    {isSigningOut ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <LogOut className="w-4 h-4" />
+                                                    )}
+                                                    {isSigningOut ? 'Signing Out...' : 'Sign Out'}
                                                 </button>
                                             </div>
                                         )}
@@ -296,7 +332,7 @@ export default function Navigation() {
 
                         {/* Mobile Menu Button */}
                         <button
-                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            onClick={toggleMobileMenu}
                             className="lg:hidden text-white hover:text-blue-400 transition-colors p-2"
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -337,7 +373,7 @@ export default function Navigation() {
                                             href={link.href}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            onClick={() => setMobileMenuOpen(false)}
+                                            onClick={closeMobileMenu}
                                             className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-300 hover:text-blue-400 hover:bg-gray-800/50"
                                         >
                                             <Icon className="w-5 h-5" />
@@ -350,7 +386,7 @@ export default function Navigation() {
                                     <Link
                                         key={link.href}
                                         href={link.href}
-                                        onClick={() => setMobileMenuOpen(false)}
+                                        onClick={closeMobileMenu}
                                         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
                                             ? 'text-blue-400 bg-blue-500/10'
                                             : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800/50'
@@ -374,10 +410,7 @@ export default function Navigation() {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => {
-                                                signOut();
-                                                setMobileMenuOpen(false);
-                                            }}
+                                            onClick={handleSignOut}
                                             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800/50 transition-all"
                                         >
                                             <LogOut className="w-5 h-5" />
@@ -387,7 +420,7 @@ export default function Navigation() {
                                 ) : (
                                     <Link
                                         href="/login"
-                                        onClick={() => setMobileMenuOpen(false)}
+                                        onClick={closeMobileMenu}
                                         className="flex items-center gap-3 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all"
                                     >
                                         <LogIn className="w-5 h-5" />

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Star } from 'lucide-react';
 
 import { getImageUrl, getYear, formatVoteAverage } from '@/lib/api/tmdb';
@@ -28,8 +28,9 @@ interface MediaCardProps {
 /**
  * Media card component using shadcn/ui Card with hover effects
  * Displays movie/TV show poster, title, rating, and year
+ * Memoized to prevent unnecessary re-renders
  */
-export default function MediaCard({ item, type }: MediaCardProps) {
+const MediaCard = memo(function MediaCard({ item, type }: MediaCardProps) {
     const [imageError, setImageError] = useState(false);
 
     const title = type === 'movie' ? item.title : item.name;
@@ -39,7 +40,7 @@ export default function MediaCard({ item, type }: MediaCardProps) {
 
     return (
         <Link href={`/${type}/${item.id}`} className="group block" prefetch={true}>
-            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-blue-500/50 hover:bg-gray-900/80 py-0 gap-0">
+            <Card className="bg-gray-900/50 border-gray-800 overflow-hidden card-hover py-0 gap-0">
                 <CardContent className="p-0 relative">
                     {/* Poster Image */}
                     <div className="relative aspect-[2/3] w-full h-full">
@@ -98,7 +99,7 @@ export default function MediaCard({ item, type }: MediaCardProps) {
                             <span className="text-xs text-gray-300">{year}</span>
                             <Badge
                                 variant="outline"
-                                className="text-xs border-gray-600 text-gray-400"
+                                className="text-xs text-gray-400 border-gray-700"
                             >
                                 {type === 'movie' ? 'Movie' : 'TV'}
                             </Badge>
@@ -108,4 +109,6 @@ export default function MediaCard({ item, type }: MediaCardProps) {
             </Card>
         </Link>
     );
-}
+});
+
+export default MediaCard;

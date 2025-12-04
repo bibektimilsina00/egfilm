@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -37,6 +37,38 @@ export default function MovieDetailPage() {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [showWatchTogether, setShowWatchTogether] = useState(false);
 
+  // Memoize handlers
+  const handleBack = useCallback(() => router.back(), [router]);
+  const handleGoHome = useCallback(() => router.push('/'), [router]);
+  const handleWatchNow = useCallback(() => router.push(`/movie/${movieId}/watch`), [router, movieId]);
+  const handleWatchTogether = useCallback(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else {
+      setShowWatchTogether(true);
+    }
+  }, [status, router]);
+
+  // Memoize trailer data
+  const trailer = useMemo(() =>
+    movie?.videos?.results?.find(
+      (video) => video.type === 'Trailer' && video.site === 'YouTube'
+    ),
+    [movie?.videos?.results]
+  );
+
+  // Memoize cast slice
+  const topCast = useMemo(() =>
+    movie?.credits?.cast?.slice(0, 16) || [],
+    [movie?.credits?.cast]
+  );
+
+  // Memoize similar movies slice
+  const similarMovies = useMemo(() =>
+    movie?.similar?.results?.slice(0, 10) || [],
+    [movie?.similar?.results]
+  );
+
   // Update watchlist status and add to history
   useEffect(() => {
     if (movie) {
@@ -45,8 +77,8 @@ export default function MovieDetailPage() {
     }
   }, [movie]);
 
-  // Watchlist toggle handler
-  const toggleWatchlist = () => {
+  // Watchlist toggle handler (memoized)
+  const toggleWatchlist = useCallback(() => {
     if (!movie) return;
 
     if (inWatchlist) {
@@ -56,7 +88,7 @@ export default function MovieDetailPage() {
       addToWatchlist(movie, 'movie');
       setInWatchlist(true);
     }
-  };
+  }, [movie, inWatchlist]);
 
   // Loading state
   if (isLoading) {
@@ -90,7 +122,7 @@ export default function MovieDetailPage() {
               <Button onClick={() => refetch()} variant="default">
                 Try Again
               </Button>
-              <Button onClick={() => router.push('/')} variant="outline">
+              <Button onClick={handleGoHome} variant="outline">
                 Go Home
               </Button>
             </div>
@@ -100,16 +132,12 @@ export default function MovieDetailPage() {
     );
   }
 
-  const trailer = movie.videos?.results?.find(
-    (video) => video.type === 'Trailer' && video.site === 'YouTube'
-  );
-
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-950 page-transition">
       {/* Back Button */}
       <div className="fixed top-4 left-4 z-50">
         <Button
-          onClick={() => router.back()}
+          onClick={handleBack}
           variant="outline"
           size="icon"
           className="bg-black/50 backdrop-blur-sm border-gray-700 hover:bg-black/70"
@@ -205,17 +233,11 @@ export default function MovieDetailPage() {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-4">
                   <PlayButton
-                    onClick={() => router.push(`/movie/${movieId}/watch`)}
+                    onClick={handleWatchNow}
                   />
 
                   <Button
-                    onClick={() => {
-                      if (status === 'unauthenticated') {
-                        router.push('/login');
-                      } else {
-                        setShowWatchTogether(true);
-                      }
-                    }}
+                    onClick={handleWatchTogether}
                     variant="secondary"
                     className="gap-2"
                     size="lg"
@@ -292,7 +314,7 @@ export default function MovieDetailPage() {
           <section>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Top Cast</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-              {movie.credits.cast.slice(0, 16).map((person: CastMember) => (
+              {topCast.map((person: CastMember) => (
                 <div key={person.id} className="group cursor-pointer">
                   <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 bg-gray-800 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
                     {person.profile_path ? (
@@ -323,7 +345,7 @@ export default function MovieDetailPage() {
           <section>
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Similar Movies</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {movie.similar.results.slice(0, 10).map((item: BaseMovie) => (
+              {similarMovies.map((item: BaseMovie) => (
                 <MediaCard key={item.id} item={item} type="movie" />
               ))}
             </div>

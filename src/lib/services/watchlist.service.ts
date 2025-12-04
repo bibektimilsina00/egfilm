@@ -67,12 +67,20 @@ export async function removeFromWatchlist(
 }
 
 /**
- * Get user's watchlist
+ * Get user's watchlist with optimized field selection
  */
 export async function getWatchlist(userId: string) {
     try {
         const watchlist = await prisma.watchlistItem.findMany({
             where: { userId },
+            select: {
+                id: true,
+                mediaId: true,
+                mediaType: true,
+                title: true,
+                posterPath: true,
+                addedAt: true,
+            },
             orderBy: { addedAt: 'desc' },
         });
 

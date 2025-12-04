@@ -7,6 +7,7 @@ import { Star, Calendar, Clock, Loader2, Info, Server, Globe, Film, Users } from
 import Navigation from '@/components/Navigation';
 import { MediaCard } from '@/components/media-card';
 import Image from 'next/image';
+import { PageLoader } from '@/components/ui/loading-spinner';
 
 interface VideoProvider {
   id: string;
@@ -62,17 +63,7 @@ export default function WatchMoviePage() {
 
   // Loading state
   if (isLoading || !movie) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="text-center space-y-4">
-            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
-            <p className="text-gray-400">Loading movie...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader text="Loading movie..." />;
   }
 
   // No providers available
@@ -105,10 +96,6 @@ export default function WatchMoviePage() {
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     : '/placeholder-poster.jpg';
 
-  const backdropUrl = movie.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-    : null;
-
   const runtime = movie.runtime
     ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
     : null;
@@ -140,6 +127,7 @@ export default function WatchMoviePage() {
                 <iframe
                   key={embedUrl}
                   src={embedUrl}
+                  scrolling='no'
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
@@ -156,7 +144,7 @@ export default function WatchMoviePage() {
               <div className="flex items-center justify-between gap-4 mb-3">
                 <p className="text-xs text-gray-400 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-blue-400" />
-                  <span>If current server doesn't work, try other servers</span>
+                  <span>If current server doesn&apos;t work, try other servers</span>
                 </p>
                 <span className="text-xs text-gray-500 font-medium">
                   {providers.length} servers
@@ -203,7 +191,7 @@ export default function WatchMoviePage() {
         </div>
 
         {/* Movie Info Section - Improved Layout */}
-        <div className="mb-10">
+        <div className="mb-10 theater-mode-dim">
           <div className="bg-gradient-to-br from-gray-900/80 via-gray-900/60 to-gray-900/40 rounded-xl overflow-hidden shadow-2xl border border-gray-800/50 backdrop-blur-sm">
             <div className="flex flex-col lg:flex-row">
               {/* Left: Poster */}
