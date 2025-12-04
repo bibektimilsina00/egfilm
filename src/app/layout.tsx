@@ -255,6 +255,15 @@ export default function RootLayout({
             </Script>
           </>
         )}
+
+        {/* Umami Analytics */}
+
+        <Script
+          src="https://cloud.umami.is/script.js"
+          data-website-id='ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53'
+          strategy="afterInteractive"
+        />
+
       </body>
     </html>
   );

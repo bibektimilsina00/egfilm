@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { searchMulti } from '@/lib/tmdb';
-import Image from 'next/image';
+
 
 interface SearchSuggestion {
     id: number;
