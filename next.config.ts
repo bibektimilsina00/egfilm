@@ -73,7 +73,6 @@ const nextConfig: NextConfig = {
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
-              "require-trusted-types-for 'script'",
               "upgrade-insecure-requests"
             ].join('; ')
           },
