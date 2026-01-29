@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     // Minimize image loads
     minimumCacheTTL: 31536000, // 1 year cache
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
+    contentDispositionType: 'inline',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Enable standalone output for Docker
@@ -37,10 +37,6 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: true,
   // React compiler for better performance
   reactStrictMode: true,
-  // Optimize fonts
-  optimizeFonts: true,
-  // Reduce bundle size by removing unused code
-  swcMinify: true,
   // Turbopack configuration (new location)
   turbopack: {
     rules: {
