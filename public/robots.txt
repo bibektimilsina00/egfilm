@@ -50,6 +50,3 @@ Sitemap: https://egfilm.xyz/sitemap.xml
 Sitemap: https://egfilm.xyz/sitemap-movies.xml
 Sitemap: https://egfilm.xyz/sitemap-tv.xml
 Sitemap: https://egfilm.xyz/sitemap-blog.xml
-
-# RSS Feed
-# RSS: https://blog.egfilm.xyz/blog/rss.xml

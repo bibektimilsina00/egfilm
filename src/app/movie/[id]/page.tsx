@@ -151,11 +151,12 @@ export default function MovieDetailPage() {
         {/* Backdrop Image */}
         <div className="absolute inset-0">
           <Image
-            src={getImageUrl(movie.backdrop_path || movie.poster_path, 'original')}
+            src={getImageUrl(movie.backdrop_path || movie.poster_path, 'w1280')}
             alt={movie.title}
             fill
             priority
             className="object-cover"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/40 to-transparent" />

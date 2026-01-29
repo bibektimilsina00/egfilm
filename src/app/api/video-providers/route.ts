@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { FALLBACK_VIDEO_PROVIDERS } from '@/lib/constants/video-providers';
 
 /**
  * GET /api/video-providers
@@ -7,7 +8,12 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
     try {
-        const providers = await prisma.videoProvider.findMany({
+        // Create a controller for the timeout
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Database timeout')), 2000)
+        );
+
+        const dbPromise = prisma.videoProvider.findMany({
             where: { isEnabled: true },
             orderBy: [
                 { sortOrder: 'asc' },
@@ -31,13 +37,14 @@ export async function GET() {
             }
         });
 
+        // Race between the database and the timeout
+        const providers = await Promise.race([dbPromise, timeoutPromise]) as any[];
+
         return NextResponse.json(providers);
     } catch (error) {
-        console.error('Error fetching video providers:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch video providers' },
-            { status: 500 }
-        );
+        console.error('Error fetching video providers (using fallbacks):', error);
+        // If database fails or timeouts, return fallback providers
+        return NextResponse.json(FALLBACK_VIDEO_PROVIDERS);
     }
 }
 

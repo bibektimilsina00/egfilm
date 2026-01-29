@@ -46,10 +46,10 @@ const MediaCard = memo(function MediaCard({ item, type }: MediaCardProps) {
                     <div className="relative aspect-[2/3] w-full h-full">
                         {!imageError && item.poster_path ? (
                             <Image
-                                src={getImageUrl(item.poster_path, 'w500')}
+                                src={getImageUrl(item.poster_path, 'w342')}
                                 alt={title || 'Media poster'}
                                 fill
-                                // sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                                 className="object-cover transition-transform duration-300 group-hover:scale-110"
                                 onError={() => setImageError(true)}
                                 loading="lazy"

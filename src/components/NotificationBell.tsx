@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Bell, X, Check, Trash2 } from 'lucide-react';
@@ -93,8 +93,14 @@ export default function NotificationBell() {
         return date.toLocaleDateString();
     };
 
-    if (status !== 'authenticated') {
-        return null;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted || status !== 'authenticated') {
+        return <div className="w-10 h-10" />; // Placeholder to maintain layout
     }
 
     return (

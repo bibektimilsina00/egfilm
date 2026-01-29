@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { notificationsApi, extractData } from '@/lib/api/client';
 
 // =============================================================================
@@ -38,6 +39,7 @@ export interface Notification {
 // =============================================================================
 
 export function useNotifications(options?: Omit<UseQueryOptions<Notification[], Error>, 'queryKey' | 'queryFn'>) {
+    const { status } = useSession();
     return useQuery({
         queryKey: notificationKeys.list(),
         queryFn: async () => {
@@ -45,11 +47,13 @@ export function useNotifications(options?: Omit<UseQueryOptions<Notification[], 
             return extractData(response).notifications;
         },
         staleTime: 1000 * 30, // 30 seconds
+        enabled: status === 'authenticated',
         ...options,
     });
 }
 
-export function useUnreadNotificationsCount() {
+export function useUnreadNotificationsCount(options?: Omit<UseQueryOptions<number, Error>, 'queryKey' | 'queryFn'>) {
+    const { status } = useSession();
     return useQuery({
         queryKey: notificationKeys.count(),
         queryFn: async () => {
@@ -58,6 +62,8 @@ export function useUnreadNotificationsCount() {
         },
         staleTime: 1000 * 30, // 30 seconds
         refetchInterval: 1000 * 60, // Refetch every minute
+        enabled: status === 'authenticated',
+        ...options,
     });
 }
 

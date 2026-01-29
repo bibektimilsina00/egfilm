@@ -238,6 +238,7 @@ export default function Navigation() {
                             <button
                                 type="submit"
                                 className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform"
+                                aria-label="Search"
                             >
                                 <Search className="w-4 h-4 text-gray-400 hover:text-blue-400" />
                             </button>
@@ -334,6 +335,7 @@ export default function Navigation() {
                         <button
                             onClick={toggleMobileMenu}
                             className="lg:hidden text-white hover:text-blue-400 transition-colors p-2"
+                            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                         >
                             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>

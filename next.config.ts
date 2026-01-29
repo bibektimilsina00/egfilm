@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   // Minimize production bundle
-  productionBrowserSourceMaps: false,
+  productionBrowserSourceMaps: true,
   // React compiler for better performance
   reactStrictMode: true,
   // Optimize fonts
@@ -58,13 +58,33 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          // Privacy and tracking prevention
+          // Security Headers
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://cloud.umami.is https://www.google-analytics.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: https://image.tmdb.org https://www.google-analytics.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "connect-src 'self' https://api.themoviedb.org https://cloud.umami.is https://www.google-analytics.com https://*.umami.dev",
+              "frame-src 'self' https://vidsrc.icu https://vidsrc.to https://vidsrc.me https://vidsrc.xyz https://2embed.org https://embed.su https://autoembed.to https://*.youtube.com https://youtube.com",
+              "frame-ancestors 'self'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "require-trusted-types-for 'script'",
+              "upgrade-insecure-requests"
+            ].join('; ')
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
           {
             key: 'Permissions-Policy',
             value: 'interest-cohort=(), browsing-topics=()',
           },
-          // Enhanced security headers
-          // Note: X-Frame-Options removed to allow video player iframes
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
@@ -75,13 +95,12 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'no-referrer-when-downgrade',
+            value: 'strict-origin-when-cross-origin',
           },
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload',
           },
-          // Performance and SEO headers
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
@@ -90,15 +109,13 @@ const nextConfig: NextConfig = {
             key: 'X-Robots-Tag',
             value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
           },
-          // Content delivery optimization
           {
             key: 'Accept-CH',
             value: 'Viewport-Width, Width, DPR, Save-Data',
           },
-          // Note: Cross-Origin policies relaxed to allow video iframes
           {
             key: 'Cross-Origin-Opener-Policy',
-            value: 'unsafe-none',
+            value: 'same-origin',
           },
         ],
       },

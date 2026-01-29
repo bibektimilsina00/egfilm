@@ -103,11 +103,12 @@ export default function TVDetailPage() {
             <div className="relative h-[60vh] md:h-[70vh]">
                 <div className="absolute inset-0">
                     <Image
-                        src={getImageUrl(tv.backdrop_path || tv.poster_path, 'original')}
+                        src={getImageUrl(tv.backdrop_path || tv.poster_path, 'w1280')}
                         alt={tv.name || tv.title || 'TV Show'}
                         fill
                         priority
                         className="object-cover"
+                        fetchPriority="high"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
                     <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/40 to-transparent" />

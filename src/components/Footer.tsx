@@ -70,10 +70,10 @@ export default function Footer() {
                 {/* Bottom Bar */}
                 <div className="mt-12 pt-8 border-t border-gray-800">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-gray-400 text-sm">
                             © {currentYear} EGFilm. All rights reserved.
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                        <div className="flex items-center gap-4 text-xs text-gray-400">
                             <span>Powered by AI & Creativity</span>
                         </div>
                     </div>

@@ -22,8 +22,6 @@ const geistMono = Geist_Mono({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: '#000000',
 }
 
@@ -236,32 +234,26 @@ export default function RootLayout({
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${validGAId}`}
-              strategy="afterInteractive"
+              strategy="lazyOnload"
             />
-            <Script id="google-analytics" strategy="afterInteractive">
+            <Script id="google-analytics" strategy="lazyOnload">
               {`
-                /**
-                 * @type {any[]}
-                 */
                 window.dataLayer = window.dataLayer || [];
-                /**
-                 * Google Analytics gtag function
-                 * @param {...any} args
-                 */
                 function gtag(...args) { window.dataLayer.push(arguments); }
                 gtag('js', new Date());
-                gtag('config', '${validGAId}');
+                gtag('config', '${validGAId}', {
+                  page_path: window.location.pathname,
+                });
               `}
             </Script>
           </>
         )}
 
         {/* Umami Analytics */}
-
         <Script
           src="https://cloud.umami.is/script.js"
           data-website-id='ce17f85a-95c0-4dbc-b5f4-b1c3fb78ed53'
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
 
       </body>

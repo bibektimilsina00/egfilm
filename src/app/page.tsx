@@ -65,11 +65,12 @@ const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | un
     <section className="relative h-[70vh] md:h-[80vh] flex items-end page-transition">
       <div className="absolute inset-0">
         <Image
-          src={getImageUrl(media.backdrop_path || media.poster_path, 'original')}
+          src={getImageUrl(media.backdrop_path || media.poster_path, 'w1280')}
           alt={heroTitle || 'Hero'}
           fill
           className="object-cover"
           priority
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-transparent to-transparent" />
@@ -90,9 +91,9 @@ const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | un
               <PlayButton className="btn-press" />
             </Link>
             <Link href={`/${heroType}/${media.id}`} prefetch={true}>
-              <Button variant="outline" size="lg" className="gap-2 btn-press">
+              <Button variant="outline" size="lg" className="gap-2 btn-press" aria-label={`View details for ${heroTitle}`}>
                 <Info className="w-5 h-5" />
-                More Info
+                Details
               </Button>
             </Link>
 
