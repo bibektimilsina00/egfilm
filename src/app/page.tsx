@@ -51,11 +51,14 @@ const Section = memo(function Section({
   );
 });
 
+import { useRouter } from 'next/navigation';
+
 /**
  * Hero section component with trending content
  * Memoized to prevent re-renders when media doesn't change
  */
 const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | undefined }) {
+  const router = useRouter();
   if (!media) return null;
 
   const heroTitle = 'title' in media ? media.title : media.name;
@@ -87,9 +90,10 @@ const HeroSection = memo(function HeroSection({ media }: { media: MediaItem | un
           <p className="mb-6 max-w-2xl text-lg text-gray-200 line-clamp-3">{media.overview}</p>
 
           <div className="flex flex-wrap gap-4 animate-in">
-            <Link href={`/${heroType}/${media.id}/watch`} prefetch={true}>
-              <PlayButton className="btn-press" />
-            </Link>
+            <PlayButton
+              className="btn-press"
+              onClick={() => router.push(`/${heroType}/${media.id}/watch`)}
+            />
             <Link href={`/${heroType}/${media.id}`} prefetch={true}>
               <Button variant="outline" size="lg" className="gap-2 btn-press" aria-label={`View details for ${heroTitle}`}>
                 <Info className="w-5 h-5" />

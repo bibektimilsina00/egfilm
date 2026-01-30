@@ -146,20 +146,13 @@ export default function Navigation() {
         <header className="sticky top-0 z-50 bg-gray-950/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
             <div className="container mx-auto px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                    {/* Logo & Brand */}
+                    {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group shrink-0">
-                        <div className="flex items-center gap-2.5">
-                            <div className="relative w-8 h-8">
-                                <img
-                                    src="/icon.svg"
-                                    alt="EGFilm Icon"
-                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                                />
-                            </div>
-                            <span className="text-xl font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">
-                                EG<span className="text-blue-500">Film</span>
-                            </span>
-                        </div>
+                        <img
+                            src="/logo.svg"
+                            alt="EGFilm"
+                            className="h-8 md:h-10 w-auto group-hover:scale-105 transition-transform duration-300"
+                        />
                     </Link>
 
                     {/* Desktop Navigation - Compact */}

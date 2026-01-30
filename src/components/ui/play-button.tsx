@@ -2,6 +2,7 @@ import * as React from "react"
 import { Play, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useLoader } from "../../lib/providers/LoaderProvider"
 
 interface PlayButtonProps extends React.ComponentPropsWithoutRef<typeof Button> {
     children?: React.ReactNode
@@ -15,11 +16,13 @@ interface PlayButtonProps extends React.ComponentPropsWithoutRef<typeof Button> 
 const PlayButton = React.forwardRef<HTMLButtonElement, PlayButtonProps>(
     ({ className, children = "Play Now", size = "lg", loading, disabled, onClick, ...props }, ref) => {
         const [isLoading, setIsLoading] = React.useState(false);
+        const { showLoader } = useLoader();
 
         const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
             if (loading || isLoading || disabled) return;
 
             setIsLoading(true);
+            showLoader(); // Trigger global fullscreen loader
             try {
                 await onClick?.(e);
             } finally {

@@ -8,6 +8,7 @@ import ServiceWorker from "@/components/ServiceWorker";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { siteConfig, seoKeywords } from "@/lib/seo";
 import { seoConfig, generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seoConfig";
+import { LoaderProvider } from "../lib/providers/LoaderProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -223,9 +224,11 @@ export default function RootLayout({
       >
         <SessionProvider>
           <QueryProvider>
-            <PerformanceMonitor />
-            <ServiceWorker />
-            {children}
+            <LoaderProvider>
+              <PerformanceMonitor />
+              <ServiceWorker />
+              {children}
+            </LoaderProvider>
           </QueryProvider>
         </SessionProvider>
 

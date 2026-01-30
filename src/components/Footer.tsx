@@ -14,17 +14,12 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Brand */}
                     <div className="space-y-4">
-                        <Link href="/" className="flex items-center gap-2 group mb-4 inline-flex">
-                            <div className="relative w-8 h-8">
-                                <img
-                                    src="/icon.svg"
-                                    alt="EGFilm Icon"
-                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                                />
-                            </div>
-                            <span className="text-xl font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">
-                                EG<span className="text-blue-500">Film</span>
-                            </span>
+                        <Link href="/" className="flex items-center group mb-4 inline-flex">
+                            <img
+                                src="/logo.svg"
+                                alt="EGFilm"
+                                className="h-8 md:h-10 w-auto group-hover:scale-105 transition-transform duration-300"
+                            />
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed">
                             Stream unlimited movies and TV shows. Watch together, discover together.
