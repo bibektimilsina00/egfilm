@@ -209,10 +209,16 @@ model VideoProvider {
   lastResponseTime Int?      // Response time in milliseconds
   lastStatus       String?   // 'healthy', 'degraded', 'offline'
 
+  // Ad tracking (user-reported)
+  adReports  Int   @default(0)  // Number of times users reported seeing ads
+  totalViews Int   @default(0)  // Total number of times this provider was used
+  adScore    Float @default(0)  // Calculated: adReports / totalViews (lower = better)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([isEnabled, sortOrder])
+  @@index([isEnabled, adScore])  // For sorting by ad score
   @@index([isDefault])
 }
 

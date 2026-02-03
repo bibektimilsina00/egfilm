@@ -30,6 +30,7 @@ export async function GET() {
         const dbPromise = prisma.videoProvider.findMany({
             where: { isEnabled: true },
             orderBy: [
+                { adScore: 'asc' },    // Lowest ad score first (best experience)
                 { sortOrder: 'asc' },
                 { name: 'asc' }
             ],
@@ -39,6 +40,7 @@ export async function GET() {
                 slug: true,
                 quality: true,
                 isDefault: true,
+                sortOrder: true,
                 movieTemplate: true,
                 tvTemplate: true,
                 supportsImdb: true,
@@ -47,7 +49,11 @@ export async function GET() {
                 hasSubtitles: true,
                 hasAutoplay: true,
                 description: true,
-                logoUrl: true
+                logoUrl: true,
+                // Ad tracking stats
+                adReports: true,
+                totalViews: true,
+                adScore: true,
             }
         });
 

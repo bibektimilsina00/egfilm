@@ -214,18 +214,43 @@
                         <span class="rank" x-text="'#' + (index + 1)"></span>
                         <span x-text="provider.name"></span>
                         <span class="status status-working" x-show="provider.isDefault">Default</span>
+                        <span style="color: #888; font-size: 11px; margin-left: 8px;"
+                            x-text="'Ad Score: ' + (provider.adScore * 100).toFixed(1) + '%'"></span>
                     </div>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <div class="provider-content">
+                    <!-- Ad Stats -->
+                    <div
+                        style="display: flex; gap: 16px; margin-bottom: 16px; padding: 12px; background: #0f0f0f; border-radius: 6px; align-items: center;">
+                        <div style="flex: 1;">
+                            <span style="color: #666; font-size: 11px;">AD REPORTS</span>
+                            <div style="font-size: 18px; font-weight: 600;" x-text="provider.adReports || 0"></div>
+                        </div>
+                        <div style="flex: 1;">
+                            <span style="color: #666; font-size: 11px;">TOTAL VIEWS</span>
+                            <div style="font-size: 18px; font-weight: 600;" x-text="provider.totalViews || 0"></div>
+                        </div>
+                        <div style="flex: 1;">
+                            <span style="color: #666; font-size: 11px;">AD SCORE</span>
+                            <div style="font-size: 18px; font-weight: 600;"
+                                :style="'color: ' + (provider.adScore < 0.3 ? '#4ade80' : provider.adScore < 0.6 ? '#fbbf24' : '#f87171')"
+                                x-text="((provider.adScore || 0) * 100).toFixed(1) + '%'"></div>
+                        </div>
+                        <button @click.stop="reportAd(provider.slug)"
+                            style="padding: 8px 16px; background: #3d0d0d; color: #f87171; border: 1px solid #f87171; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            🚨 Report Ad
+                        </button>
+                    </div>
+
                     <div class="test-type">TV Show</div>
                     <div class="url-box" x-text="getTvUrl(provider)"></div>
-                    <div class="player">
+                    <div class="player" @click="trackView(provider.slug)">
                         <iframe :src="getTvUrl(provider)" allowfullscreen></iframe>
                     </div>
                     <div class="test-type">Movie (Fight Club)</div>
                     <div class="url-box" x-text="getMovieUrl(provider)"></div>
-                    <div class="player">
+                    <div class="player" @click="trackView(provider.slug)">
                         <iframe :src="getMovieUrl(provider)" allowfullscreen></iframe>
                     </div>
                 </div>
@@ -514,6 +539,42 @@
                 toggleDynamic(slug) {
                     const el = document.getElementById('dynamic-' + slug);
                     if (el) el.classList.toggle('collapsed');
+                },
+
+                async reportAd(slug) {
+                    try {
+                        const baseUrl = this.apiUrl.replace('/api/video-providers', '');
+                        const response = await fetch(`${baseUrl}/api/video-providers/${slug}/report-ad`, {
+                            method: 'POST',
+                        });
+                        if (response.ok) {
+                            const result = await response.json();
+                            console.log('🚨 Ad reported:', result);
+                            // Update local provider data
+                            const provider = this.providers.find(p => p.slug === slug);
+                            if (provider) {
+                                provider.adReports = result.adReports;
+                                provider.adScore = result.adScore;
+                            }
+                            alert(`Ad reported for ${result.provider}!\nAd Score: ${(result.adScore * 100).toFixed(1)}%`);
+                            // Refresh to get new order
+                            this.fetchProviders();
+                        }
+                    } catch (err) {
+                        console.error('Failed to report ad:', err);
+                    }
+                },
+
+                async trackView(slug) {
+                    try {
+                        const baseUrl = this.apiUrl.replace('/api/video-providers', '');
+                        await fetch(`${baseUrl}/api/video-providers/${slug}/track-view`, {
+                            method: 'POST',
+                        });
+                        console.log('👁️ View tracked:', slug);
+                    } catch (err) {
+                        console.error('Failed to track view:', err);
+                    }
                 }
             };
         }
