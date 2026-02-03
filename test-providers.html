@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Test Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .controls button {
+            padding: 10px 16px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .controls button:hover {
+            background: #252525;
+            border-color: #444;
+        }
+
+        .section-title {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 30px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .provider {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .provider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .provider-header:hover {
+            background: #222;
+        }
+
+        .provider-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .rank {
+            color: #666;
+            font-size: 12px;
+            margin-right: 4px;
+        }
+
+        .status {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-working {
+            background: #0d3320;
+            color: #4ade80;
+        }
+
+        .toggle-icon {
+            color: #666;
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+
+        .provider.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .provider-content {
+            padding: 0 20px 20px;
+            display: block;
+        }
+
+        .provider.collapsed .provider-content {
+            display: none;
+        }
+
+        .test-type {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 16px 0 8px;
+        }
+
+        .url-box {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+
+        .player {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 360px;
+            border: none;
+            display: block;
+        }
+    </style>
+    <!-- Alpine.js for reactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>🧪 Provider Test Lab</h1>
+        <p class="subtitle">Stranger Things (TMDB: 66732) • Season 1, Episode 1</p>
+    </header>
+
+    <!-- DYNAMIC PROVIDERS SECTION -->
+    <div x-data="dynamicProviders()" x-init="fetchProviders()">
+        <div class="section-title" style="color: #4ade80;">🔄 Dynamic Providers (from API)</div>
+
+        <div class="controls" style="margin-bottom: 16px;">
+            <input type="text" x-model="apiUrl" placeholder="API URL"
+                style="flex: 1; padding: 10px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: 13px;">
+            <button @click="fetchProviders()" :disabled="loading">
+                <span x-show="!loading">🔄 Refresh</span>
+                <span x-show="loading">Loading...</span>
+            </button>
+        </div>
+
+        <!-- API Status -->
+        <div x-show="error"
+            style="background: #3d0d0d; color: #f87171; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px;">
+            ❌ Error: <span x-text="error"></span>
+        </div>
+        <div x-show="!loading && !error && providers.length > 0"
+            style="background: #0d3320; color: #4ade80; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px;">
+            ✅ Loaded <span x-text="providers.length"></span> providers from API
+        </div>
+
+        <!-- Dynamic Provider Cards -->
+        <template x-for="(provider, index) in providers" :key="provider.id">
+            <div class="provider collapsed" :id="'dynamic-' + provider.slug">
+                <div class="provider-header" @click="toggleDynamic(provider.slug)">
+                    <div class="provider-title">
+                        <span class="rank" x-text="'#' + (index + 1)"></span>
+                        <span x-text="provider.name"></span>
+                        <span class="status status-working" x-show="provider.isDefault">Default</span>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="provider-content">
+                    <div class="test-type">TV Show</div>
+                    <div class="url-box" x-text="getTvUrl(provider)"></div>
+                    <div class="player">
+                        <iframe :src="getTvUrl(provider)" allowfullscreen></iframe>
+                    </div>
+                    <div class="test-type">Movie (Fight Club)</div>
+                    <div class="url-box" x-text="getMovieUrl(provider)"></div>
+                    <div class="player">
+                        <iframe :src="getMovieUrl(provider)" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <div x-show="!loading && providers.length === 0 && !error"
+            style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 40px; text-align: center; color: #666; margin-bottom: 24px;">
+            No providers loaded. Click "Refresh" to fetch from API.
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="expandAll()">↓ Expand All</button>
+        <button onclick="collapseAll()">↑ Collapse All</button>
+    </div>
+
+    <div class="section-title">📌 Static Reference Providers (for comparison)</div>
+
+    <div class="section-title">⭐ Tier 1 — Minimal Ads, Best Quality</div>
+
+    <!-- 1. VidLink Pro -->
+    <div class="provider collapsed" id="vidlink-pro">
+        <div class="provider-header" onclick="toggle('vidlink-pro')">
+            <div class="provider-title">
+                <span class="rank">#1</span> VidLink Pro
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://vidlink.pro/tv/66732/1/1</div>
+            <div class="player">
+                <iframe src="https://vidlink.pro/tv/66732/1/1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://vidlink.pro/movie/550</div>
+            <div class="player">
+                <iframe src="https://vidlink.pro/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. VidRock -->
+    <div class="provider collapsed" id="vidrock">
+        <div class="provider-header" onclick="toggle('vidrock')">
+            <div class="provider-title">
+                <span class="rank">#2</span> VidRock
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://vidrock.net/tv/66732/1/1</div>
+            <div class="player">
+                <iframe src="https://vidrock.net/tv/66732/1/1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://vidrock.net/movie/550</div>
+            <div class="player">
+                <iframe src="https://vidrock.net/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. VidSrc ICU -->
+    <div class="provider collapsed" id="vidsrc-icu">
+        <div class="provider-header" onclick="toggle('vidsrc-icu')">
+            <div class="provider-title">
+                <span class="rank">#3</span> VidSrc ICU
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://vidsrc.icu/embed/tv/66732/1/1</div>
+            <div class="player">
+                <iframe src="https://vidsrc.icu/embed/tv/66732/1/1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://vidsrc.icu/embed/movie/550</div>
+            <div class="player">
+                <iframe src="https://vidsrc.icu/embed/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">🎬 Tier 2 — Good Quality, Some Ads</div>
+
+    <!-- 4. VidSrc.cc -->
+    <div class="provider collapsed" id="vidsrc-cc">
+        <div class="provider-header" onclick="toggle('vidsrc-cc')">
+            <div class="provider-title">
+                <span class="rank">#4</span> VidSrc.cc (v2)
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://vidsrc.cc/v2/embed/tv/66732/1/1</div>
+            <div class="player">
+                <iframe src="https://vidsrc.cc/v2/embed/tv/66732/1/1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://vidsrc.cc/v2/embed/movie/550</div>
+            <div class="player">
+                <iframe src="https://vidsrc.cc/v2/embed/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. VidSrc.to -->
+    <div class="provider collapsed" id="vidsrc-to">
+        <div class="provider-header" onclick="toggle('vidsrc-to')">
+            <div class="provider-title">
+                <span class="rank">#5</span> VidSrc.to
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://vidsrc.to/embed/tv/66732/1/1</div>
+            <div class="player">
+                <iframe src="https://vidsrc.to/embed/tv/66732/1/1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://vidsrc.to/embed/movie/550</div>
+            <div class="player">
+                <iframe src="https://vidsrc.to/embed/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. VidSrc Embed -->
+    <div class="provider collapsed" id="vidsrc-embed">
+        <div class="provider-header" onclick="toggle('vidsrc-embed')">
+            <div class="provider-title">
+                <span class="rank">#6</span> VidSrc Embed
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show (season/episode in player)</div>
+            <div class="url-box">https://vidsrc-embed.ru/embed/tv/66732</div>
+            <div class="player">
+                <iframe src="https://vidsrc-embed.ru/embed/tv/66732" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://vidsrc-embed.ru/embed/movie/550</div>
+            <div class="player">
+                <iframe src="https://vidsrc-embed.ru/embed/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">📺 Tier 3 — Standard Experience</div>
+
+    <!-- 7. Smashystream -->
+    <div class="provider collapsed" id="smashystream">
+        <div class="provider-header" onclick="toggle('smashystream')">
+            <div class="provider-title">
+                <span class="rank">#7</span> Smashystream
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://player.smashy.stream/tv/66732?s=1&e=1</div>
+            <div class="player">
+                <iframe src="https://player.smashy.stream/tv/66732?s=1&e=1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://player.smashy.stream/movie/550</div>
+            <div class="player">
+                <iframe src="https://player.smashy.stream/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. MoviesAPI -->
+    <div class="provider collapsed" id="moviesapi">
+        <div class="provider-header" onclick="toggle('moviesapi')">
+            <div class="provider-title">
+                <span class="rank">#8</span> MoviesAPI
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show (id-season-episode format)</div>
+            <div class="url-box">https://moviesapi.club/tv/66732-1-1</div>
+            <div class="player">
+                <iframe src="https://moviesapi.club/tv/66732-1-1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://moviesapi.club/movie/550</div>
+            <div class="player">
+                <iframe src="https://moviesapi.club/movie/550" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. MultiEmbed -->
+    <div class="provider collapsed" id="multiembed">
+        <div class="provider-header" onclick="toggle('multiembed')">
+            <div class="provider-title">
+                <span class="rank">#9</span> MultiEmbed
+                <span class="status status-working">Working</span>
+            </div>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="provider-content">
+            <div class="test-type">TV Show</div>
+            <div class="url-box">https://multiembed.mov/?video_id=66732&tmdb=1&s=1&e=1</div>
+            <div class="player">
+                <iframe src="https://multiembed.mov/?video_id=66732&tmdb=1&s=1&e=1" allowfullscreen></iframe>
+            </div>
+            <div class="test-type">Movie (Fight Club)</div>
+            <div class="url-box">https://multiembed.mov/?video_id=550&tmdb=1</div>
+            <div class="player">
+                <iframe src="https://multiembed.mov/?video_id=550&tmdb=1" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Static providers toggle
+        function toggle(id) {
+            document.getElementById(id).classList.toggle('collapsed');
+        }
+        function expandAll() {
+            document.querySelectorAll('.provider').forEach(p => p.classList.remove('collapsed'));
+        }
+        function collapseAll() {
+            document.querySelectorAll('.provider').forEach(p => p.classList.add('collapsed'));
+        }
+
+        // Dynamic providers (Alpine.js)
+        function dynamicProviders() {
+            return {
+                apiUrl: 'http://localhost:8000/api/video-providers',
+                providers: [],
+                loading: false,
+                error: null,
+                tmdbId: 66732,
+                movieId: 550,
+                season: 1,
+                episode: 1,
+
+                async fetchProviders() {
+                    this.loading = true;
+                    this.error = null;
+                    try {
+                        const response = await fetch(this.apiUrl);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        this.providers = await response.json();
+                        console.log('✅ Loaded providers:', this.providers);
+                    } catch (err) {
+                        this.error = err.message;
+                        console.error('❌ Failed:', err);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                getTvUrl(provider) {
+                    if (!provider.tvTemplate) return '';
+                    return provider.tvTemplate
+                        .replace(/{tmdbId}/g, this.tmdbId)
+                        .replace(/{season}/g, this.season)
+                        .replace(/{episode}/g, this.episode);
+                },
+
+                getMovieUrl(provider) {
+                    if (!provider.movieTemplate) return '';
+                    return provider.movieTemplate.replace(/{tmdbId}/g, this.movieId);
+                },
+
+                toggleDynamic(slug) {
+                    const el = document.getElementById('dynamic-' + slug);
+                    if (el) el.classList.toggle('collapsed');
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>
