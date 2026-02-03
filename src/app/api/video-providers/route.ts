@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// CORS headers for cross-origin requests (needed for test HTML file)
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+/**
+ * OPTIONS /api/video-providers
+ * Handle preflight requests for CORS
+ */
+export async function OPTIONS() {
+    return NextResponse.json({}, { headers: corsHeaders });
+}
+
 /**
  * GET /api/video-providers
  * Get all enabled video providers (public endpoint)
@@ -39,9 +54,9 @@ export async function GET() {
         // Race between the database and the timeout
         const providers = await Promise.race([dbPromise, timeoutPromise]) as any[];
 
-        return NextResponse.json(providers);
+        return NextResponse.json(providers, { headers: corsHeaders });
     } catch (error) {
-        return NextResponse.json([]);
+        return NextResponse.json([], { headers: corsHeaders });
     }
 }
 
