@@ -131,12 +131,14 @@ export default function WatchTVPage() {
 
   const currentSource = providers[currentSourceIndex];
   const embedUrl = currentSource?.tvTemplate
-    .replace(/\{\{tmdbId\}\}/g, tvId.toString())
-    .replace(/\{tmdbId\}/g, tvId.toString())
-    .replace(/\{\{season\}\}/g, selectedSeason.toString())
-    .replace(/\{season\}/g, selectedSeason.toString())
-    .replace(/\{\{episode\}\}/g, selectedEpisode.toString())
-    .replace(/\{episode\}/g, selectedEpisode.toString());
+    ? currentSource.tvTemplate
+      .replace(/\{\{tmdbId\}\}/g, tvId.toString())
+      .replace(/\{tmdbId\}/g, tvId.toString())
+      .replace(/\{\{season\}\}/g, selectedSeason.toString())
+      .replace(/\{season\}/g, selectedSeason.toString())
+      .replace(/\{\{episode\}\}/g, selectedEpisode.toString())
+      .replace(/\{episode\}/g, selectedEpisode.toString())
+    : '';
 
   const posterUrl = tv.poster_path
     ? `https://image.tmdb.org/t/p/w500${tv.poster_path}`
@@ -177,10 +179,9 @@ export default function WatchTVPage() {
                   key={embedUrl}
                   src={embedUrl}
                   className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                   title={`${tv.name} - S${selectedSeason}E${selectedEpisode}`}
-                  referrerPolicy="origin"
                   onLoad={() => setIsPlayerLoading(false)}
                   onError={() => setIsPlayerLoading(false)}
                 />

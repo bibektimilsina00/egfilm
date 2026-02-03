@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { FALLBACK_VIDEO_PROVIDERS } from '@/lib/constants/video-providers';
 
 /**
  * GET /api/video-providers
@@ -42,9 +41,7 @@ export async function GET() {
 
         return NextResponse.json(providers);
     } catch (error) {
-        console.error('Error fetching video providers (using fallbacks):', error);
-        // If database fails or timeouts, return fallback providers
-        return NextResponse.json(FALLBACK_VIDEO_PROVIDERS);
+        return NextResponse.json([]);
     }
 }
 

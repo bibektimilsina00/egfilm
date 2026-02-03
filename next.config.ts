@@ -54,47 +54,48 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          // Security Headers
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://cloud.umami.is https://www.google-analytics.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: https://image.tmdb.org https://www.google-analytics.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://api.themoviedb.org https://cloud.umami.is https://www.google-analytics.com https://*.umami.dev",
-              "frame-src 'self' https://vidsrc.icu https://vidsrc.to https://vidsrc.me https://vidsrc.xyz https://2embed.org https://embed.su https://autoembed.to https://*.youtube.com https://youtube.com",
-              "frame-ancestors 'self'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "upgrade-insecure-requests"
-            ].join('; ')
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
+          // Security Headers - ONLY IN PRODUCTION to avoid local dev blocking
+          ...(process.env.NODE_ENV === 'production' ? [
+            {
+              key: 'Content-Security-Policy',
+              value: [
+                "default-src 'self'",
+                "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://cloud.umami.is https://www.google-analytics.com",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                "img-src 'self' data: https://image.tmdb.org https://www.google-analytics.com",
+                "font-src 'self' https://fonts.gstatic.com",
+                "connect-src 'self' https://api.themoviedb.org https://cloud.umami.is https://www.google-analytics.com https://*.umami.dev",
+                "frame-src 'self' blob: *.vidsrc.icu vidsrc.icu *.vidsrc.to vidsrc.to *.vidsrc.me vidsrc.me *.vidsrc.xyz vidsrc.xyz *.vidsrc.cc vidsrc.cc *.vidlink.pro vidlink.pro *.vidsrc.net vidsrc.net *.vidsrcme.ru vidsrcme.ru *.2embed.cc www.2embed.cc *.2embed.org 2embed.org *.2embed.to 2embed.to *.multiembed.mov multiembed.mov *.moviesapi.club moviesapi.club *.smashystream.com embed.smashystream.com *.nontongo.win www.nontongo.win *.vidsrc.vip vidsrc.vip *.vidsrc.stream *.vidsrc.best *.vidsrc.top *.subf2m.co *.youtube.com youtube.com",
+                "frame-ancestors *",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "form-action 'self'"
+              ].join('; ')
+            },
+            {
+              key: 'Strict-Transport-Security',
+              value: 'max-age=31536000; includeSubDomains; preload',
+            },
+            {
+              key: 'X-Content-Type-Options',
+              value: 'nosniff',
+            },
+            {
+              key: 'X-XSS-Protection',
+              value: '1; mode=block',
+            },
+            {
+              key: 'Cross-Origin-Opener-Policy',
+              value: 'same-origin',
+            }
+          ] : []),
           {
             key: 'Permissions-Policy',
             value: 'interest-cohort=(), browsing-topics=()',
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload',
+            value: 'no-referrer-when-downgrade',
           },
           {
             key: 'X-DNS-Prefetch-Control',
@@ -110,7 +111,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
+            value: 'unsafe-none',
           },
         ],
       },

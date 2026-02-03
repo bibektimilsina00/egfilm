@@ -41,6 +41,7 @@ export default function WatchTogetherModal({
     const [sendingInvites, setSendingInvites] = useState(false);
     const [error, setError] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+    const [providers, setProviders] = useState<any[]>([]);
 
     // Settings
     const [enableVideo, setEnableVideo] = useState(false);
@@ -66,6 +67,24 @@ export default function WatchTogetherModal({
         }
     }, [isOpen, session?.user?.email, session?.user?.name]);
 
+    // Fetch providers if embedUrl is not provided OR if we're in the modal
+    useEffect(() => {
+        const fetchProviders = async () => {
+            if (!isOpen) return;
+            try {
+                const response = await fetch('/api/video-providers');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProviders(data);
+                }
+            } catch (error) {
+                console.error('Error fetching providers in modal:', error);
+            }
+        };
+
+        fetchProviders();
+    }, [isOpen]);
+
     const generateRoomCode = () => {
         return Math.random().toString(36).substring(2, 8).toUpperCase();
     };
@@ -88,13 +107,26 @@ export default function WatchTogetherModal({
         // Save username for future use
         localStorage.setItem('watchTogether_username', username);
 
+        // Determine effective embed URL (use prop or find default from fetched providers)
+        let effectiveEmbedUrl = embedUrl;
+        if (!effectiveEmbedUrl && providers.length > 0) {
+            const defaultProvider = providers.find(p => p.isDefault) || providers[0];
+            if (defaultProvider) {
+                const template = type === 'movie' ? defaultProvider.movieTemplate : defaultProvider.tvTemplate;
+                effectiveEmbedUrl = template
+                    .replace(/\{tmdbId\}/g, movieId.toString())
+                    .replace(/\{season\}/g, '1') // Simplified defaults
+                    .replace(/\{episode\}/g, '1');
+            }
+        }
+
         // Create room with settings
         const roomData = {
             roomCode: generatedRoomCode,
             hostUsername: username,
             movieTitle,
             movieId,
-            embedUrl,
+            embedUrl: effectiveEmbedUrl,
             type,
             enableVideo,
             enableAudio,
@@ -118,7 +150,7 @@ export default function WatchTogetherModal({
                         mediaId: movieId,
                         mediaType: type,
                         mediaTitle: movieTitle,
-                        embedUrl: embedUrl, // <-- FIX: pass embedUrl
+                        embedUrl: effectiveEmbedUrl, // <-- FIX: pass effectiveEmbedUrl
                         posterPath: null, // You can pass poster path if available
                         season: null, // For TV shows
                         episode: null, // For TV shows
@@ -147,7 +179,7 @@ export default function WatchTogetherModal({
                                 mediaTitle: movieTitle,
                                 mediaId: movieId,
                                 mediaType: type,
-                                embedUrl: embedUrl,
+                                embedUrl: effectiveEmbedUrl,
                             }),
                         })
                     );

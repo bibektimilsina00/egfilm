@@ -58,7 +58,7 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Biggest library: 51K+ movies and 36K+ shows from 13+ sources with minimal ads',
+    description: 'MASSIVE LIBRARY - 250K+ titles from 13+ sources with minimal ads',
     homepage: 'https://vidlink.pro',
   },
   {
@@ -119,7 +119,7 @@ const videoProviders = [
     homepage: 'https://vidsrc.me',
   },
 
-  // 📺 STANDARD ADS - Acceptable Experience
+  // 📺 STANDARD ADS - Reliable Resources (Acceptable Experience)
   {
     name: 'VidSrc NEW',
     slug: 'vidsrc-new',
@@ -159,32 +159,13 @@ const videoProviders = [
     homepage: 'https://vidsrc.xyz',
   },
   {
-    name: '2Embed',
-    slug: '2embed',
-    baseUrl: 'https://www.2embed.cc',
-    quality: '1080p',
-    isEnabled: true,
-    isDefault: false,
-    sortOrder: 8,
-    movieTemplate: 'https://www.2embed.cc/embed/{tmdbId}',
-    tvTemplate: 'https://www.2embed.cc/embedtv/{tmdbId}&s={season}&e={episode}',
-    supportsImdb: true,
-    supportsTmdb: true,
-    hasMultiQuality: true,
-    hasSubtitles: true,
-    hasAutoplay: false,
-    requiresAuth: false,
-    description: 'Popular embed with multiple servers and standard ads',
-    homepage: 'https://2embed.cc',
-  },
-  {
     name: 'SuperEmbed',
     slug: 'superembed',
     baseUrl: 'https://multiembed.mov',
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 9,
+    sortOrder: 8,
     movieTemplate: 'https://multiembed.mov/?video_id={tmdbId}&tmdb=1',
     tvTemplate: 'https://multiembed.mov/?video_id={tmdbId}&tmdb=1&s={season}&e={episode}',
     supportsImdb: true,
@@ -203,7 +184,7 @@ const videoProviders = [
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 10,
+    sortOrder: 9,
     movieTemplate: 'https://moviesapi.club/movie/{tmdbId}',
     tvTemplate: 'https://moviesapi.club/tv/{tmdbId}-{season}-{episode}',
     supportsImdb: false,
@@ -212,8 +193,23 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'RESTful API with embed support and standard ads',
+    description: 'RESTful API with excellent coverage and standard ads',
     homepage: 'https://moviesapi.club',
+  },
+  {
+    name: 'VidSrc VIP',
+    slug: 'vidsrc-vip',
+    baseUrl: 'https://vidsrc.vip',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 10,
+    movieTemplate: 'https://vidsrc.vip/embed/movie/{tmdbId}',
+    tvTemplate: 'https://vidsrc.vip/embed/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: true,
+    supportsTmdb: true,
+    description: 'Premium-styled mirror with fast CDN and standard ads',
+    homepage: 'https://vidsrc.vip',
   },
   {
     name: 'Smashystream',
@@ -234,47 +230,31 @@ const videoProviders = [
     description: 'Alternative embed with good compatibility and standard ads',
     homepage: 'https://embed.smashystream.com',
   },
-
-  // ⚠️ HEAVY ADS - Use as Last Resort
-  {
-    name: 'NontonGo',
-    slug: 'nontongo',
-    baseUrl: 'https://www.NontonGo.win',
-    quality: '720p',
-    isEnabled: false,
-    isDefault: false,
-    sortOrder: 12,
-    movieTemplate: 'https://www.NontonGo.win/embed/movie/{tmdbId}',
-    tvTemplate: 'https://www.NontonGo.win/embed/tv/{tmdbId}/{season}/{episode}',
-    supportsImdb: false,
-    supportsTmdb: true,
-    hasMultiQuality: false,
-    hasSubtitles: true,
-    hasAutoplay: false,
-    requiresAuth: false,
-    description: 'Indonesian provider with heavy ads (disabled by default)',
-    homepage: 'https://nontongo.win',
-  },
 ];
 
 async function main() {
   console.log('🌱 Seeding video providers...');
 
   for (const provider of videoProviders) {
-    const existing = await prisma.videoProvider.findUnique({
+    const result = await prisma.videoProvider.upsert({
       where: { slug: provider.slug },
+      update: provider,
+      create: provider,
     });
 
-    if (existing) {
-      console.log(`   ⏭️  Skipping ${provider.name} (already exists)`);
-      continue;
+    console.log(`   ✅ ${result ? 'Processed' : 'Error'} ${provider.name}`);
+  }
+
+  // Synchronize database: Remove providers not in the seed list
+  const seedSlugs = videoProviders.map(p => p.slug);
+  const deleteResult = await prisma.videoProvider.deleteMany({
+    where: {
+      slug: { notIn: seedSlugs }
     }
+  });
 
-    await prisma.videoProvider.create({
-      data: provider,
-    });
-
-    console.log(`   ✅ Created ${provider.name}`);
+  if (deleteResult.count > 0) {
+    console.log(`   🗑️  Removed ${deleteResult.count} obsolete providers from database`);
   }
 
   console.log('');

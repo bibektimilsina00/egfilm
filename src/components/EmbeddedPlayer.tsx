@@ -197,8 +197,6 @@ export default function EmbeddedPlayer({
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                     title={title}
-                    referrerPolicy="origin"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
                     onLoad={() => setIsPlayerLoading(false)}
                     onError={() => setIsPlayerLoading(false)}
                 />

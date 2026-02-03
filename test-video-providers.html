@@ -366,7 +366,7 @@
 
     <script>
         const providers = [
-            // ⭐ MINIMAL ADS - Best User Experience
+            // ⭐ MINIMAL ADS - Top Quality (Best User Experience)
             {
                 name: 'VidSrc ICU',
                 baseUrl: 'vidsrc.icu',
@@ -395,7 +395,7 @@
                 ads: 'minimal',
                 movie: (id) => `https://vidlink.pro/movie/${id}`,
                 tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
-                notes: '⭐ Biggest API: 51K+ movies, 36K+ shows from 13+ sources'
+                notes: '⭐ Biggest API: 250K+ titles from 13+ sources'
             },
             {
                 name: 'VidSrc.to',
@@ -428,7 +428,7 @@
                 notes: '⭐ Original VidSrc with query-based URLs'
             },
 
-            // 📺 STANDARD ADS - Acceptable Experience
+            // 📺 STANDARD ADS - Reliable Resources (Acceptable Experience)
             {
                 name: 'VidSrc NEW',
                 baseUrl: 'vidsrcme.ru',
@@ -447,17 +447,7 @@
                 ads: 'standard',
                 movie: (id) => `https://vidsrc.xyz/embed/movie/${id}`,
                 tv: (id, s, e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}`,
-                notes: 'Legacy VidSrc domain (may redirect)'
-            },
-            {
-                name: '2Embed',
-                baseUrl: '2embed.cc',
-                quality: '1080p',
-                type: 'free',
-                ads: 'standard',
-                movie: (id) => `https://www.2embed.cc/embed/${id}`,
-                tv: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`,
-                notes: 'Popular embed with multiple servers'
+                notes: 'Legacy VidSrc domain (standard reliability)'
             },
             {
                 name: 'SuperEmbed',
@@ -467,7 +457,7 @@
                 ads: 'standard',
                 movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
                 tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
-                notes: 'Multi-source aggregator'
+                notes: 'Aggregates multiple sources into one player'
             },
             {
                 name: 'MoviesAPI',
@@ -477,7 +467,17 @@
                 ads: 'standard',
                 movie: (id) => `https://moviesapi.club/movie/${id}`,
                 tv: (id, s, e) => `https://moviesapi.club/tv/${id}-${s}-${e}`,
-                notes: 'RESTful API with embed support'
+                notes: 'RESTful API with excellent database coverage'
+            },
+            {
+                name: 'VidSrc VIP',
+                baseUrl: 'vidsrc.vip',
+                quality: '1080p',
+                type: 'free',
+                ads: 'standard',
+                movie: (id) => `https://vidsrc.vip/embed/movie/${id}`,
+                tv: (id, s, e) => `https://vidsrc.vip/embed/tv/${id}/${s}/${e}`,
+                notes: 'Premium-styled mirror with fast CDN'
             },
             {
                 name: 'Smashystream',
@@ -487,19 +487,7 @@
                 ads: 'standard',
                 movie: (id) => `https://embed.smashystream.com/playere.php?tmdb=${id}`,
                 tv: (id, s, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${s}&episode=${e}`,
-                notes: 'Alternative embed with good compatibility'
-            },
-
-            // ⚠️ HEAVY ADS - Use as Last Resort
-            {
-                name: 'NontonGo',
-                baseUrl: 'NontonGo.win',
-                quality: '720p',
-                type: 'free',
-                ads: 'heavy',
-                movie: (id) => `https://www.NontonGo.win/embed/movie/${id}`,
-                tv: (id, s, e) => `https://www.NontonGo.win/embed/tv/${id}/${s}/${e}`,
-                notes: '⚠️ Heavy ads - Indonesian provider with English content'
+                notes: 'Alternative PHP-based player with good compatibility'
             }
         ];
 

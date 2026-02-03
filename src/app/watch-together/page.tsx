@@ -6,8 +6,18 @@ import { useSession } from 'next-auth/react';
 import { Video, VideoOff, Mic, MicOff, Phone, MessageCircle, Users, Copy, Check, Send, X, Maximize, Minimize, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import io, { Socket } from 'socket.io-client';
-import { VIDEO_SOURCES } from '@/lib/videoSources';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
+
+interface VideoProvider {
+    id: string;
+    name: string;
+    slug: string;
+    quality: string;
+    isDefault: boolean;
+    movieTemplate: string;
+    tvTemplate: string;
+    description?: string | null;
+}
 
 interface Participant {
     id: string;
@@ -73,6 +83,8 @@ function WatchTogetherContent() {
     const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
     const [showSourceMenu, setShowSourceMenu] = useState(false);
     const [currentEmbedUrl, setCurrentEmbedUrl] = useState('');
+    const [providers, setProviders] = useState<VideoProvider[]>([]);
+    const [providersLoading, setProvidersLoading] = useState(true);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -145,6 +157,31 @@ function WatchTogetherContent() {
             setUnreadCount(0);
         }
     }, [showChat, showParticipants]);
+
+    // Fetch video providers
+    useEffect(() => {
+        const fetchProviders = async () => {
+            try {
+                const response = await fetch('/api/video-providers');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProviders(data);
+
+                    // If we have room data, find if the current embed matches any provider
+                    if (roomData && roomData.embedUrl) {
+                        // Try to find by name or slug if possible, but room usually stores the URL
+                        // For now we just keep the room's default embedUrl
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching video providers:', error);
+            } finally {
+                setProvidersLoading(false);
+            }
+        };
+
+        fetchProviders();
+    }, [roomData]);
 
     const initializeRoom = async () => {
         try {
@@ -781,17 +818,25 @@ function WatchTogetherContent() {
     };
 
     const changeVideoSource = (index: number) => {
-        if (!roomData) return;
+        if (!roomData || !providers[index]) return;
 
         setCurrentSourceIndex(index);
-        const source = VIDEO_SOURCES[index];
+        const source = providers[index];
 
-        // Generate new embed URL based on media type
+        // Generate new embed URL based on media type templates from DB
         let newUrl: string;
         if (roomData.type === 'tv' && roomData.season && roomData.episode) {
-            newUrl = source.embed(roomData.movieId, 'tv', roomData.season, roomData.episode);
+            newUrl = source.tvTemplate
+                .replace(/\{\{tmdbId\}\}/g, roomData.movieId.toString())
+                .replace(/\{tmdbId\}/g, roomData.movieId.toString())
+                .replace(/\{\{season\}\}/g, roomData.season.toString())
+                .replace(/\{season\}/g, roomData.season.toString())
+                .replace(/\{\{episode\}\}/g, roomData.episode.toString())
+                .replace(/\{episode\}/g, roomData.episode.toString());
         } else {
-            newUrl = source.embed(roomData.movieId, 'movie');
+            newUrl = source.movieTemplate
+                .replace(/\{\{tmdbId\}\}/g, roomData.movieId.toString())
+                .replace(/\{tmdbId\}/g, roomData.movieId.toString());
         }
 
         setCurrentEmbedUrl(newUrl);
@@ -975,7 +1020,7 @@ function WatchTogetherContent() {
                                 className="flex items-center gap-2 px-4 py-2 bg-gray-900/90 backdrop-blur-sm hover:bg-gray-800/90 text-white rounded-lg transition-colors border border-gray-700 shadow-lg"
                             >
                                 <span className="text-sm font-medium">
-                                    {VIDEO_SOURCES[currentSourceIndex].name}
+                                    {providers[currentSourceIndex]?.name || 'Loading...'}
                                 </span>
                                 <ChevronDown className="w-4 h-4" />
                             </button>
@@ -986,13 +1031,13 @@ function WatchTogetherContent() {
                                         <div className="text-xs text-gray-400 px-3 py-2 font-semibold">
                                             Select Video Server
                                         </div>
-                                        {VIDEO_SOURCES.map((source, index) => (
+                                        {providers.map((source, index) => (
                                             <button
-                                                key={index}
+                                                key={source.id}
                                                 onClick={() => changeVideoSource(index)}
-                                                className={`w-full text-left px-3 py-2 rounded transition-colors ${currentSourceIndex === index
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'text-gray-300 hover:bg-gray-800'
+                                                className={`w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors ${currentSourceIndex === index
+                                                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                                                    : 'text-gray-300'
                                                     }`}
                                             >
                                                 <div className="flex items-center justify-between">
@@ -1039,8 +1084,8 @@ function WatchTogetherContent() {
                             <div className="text-center">
                                 <Video className="w-24 h-24 text-gray-600 mx-auto mb-4" />
                                 <p className="text-gray-400">No video source available</p>
-                                {currentEmbedUrl && (
-                                    <p className="text-gray-500 text-sm mt-2">Source: {VIDEO_SOURCES[currentSourceIndex].name}</p>
+                                {providers.length > 0 && providers[currentSourceIndex] && (
+                                    <p className="text-gray-500 text-sm mt-2">Source: {providers[currentSourceIndex].name}</p>
                                 )}
                             </div>
                         )}

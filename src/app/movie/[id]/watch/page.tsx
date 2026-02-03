@@ -89,8 +89,10 @@ export default function WatchMoviePage() {
 
   const currentSource = providers[currentSourceIndex];
   const embedUrl = currentSource?.movieTemplate
-    .replace(/\{\{tmdbId\}\}/g, movieId.toString())
-    .replace(/\{tmdbId\}/g, movieId.toString());
+    ? currentSource.movieTemplate
+      .replace(/\{\{tmdbId\}\}/g, movieId.toString())
+      .replace(/\{tmdbId\}/g, movieId.toString())
+    : '';
 
   const posterUrl = movie.poster_path
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
@@ -127,12 +129,11 @@ export default function WatchMoviePage() {
                 <iframe
                   key={embedUrl}
                   src={embedUrl}
-                  scrolling='no'
+                  scrolling="no"
                   className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                   title={movie.title}
-                  referrerPolicy="origin"
                   onLoad={() => setIsPlayerLoading(false)}
                   onError={() => setIsPlayerLoading(false)}
                 />
