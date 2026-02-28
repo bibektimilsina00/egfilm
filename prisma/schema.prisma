@@ -209,6 +209,9 @@ model VideoProvider {
   lastResponseTime Int?      // Response time in milliseconds
   lastStatus       String?   // 'healthy', 'degraded', 'offline'
 
+  // Ad reporting
+  adReports        Int       @default(0) // Count of reported ads
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

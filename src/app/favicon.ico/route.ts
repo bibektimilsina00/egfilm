@@ -15,7 +15,7 @@ export async function GET() {
                 'Cache-Control': 'public, max-age=31536000, immutable',
             },
         })
-    } catch (error) {
+    } catch {
         // Fallback to a simple SVG if file not found
         const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">🎬</text></svg>`
 

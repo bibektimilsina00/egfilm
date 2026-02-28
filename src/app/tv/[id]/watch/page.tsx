@@ -1,15 +1,24 @@
-'use client';
+"use client";
 
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useTVDetails } from '@/lib/hooks/useTMDb';
-import { useState, useEffect } from 'react';
-import { Star, Calendar, Clock, Loader2, Info, Server, Globe, Film, Users, Tv } from 'lucide-react';
-import Navigation from '@/components/Navigation';
-import { MediaCard } from '@/components/media-card';
-import Image from 'next/image';
-import { getSeasonDetails, type Episode } from '@/lib/api/tmdb';
-import { PageLoader } from '@/components/ui/loading-spinner';
-import { Button } from '@/components/ui/button';
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTVDetails } from "@/lib/hooks/useTMDb";
+import { useState, useEffect } from "react";
+import {
+  Star,
+  Calendar,
+  Loader2,
+  Info,
+  Server,
+  Globe,
+  Film,
+  Users,
+  Tv,
+} from "lucide-react";
+import Navigation from "@/components/Navigation";
+import { MediaCard } from "@/components/media-card";
+import Image from "next/image";
+import { getSeasonDetails, type Episode } from "@/lib/api/tmdb";
+import { PageLoader } from "@/components/ui/loading-spinner";
 
 interface VideoProvider {
   id: string;
@@ -29,8 +38,8 @@ export default function WatchTVPage() {
   const tvId = Number(params?.id as string);
 
   // Get season and episode from URL params or default to 1
-  const initialSeason = Number(searchParams?.get('season')) || 1;
-  const initialEpisode = Number(searchParams?.get('episode')) || 1;
+  const initialSeason = Number(searchParams?.get("season")) || 1;
+  const initialEpisode = Number(searchParams?.get("episode")) || 1;
 
   const { data: tv, isLoading } = useTVDetails(tvId);
   const [providers, setProviders] = useState<VideoProvider[]>([]);
@@ -48,26 +57,30 @@ export default function WatchTVPage() {
 
   // Show first 5 servers by default
   const defaultServersCount = 5;
-  const visibleServers = showAllServers ? providers : providers.slice(0, defaultServersCount);
+  const visibleServers = showAllServers
+    ? providers
+    : providers.slice(0, defaultServersCount);
   const hasMoreServers = providers.length > defaultServersCount;
 
   // Fetch video providers
   useEffect(() => {
     const fetchProviders = async () => {
       try {
-        const response = await fetch('/api/video-providers');
+        const response = await fetch("/api/video-providers");
         if (response.ok) {
           const data = await response.json();
           setProviders(data);
 
           // Set default provider as current
-          const defaultIndex = data.findIndex((p: VideoProvider) => p.isDefault);
+          const defaultIndex = data.findIndex(
+            (p: VideoProvider) => p.isDefault,
+          );
           if (defaultIndex !== -1) {
             setCurrentSourceIndex(defaultIndex);
           }
         }
       } catch (error) {
-        console.error('Error fetching video providers:', error);
+        console.error("Error fetching video providers:", error);
       } finally {
         setProvidersLoading(false);
       }
@@ -86,7 +99,7 @@ export default function WatchTVPage() {
         const seasonData = await getSeasonDetails(tvId, selectedSeason);
         setEpisodes(seasonData.episodes || []);
       } catch (error) {
-        console.error('Error fetching episodes:', error);
+        console.error("Error fetching episodes:", error);
         setEpisodes([]);
       } finally {
         setEpisodesLoading(false);
@@ -115,10 +128,12 @@ export default function WatchTVPage() {
         <Navigation />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center space-y-4">
-            <h1 className="text-white text-2xl font-bold">No video providers available</h1>
+            <h1 className="text-white text-2xl font-bold">
+              No video providers available
+            </h1>
             <p className="text-gray-400">Please contact support</p>
             <button
-              onClick={() => router.push('/tv')}
+              onClick={() => router.push("/tv")}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
             >
               Browse TV Shows
@@ -140,14 +155,16 @@ export default function WatchTVPage() {
 
   const posterUrl = tv.poster_path
     ? `https://image.tmdb.org/t/p/w500${tv.poster_path}`
-    : '/placeholder-poster.jpg';
+    : "/placeholder-poster.jpg";
 
   // Get current season data
-  const currentSeasonData = tv.seasons?.find(s => s.season_number === selectedSeason);
+  const currentSeasonData = tv.seasons?.find(
+    (s) => s.season_number === selectedSeason,
+  );
   const episodeCount = currentSeasonData?.episode_count || 20;
 
   // Get available seasons (excluding season 0 - specials)
-  const availableSeasons = tv.seasons?.filter(s => s.season_number > 0) || [];
+  const availableSeasons = tv.seasons?.filter((s) => s.season_number > 0) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
@@ -155,7 +172,6 @@ export default function WatchTVPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 pt-8 pb-6 max-w-[1600px]">
-
         {/* Video Player Section */}
         <div className="mb-8">
           <div className="bg-gray-900/50 rounded-xl overflow-hidden shadow-2xl border border-gray-800/50 theater-mode-keep">
@@ -166,8 +182,12 @@ export default function WatchTVPage() {
                   <div className="text-center space-y-4">
                     <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
                     <div>
-                      <p className="text-white text-lg font-semibold">Loading {currentSource?.name}...</p>
-                      <p className="text-gray-400 text-sm mt-2">Please wait while we prepare your stream</p>
+                      <p className="text-white text-lg font-semibold">
+                        Loading {currentSource?.name}...
+                      </p>
+                      <p className="text-gray-400 text-sm mt-2">
+                        Please wait while we prepare your stream
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -192,7 +212,9 @@ export default function WatchTVPage() {
               <div className="flex items-center justify-between gap-4 mb-3">
                 <p className="text-xs text-gray-400 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-blue-400" />
-                  <span>If current server doesn't work, try other servers</span>
+                  <span>
+                    If current server doesn&apos;t work, try other servers
+                  </span>
                 </p>
                 <span className="text-xs text-gray-500 font-medium">
                   {providers.length} servers
@@ -210,10 +232,11 @@ export default function WatchTVPage() {
                         setIsPlayerLoading(true);
                         setCurrentSourceIndex(index);
                       }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md font-medium text-sm transition-all ${isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                        }`}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md font-medium text-sm transition-all ${
+                        isActive
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
+                      }`}
                     >
                       <Server className="w-3.5 h-3.5" />
                       <span>{provider.name}</span>
@@ -230,7 +253,11 @@ export default function WatchTVPage() {
                     onClick={() => setShowAllServers(!showAllServers)}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-md font-medium text-sm bg-gray-700/50 text-gray-400 hover:bg-gray-600 hover:text-white border border-gray-600 transition-all"
                   >
-                    <span>{showAllServers ? '− Show Less' : `+ ${providers.length - defaultServersCount} More`}</span>
+                    <span>
+                      {showAllServers
+                        ? "− Show Less"
+                        : `+ ${providers.length - defaultServersCount} More`}
+                    </span>
                   </button>
                 )}
               </div>
@@ -258,10 +285,11 @@ export default function WatchTVPage() {
                         setSelectedEpisode(1);
                         setIsPlayerLoading(true);
                       }}
-                      className={`px-4 py-2 rounded-md font-medium text-sm transition-all ${isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                        }`}
+                      className={`px-4 py-2 rounded-md font-medium text-sm transition-all ${
+                        isActive
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
+                      }`}
                     >
                       Season {season.season_number}
                     </button>
@@ -297,10 +325,11 @@ export default function WatchTVPage() {
                           setSelectedEpisode(episode.episode_number);
                           setIsPlayerLoading(true);
                         }}
-                        className={`group relative rounded-lg overflow-hidden transition-all ${isActive
-                          ? 'ring-2 ring-blue-500 scale-105'
-                          : 'hover:scale-105 hover:ring-2 hover:ring-gray-500'
-                          }`}
+                        className={`group relative rounded-lg overflow-hidden transition-all ${
+                          isActive
+                            ? "ring-2 ring-blue-500 scale-105"
+                            : "hover:scale-105 hover:ring-2 hover:ring-gray-500"
+                        }`}
                       >
                         {/* Episode Thumbnail */}
                         <div className="relative aspect-video bg-gray-800">
@@ -327,7 +356,9 @@ export default function WatchTVPage() {
                         </div>
 
                         {/* Episode Info */}
-                        <div className={`p-2 ${isActive ? 'bg-blue-600' : 'bg-gray-800'}`}>
+                        <div
+                          className={`p-2 ${isActive ? "bg-blue-600" : "bg-gray-800"}`}
+                        >
                           <p className="text-white font-semibold text-sm truncate">
                             Episode {episode.episode_number}
                           </p>
@@ -341,24 +372,27 @@ export default function WatchTVPage() {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {Array.from({ length: episodeCount }, (_, i) => i + 1).map((ep) => {
-                    const isActive = selectedEpisode === ep;
-                    return (
-                      <button
-                        key={ep}
-                        onClick={() => {
-                          setSelectedEpisode(ep);
-                          setIsPlayerLoading(true);
-                        }}
-                        className={`px-4 py-2 rounded-md font-medium text-sm transition-all min-w-[60px] ${isActive
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                  {Array.from({ length: episodeCount }, (_, i) => i + 1).map(
+                    (ep) => {
+                      const isActive = selectedEpisode === ep;
+                      return (
+                        <button
+                          key={ep}
+                          onClick={() => {
+                            setSelectedEpisode(ep);
+                            setIsPlayerLoading(true);
+                          }}
+                          className={`px-4 py-2 rounded-md font-medium text-sm transition-all min-w-[60px] ${
+                            isActive
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
                           }`}
-                      >
-                        {ep}
-                      </button>
-                    );
-                  })}
+                        >
+                          {ep}
+                        </button>
+                      );
+                    },
+                  )}
                 </div>
               )}
             </div>
@@ -395,7 +429,9 @@ export default function WatchTVPage() {
                     {tv.vote_average && tv.vote_average > 0 && (
                       <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-2 rounded-lg border border-yellow-500/30">
                         <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                        <span className="text-white font-bold text-lg">{tv.vote_average.toFixed(1)}</span>
+                        <span className="text-white font-bold text-lg">
+                          {tv.vote_average.toFixed(1)}
+                        </span>
                         <span className="text-gray-400 text-sm">/10</span>
                       </div>
                     )}
@@ -409,14 +445,18 @@ export default function WatchTVPage() {
                     {tv.number_of_seasons && (
                       <div className="flex items-center gap-1.5 text-gray-300">
                         <Tv className="w-4 h-4" />
-                        <span className="font-medium">{tv.number_of_seasons} Seasons</span>
+                        <span className="font-medium">
+                          {tv.number_of_seasons} Seasons
+                        </span>
                       </div>
                     )}
 
                     {tv.first_air_date && (
                       <div className="flex items-center gap-1.5 text-gray-300">
                         <Calendar className="w-4 h-4" />
-                        <span className="font-medium">{new Date(tv.first_air_date).getFullYear()}</span>
+                        <span className="font-medium">
+                          {new Date(tv.first_air_date).getFullYear()}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -441,8 +481,12 @@ export default function WatchTVPage() {
                 {/* Overview */}
                 {tv.overview && (
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-2">Overview</h3>
-                    <p className="text-gray-300 leading-relaxed">{tv.overview}</p>
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Overview
+                    </h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      {tv.overview}
+                    </p>
                   </div>
                 )}
 
@@ -451,8 +495,12 @@ export default function WatchTVPage() {
                   <div className="flex items-start gap-3 p-3 bg-gray-800/40 rounded-lg min-w-[200px]">
                     <Tv className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Type</p>
-                      <p className="text-gray-200 text-sm font-medium">{tv.type || 'TV Series'}</p>
+                      <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                        Type
+                      </p>
+                      <p className="text-gray-200 text-sm font-medium">
+                        {tv.type || "TV Series"}
+                      </p>
                     </div>
                   </div>
 
@@ -460,9 +508,11 @@ export default function WatchTVPage() {
                     <div className="flex items-start gap-3 p-3 bg-gray-800/40 rounded-lg min-w-[200px]">
                       <Globe className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Country</p>
+                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                          Country
+                        </p>
                         <p className="text-gray-200 text-sm font-medium">
-                          {tv.origin_country.join(', ')}
+                          {tv.origin_country.join(", ")}
                         </p>
                       </div>
                     </div>
@@ -472,7 +522,9 @@ export default function WatchTVPage() {
                     <div className="flex items-start gap-3 p-3 bg-gray-800/40 rounded-lg min-w-[200px]">
                       <Globe className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Language</p>
+                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                          Language
+                        </p>
                         <p className="text-gray-200 text-sm font-medium">
                           {tv.spoken_languages[0].english_name}
                         </p>
@@ -480,17 +532,23 @@ export default function WatchTVPage() {
                     </div>
                   )}
 
-                  {tv.production_companies && tv.production_companies.length > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-gray-800/40 rounded-lg min-w-[200px] flex-1">
-                      <Users className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Production</p>
-                        <p className="text-gray-200 text-sm font-medium">
-                          {tv.production_companies.slice(0, 2).map(c => c.name).join(', ')}
-                        </p>
+                  {tv.production_companies &&
+                    tv.production_companies.length > 0 && (
+                      <div className="flex items-start gap-3 p-3 bg-gray-800/40 rounded-lg min-w-[200px] flex-1">
+                        <Users className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                            Production
+                          </p>
+                          <p className="text-gray-200 text-sm font-medium">
+                            {tv.production_companies
+                              .slice(0, 2)
+                              .map((c) => c.name)
+                              .join(", ")}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             </div>
@@ -500,7 +558,9 @@ export default function WatchTVPage() {
         {/* Similar TV Shows Section */}
         {similarShows && similarShows.length > 0 && (
           <div className="pt-8">
-            <h2 className="text-2xl font-bold text-white mb-6">You May Also Like</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">
+              You May Also Like
+            </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {similarShows.slice(0, 12).map((item) => (
                 <MediaCard key={item.id} media={item} mediaType="tv" />

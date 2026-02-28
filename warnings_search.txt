@@ -1,0 +1,17 @@
+src/app/watch-together/page.tsx:137:                console.warn('⚠️ [VIDEO EFFECT] Playback failed:', err.message);
+src/app/watch-together/page.tsx:705:                        console.warn('⚠️ [TOGGLE VIDEO] Play failed:', e.message);
+src/app/watch-together/page.tsx:969:                    {/* Video Player Controls - Top Right */}
+src/app/watch-together/page.tsx:1025:                    {/* Video Player */}
+src/app/watch-together/page.tsx:1056:                                            autoPlay={true}
+src/app/watch-together/page.tsx:1091:                                                autoPlay
+src/app/watch-together/page.tsx:1102:                                                autoPlay
+src/app/watch-together/page.tsx:1133:                                            autoPlay
+src/app/watch-together/page.tsx:1319:                                        autoPlay={true}
+src/app/watch-together/page.tsx:1374:                                            autoPlay
+src/app/watch-together/page.tsx:1394:                                            autoPlay
+src/components/Footer.tsx:2:import Image from 'next/image';
+src/components/Footer.tsx:18:                            <Image
+src/components/Navigation.tsx:5:import Image from 'next/image';
+src/components/Navigation.tsx:8:import { Film, Search, Menu, X, Home, Tv, Play, Heart, LogIn, LogOut, User, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
+src/components/Navigation.tsx:152:                            <Image
+src/components/Navigation.tsx:267:                                            <img
