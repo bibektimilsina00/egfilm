@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 8001 --turbo",
+    "dev": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 5555 --turbo",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
-    "start": "next start --port 8001",
+    "start": "next start --port 5555",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next .turbo node_modules"

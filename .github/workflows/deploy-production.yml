@@ -1,8 +1,9 @@
-# ========================================
-# 🚀 EGFilm Main App – Production Deploy
-#   (appleboy edition – no manual SSH)
-# ========================================
-name: 🚀 EGFilm Main App – Production Deploy
+# ============================================================
+# 🚀 EGFilm Monorepo – Production Deploy (egfilm + egsport + egtv)
+#   Builds a per-app image from docker/Dockerfile.app (turbo prune)
+#   and deploys all apps via deploy.sh on the production server.
+# ============================================================
+name: 🚀 Monorepo – Production Deploy
 
 on:
   push:
@@ -11,31 +12,23 @@ on:
   workflow_dispatch:
     inputs:
       force_deploy:
-        description: "Force deployment (skip some checks)"
+        description: "Force deployment (skip change detection)"
         type: boolean
         default: false
-      rollback_version:
-        description: "Rollback to version (e.g., v1.2.3)"
-        type: string
-        required: false
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  NODE_VERSION: "18"
-  HEALTH_CHECK_TIMEOUT: 120
-  DEPLOYMENT_TIMEOUT: 600
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9.15.0"
 
 concurrency:
-  group: deploy-main-${{ github.ref }}
+  group: deploy-monorepo-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
-  security-events: write
   packages: write
   id-token: write
-  actions: read
 
 jobs:
   validate:
@@ -44,137 +37,98 @@ jobs:
     outputs:
       should-deploy: ${{ steps.version.outputs.should-deploy }}
       version: ${{ steps.version.outputs.version }}
-      is-rollback: ${{ github.event.inputs.rollback_version != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: |
             app:
-              - 'src/**'
-              - 'public/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'next.config.*'
-              - 'tailwind.config.*'
-              - 'Dockerfile'
-              - 'docker-compose.*'
-              - 'prisma/**'
+              - 'apps/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'docker/**'
+              - 'docker-compose.yml'
+              - 'deploy.sh'
               - '.github/workflows/**'
 
       - id: version
         run: |
-          if [[ -n "${{ github.event.inputs.rollback_version }}" ]]; then
-            echo "version=${{ github.event.inputs.rollback_version }}" >> $GITHUB_OUTPUT
-            echo "🔄 Rollback to ${{ github.event.inputs.rollback_version }}"
-          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "🏷️ Tag deployment $VERSION"
           else
-            VERSION="main-${GITHUB_SHA::8}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "🌟 Branch deployment $VERSION"
+            VERSION="${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::8}"
           fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "🏷️  Version: $VERSION"
 
           if [[ "${{ steps.changes.outputs.app }}" == "true" ]] || \
              [[ "${{ github.event.inputs.force_deploy }}" == "true" ]] || \
-             [[ "$GITHUB_REF" == refs/tags/* ]] || \
-             [[ -n "${{ github.event.inputs.rollback_version }}" ]]; then
-            echo "should-deploy=true" >> $GITHUB_OUTPUT
+             [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "should-deploy=true" >> "$GITHUB_OUTPUT"
           else
-            echo "should-deploy=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No relevant changes – skipping deployment"
+            echo "should-deploy=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  No relevant changes – skipping deployment"
           fi
 
-  lint:
-    name: 🔍 Lint Code
+  ci:
+    name: 🧪 Lint, Type-check, Test & Build
     runs-on: ubuntu-latest
     needs: validate
-    if: needs.validate.outputs.should-deploy == 'true' && needs.validate.outputs.is-rollback != 'true'
+    if: needs.validate.outputs.should-deploy == 'true'
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci --prefer-offline --no-audit
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run lint
+      - name: Prisma generate
+        run: pnpm --filter @egfilm/db db:generate
 
-  test:
-    name: 🧪 Build & Test
-    runs-on: ubuntu-latest
-    needs: validate
-    
-    if: needs.validate.outputs.should-deploy == 'true' && needs.validate.outputs.is-rollback != 'true'
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
+      - name: Lint
+        run: pnpm run lint
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+      - name: Type-check apps
+        run: pnpm --filter egfilm --filter egsport --filter egtv type-check
 
-      - run: npm ci --prefer-offline --no-audit
+      - name: Unit tests
+        run: pnpm --filter @egfilm/services test
 
-      - run: npm run build
+      - name: Build all apps
+        run: pnpm run build
         env:
           NODE_ENV: production
           NEXT_TELEMETRY_DISABLED: 1
           NEXT_PUBLIC_TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          NEXT_PUBLIC_TMDB_BASE_URL: https://api.themoviedb.org/3
-          NEXT_PUBLIC_APP_NAME: EGFilm
-          NEXT_PUBLIC_APP_URL: ${{ vars.APP_URL || 'https://egfilm.xyz' }}
-          NEXT_PUBLIC_BLOG_SITE_URL: ${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
-          NEXT_PUBLIC_TURN_SERVER: ${{ vars.TURN_SERVER || '' }}
-          NEXT_PUBLIC_TURN_USERNAME: ${{ vars.TURN_USERNAME || '' }}
-          NEXT_PUBLIC_BUILD_VERSION: ${{ needs.validate.outputs.version }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
+          NEXT_PUBLIC_EGFILM_URL: ${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
+          NEXT_PUBLIC_EGSPORT_URL: ${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+          NEXT_PUBLIC_EGTV_URL: ${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
           NEXT_PUBLIC_GIT_SHA: ${{ github.sha }}
-          NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
-          NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
-
-      - run: npm test -- --passWithNoTests
-        env:
-          CI: true
-
-      - uses: codecov/codecov-action@v3
-        with:
-          fail_ci_if_error: false
-
-  audit:
-    name: 🔐 Security Audit
-    runs-on: ubuntu-latest
-    needs: validate
-    if: needs.validate.outputs.should-deploy == 'true' && needs.validate.outputs.is-rollback != 'true'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci --prefer-offline --no-audit
-
-      - run: npm audit --audit-level high
+          NEXT_PUBLIC_BUILD_VERSION: ${{ needs.validate.outputs.version }}
 
   security-scan:
     name: 🔒 Trivy Security Scan
     runs-on: ubuntu-latest
     needs: validate
-    if: needs.validate.outputs.should-deploy == 'true' && needs.validate.outputs.is-rollback != 'true'
+    if: needs.validate.outputs.should-deploy == 'true'
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-
-      - name: 🔍 Trivy security scan
+      - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
@@ -184,41 +138,30 @@ jobs:
           severity: CRITICAL,HIGH
 
   build:
-    name: 🐳 Build & Push Docker Image
+    name: 🐳 Build & Push (${{ matrix.app }})
     runs-on: ubuntu-latest
-    needs: [validate, lint, test, audit, security-scan]
+    needs: [validate, ci]
     if: needs.validate.outputs.should-deploy == 'true'
-    environment: production
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    outputs:
-      image-uri: ${{ steps.image-uri.outputs.image-uri }}
-      image-digest: ${{ steps.build.outputs.digest }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: egfilm
+            public_app_name: EGFilm
+            app_url_var: EGFILM_URL
+            default_url: https://egfilm.xyz
+          - app: egsport
+            public_app_name: EGSport
+            app_url_var: EGSPORT_URL
+            default_url: https://live.egfilm.xyz
+          - app: egtv
+            public_app_name: EGTV
+            app_url_var: EGTV_URL
+            default_url: https://tv.egfilm.xyz
     steps:
       - uses: actions/checkout@v4
-        if: needs.validate.outputs.is-rollback != 'true'
-
-      - uses: docker/metadata-action@v5
-        id: meta
-        if: needs.validate.outputs.is-rollback != 'true'
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=raw,value=${{ needs.validate.outputs.version }}
-            type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=EGFilm Main App
-            org.opencontainers.image.description=Movie & TV streaming platform
-            org.opencontainers.image.vendor=EGFilm
-            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
-            org.opencontainers.image.created={{date 'RFC3339'}}
-            org.opencontainers.image.revision=${{ github.sha }}
-            maintainer=bibektimilsina00
 
       - uses: docker/setup-buildx-action@v3
-        if: needs.validate.outputs.is-rollback != 'true'
 
       - uses: docker/login-action@v3
         with:
@@ -226,49 +169,38 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.REGISTRY_TOKEN }}
 
-      - uses: docker/build-push-action@v5
-        id: build
-        if: needs.validate.outputs.is-rollback != 'true'
-        
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.app }}
+          tags: |
+            type=raw,value=${{ needs.validate.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
         with:
           context: .
+          file: docker/Dockerfile.app
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
           build-args: |
-            NODE_ENV=production
-            VERSION=${{ needs.validate.outputs.version }}
-            COMMIT_SHA=${{ github.sha }}
-            TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+            APP_NAME=${{ matrix.app }}
+            NEXT_PUBLIC_APP_NAME=${{ matrix.public_app_name }}
+            NEXT_PUBLIC_APP_URL=${{ vars[matrix.app_url_var] || matrix.default_url }}
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
-            NEXT_PUBLIC_TMDB_BASE_URL=https://api.themoviedb.org/3
-            NEXT_PUBLIC_APP_NAME=EGFilm
-            NEXT_PUBLIC_APP_URL=${{ vars.APP_URL || 'https://egfilm.xyz' }}
             NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
+            NEXT_PUBLIC_EGFILM_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
+            NEXT_PUBLIC_EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+            NEXT_PUBLIC_EGTV_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
             NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
             NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
             NEXT_PUBLIC_BUILD_VERSION=${{ needs.validate.outputs.version }}
             NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
             NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
-            NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ secrets.UMAMI_WEBSITE_ID }}
-
-      - uses: sigstore/cosign-installer@v3
-        if: needs.validate.outputs.is-rollback != 'true'
-
-      - if: needs.validate.outputs.is-rollback != 'true'
-        run: cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
-
-      - id: image-uri
-        run: |
-          if [[ "${{ needs.validate.outputs.is-rollback }}" == "true" ]]; then
-            IMAGE_URI="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate.outputs.version }}"
-          else
-            IMAGE_URI="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
-          fi
-          echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
 
   deploy:
     name: 🚀 Zero-Downtime Deploy
@@ -276,8 +208,8 @@ jobs:
     needs: [validate, build]
     environment:
       name: production
-      url: ${{ vars.APP_URL || 'https://egfilm.xyz' }}
-    timeout-minutes: 15
+      url: ${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -286,37 +218,52 @@ jobs:
             docker-compose.yml
           sparse-checkout-cone-mode: false
 
-      # 1.  Create production.env on the runner
       - name: 📝 Create .env
         run: |
+          OWNER="${{ github.repository_owner }}"
+          REG="${{ env.REGISTRY }}"
+          VER="${{ needs.validate.outputs.version }}"
           cat > .env <<EOF
           NODE_ENV=production
           NEXT_TELEMETRY_DISABLED=1
+          REGISTRY=${REG}
+          DEPLOY_USER=${{ github.actor }}
+          REGISTRY_TOKEN=${{ secrets.REGISTRY_TOKEN }}
+
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           POSTGRES_DB=${{ secrets.POSTGRES_DB }}
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-          TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           AUTH_TRUST_HOST=true
-          AUTH_URL=${{ vars.APP_URL }}
-          NEXTAUTH_URL=${{ vars.APP_URL }}
-          NEXT_PUBLIC_APP_NAME=EGFilm
-          NEXT_PUBLIC_APP_URL=${{ vars.APP_URL }}
+          TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+
+          EGFILM_IMAGE_NAME=${REG}/${OWNER}/egfilm:${VER}
+          EGSPORT_IMAGE_NAME=${REG}/${OWNER}/egsport:${VER}
+          EGTV_IMAGE_NAME=${REG}/${OWNER}/egtv:${VER}
+
+          EGFILM_PORT=${{ vars.EGFILM_PORT || '8000' }}
+          EGSPORT_PORT=${{ vars.EGSPORT_PORT || '5555' }}
+          EGTV_PORT=${{ vars.EGTV_PORT || '3333' }}
+
+          EGFILM_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
+          EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+          EGTV_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
+
+          EGFILM_AUTH_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
+          EGSPORT_AUTH_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+          EGTV_AUTH_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
+
           NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
           NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
           NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
           TURN_PASSWORD=${{ secrets.TURN_PASSWORD || '' }}
-          NEXT_PUBLIC_BUILD_VERSION=${{ needs.validate.outputs.version }}
-          NEXT_PUBLIC_BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
           NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
-          REGISTRY_TOKEN=${{ secrets.REGISTRY_TOKEN }}
-          DEPLOY_USER=${{ github.actor }}
-          IMAGE_NAME=${{ needs.build.outputs.image-uri }}
+          NEXT_PUBLIC_BUILD_VERSION=${VER}
+          NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
           EOF
 
-      #  Ship files to server (appleboy/scp-action)
       - name: 📤 Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -328,97 +275,46 @@ jobs:
           target: "~/egfilm/"
           overwrite: true
 
-      # 3.  Run deployment script (appleboy/ssh-action)
       - name: 🚀 Execute deploy.sh
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.SERVER_HOST }}
+          username: ${{ vars.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          command_timeout: 20m
+          script: |
+            cd ~/egfilm
+            chmod +x deploy.sh
+            bash deploy.sh
+
+      - name: 🧪 Smoke tests
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.SERVER_HOST }}
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ vars.SSH_PORT || 22 }}
           script: |
-            cd ~/egfilm
-            bash deploy.sh
-
-
-      # 4.  Health-check & smoke tests (still via appleboy/ssh-action)
-      - name: 🏥 Post-deploy health check
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ vars.SERVER_HOST }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ vars.SSH_PORT || '22' }}
-          script: |
             set -e
-            for i in {1..30}; do
-              curl -sf http://localhost:8000/api/health && echo && echo "✅ App healthy" && exit 0
-              echo -n .
-              sleep 2
+            for p in "${{ vars.EGFILM_PORT || '8000' }}" "${{ vars.EGSPORT_PORT || '5555' }}" "${{ vars.EGTV_PORT || '3333' }}"; do
+              echo -n "  :$p/api/health … "
+              curl -sf "http://localhost:$p/api/health" >/dev/null && echo "✅" || { echo "❌"; exit 1; }
             done
-            echo "❌ Health check failed"
-            docker compose -f ~/egfilm/docker-compose.yml logs app --tail=50
-            exit 1
-
-      - name: 🧪 Smoke tests
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ vars.SERVER_HOST }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ vars.SSH_PORT || '22' }}
-          script: |
-            BASE="${{ vars.APP_URL }}"
-            curl -sf "$BASE/"               && echo "✅ Home page"
-            curl -sf "$BASE/api/health"     && echo "✅ API health"
-            curl -sf "$BASE/movies"         && echo "✅ Movies page" || echo "⚠️ Movies page unavailable (non-critical)"
-
-      # 5.  Final cleanup
-      - name: 🧹 System cleanup
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ vars.SERVER_HOST }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ vars.SSH_PORT || '22' }}
-          script: |
-            docker system prune -af --filter "until=1h"
-            docker system df
 
   report:
     name: 📊 Deployment Report
     runs-on: ubuntu-latest
     needs: [validate, build, deploy]
-    environment: production
     if: always()
     steps:
-      - name: 📋 GitHub step summary
-        run: |
-          echo "# 🚀 EGFilm Main App Deployment Report" >> $GITHUB_STEP_SUMMARY
+      - run: |
+          echo "# 🚀 Monorepo Deployment Report" >> "$GITHUB_STEP_SUMMARY"
           if [[ "${{ needs.deploy.result }}" == "success" ]]; then
-            echo "## ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ Deployment Successful" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ Deployment Failed (${{ needs.deploy.result }})" >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo "- **Version**: ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ needs.build.outputs.image-uri }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ needs.validate.outputs.is-rollback }}" == "true" ]]; then
-            echo "- **Type**: 🔄 Rollback" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [🎬 Main App](${{ vars.APP_URL }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [📝 Blog](${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [🏥 Health Check](${{ vars.APP_URL }}/api/health)" >> $GITHUB_STEP_SUMMARY
-
-      - if: needs.deploy.result == 'success'
-        run: |
-          echo "🎉 EGFilm deployed successfully!"
-          echo "Version: ${{ needs.validate.outputs.version }}"
-          echo "🌐 Live at: ${{ vars.APP_URL }}"
-
-      - if: needs.deploy.result == 'failure'
-        run: |
-          echo "❌ Deployment failed – inspect logs above"
-          exit 1
+          echo "- **Version**: ${{ needs.validate.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Apps**: egfilm, egsport, egtv" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Triggered by**: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"

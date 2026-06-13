@@ -3,6 +3,7 @@
 # Build a specific app from the monorepo:
 #   docker build --build-arg APP_NAME=egfilm -f docker/Dockerfile.app -t egfilm:latest .
 #   docker build --build-arg APP_NAME=egsport -f docker/Dockerfile.app -t egsport:latest .
+#   docker build --build-arg APP_NAME=egtv   -f docker/Dockerfile.app -t egtv:latest .
 
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
@@ -36,6 +37,7 @@ ARG NEXT_PUBLIC_TMDB_API_KEY
 ARG NEXT_PUBLIC_BLOG_SITE_URL
 ARG NEXT_PUBLIC_EGFILM_URL
 ARG NEXT_PUBLIC_EGSPORT_URL
+ARG NEXT_PUBLIC_EGTV_URL
 ARG NEXT_PUBLIC_TURN_SERVER
 ARG NEXT_PUBLIC_TURN_USERNAME
 ARG NEXT_PUBLIC_BUILD_VERSION
@@ -51,6 +53,7 @@ ENV NEXT_PUBLIC_TMDB_API_KEY=${NEXT_PUBLIC_TMDB_API_KEY}
 ENV NEXT_PUBLIC_BLOG_SITE_URL=${NEXT_PUBLIC_BLOG_SITE_URL}
 ENV NEXT_PUBLIC_EGFILM_URL=${NEXT_PUBLIC_EGFILM_URL}
 ENV NEXT_PUBLIC_EGSPORT_URL=${NEXT_PUBLIC_EGSPORT_URL}
+ENV NEXT_PUBLIC_EGTV_URL=${NEXT_PUBLIC_EGTV_URL}
 ENV NEXT_PUBLIC_TURN_SERVER=${NEXT_PUBLIC_TURN_SERVER}
 ENV NEXT_PUBLIC_TURN_USERNAME=${NEXT_PUBLIC_TURN_USERNAME}
 ENV NEXT_PUBLIC_BUILD_VERSION=${NEXT_PUBLIC_BUILD_VERSION}
@@ -58,7 +61,9 @@ ENV NEXT_PUBLIC_BUILD_DATE=${NEXT_PUBLIC_BUILD_DATE}
 ENV NEXT_PUBLIC_GIT_SHA=${NEXT_PUBLIC_GIT_SHA}
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
 
-COPY --from=deps /repo/node_modules ./node_modules
+# Bring the full installed workspace (root + per-package node_modules, e.g. the
+# prisma CLI in packages/db/node_modules/.bin), then overlay the full source.
+COPY --from=deps /repo/ ./
 COPY --from=pruner /repo/out/full/ ./
 
 RUN pnpm --filter @egfilm/db db:generate
@@ -81,8 +86,8 @@ COPY --from=builder --chown=nextjs:nodejs /repo/apps/${APP_NAME}/.next/standalon
 COPY --from=builder --chown=nextjs:nodejs /repo/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
 COPY --from=builder --chown=nextjs:nodejs /repo/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
 COPY --from=builder --chown=nextjs:nodejs /repo/packages/db/prisma ./packages/db/prisma
-COPY --from=builder --chown=nextjs:nodejs /repo/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /repo/node_modules/@prisma ./node_modules/@prisma
+# Prisma client + query engine are bundled inside the Next.js standalone output
+# (apps/${APP_NAME}/.next/standalone/node_modules/.pnpm/...); no root copy needed.
 
 USER nextjs
 EXPOSE 3000

@@ -52,7 +52,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "${EGSPORT_PORT:-8001}:3000"
+      - "${EGSPORT_PORT:-5555}:3000"
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
@@ -66,6 +66,34 @@ services:
       NEXT_PUBLIC_APP_URL: ${EGSPORT_URL}
       NEXT_PUBLIC_EGFILM_URL: ${EGFILM_URL}
       NEXT_PUBLIC_EGSPORT_URL: ${EGSPORT_URL}
+      NEXT_PUBLIC_BLOG_SITE_URL: ${NEXT_PUBLIC_BLOG_SITE_URL:-}
+      NEXT_PUBLIC_TURN_SERVER: ${NEXT_PUBLIC_TURN_SERVER:-}
+      NEXT_PUBLIC_TURN_USERNAME: ${NEXT_PUBLIC_TURN_USERNAME:-}
+      TURN_PASSWORD: ${TURN_PASSWORD:-}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+
+  egtv:
+    image: ${EGTV_IMAGE_NAME:-ghcr.io/bibektimilsina00/egtv:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${EGTV_PORT:-3333}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_URL: ${EGTV_AUTH_URL}
+      NEXTAUTH_URL: ${EGTV_AUTH_URL}
+      NEXT_PUBLIC_APP_NAME: EGTV
+      NEXT_PUBLIC_APP_URL: ${EGTV_URL}
+      NEXT_PUBLIC_EGFILM_URL: ${EGFILM_URL}
+      NEXT_PUBLIC_EGSPORT_URL: ${EGSPORT_URL}
+      NEXT_PUBLIC_EGTV_URL: ${EGTV_URL}
       NEXT_PUBLIC_BLOG_SITE_URL: ${NEXT_PUBLIC_BLOG_SITE_URL:-}
       NEXT_PUBLIC_TURN_SERVER: ${NEXT_PUBLIC_TURN_SERVER:-}
       NEXT_PUBLIC_TURN_USERNAME: ${NEXT_PUBLIC_TURN_USERNAME:-}
