@@ -69,7 +69,7 @@ RUN pnpm --filter ${APP_NAME} build
 # Walks the workspace graph, resolves every transitive dep, emits a flat
 # (symlink-free) directory. Canonical fix for the "standalone trace missed
 # styled-jsx / next / etc" pnpm symlink trap.
-RUN pnpm --filter ${APP_NAME} --prod deploy --legacy /deploy
+RUN pnpm --filter ${APP_NAME} --prod deploy /deploy
 
 # Overlay the built Next output + public + prisma into the deploy tree.
 RUN cp -r apps/${APP_NAME}/.next /deploy/.next \
