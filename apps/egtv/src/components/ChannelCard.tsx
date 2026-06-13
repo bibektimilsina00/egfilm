@@ -6,7 +6,7 @@ export default function ChannelCard({ channel }: { channel: TvChannel }) {
     return (
         <Link
             href={`/channel/${encodeURIComponent(channel.id)}`}
-            className="group flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3 transition hover:border-primary"
+            className="group flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3 transition hover:border-blue-500"
         >
             <div className="flex h-20 w-full items-center justify-center overflow-hidden rounded bg-muted">
                 {channel.logo ? (
