@@ -9,6 +9,8 @@
     "start": "next start",
     "test": "echo 'No tests specified' && exit 0",
     "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next .turbo node_modules",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

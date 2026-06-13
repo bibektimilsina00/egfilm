@@ -1,0 +1,30 @@
+{
+  "name": "egfilm-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:egfilm": "pnpm --filter egfilm dev",
+    "dev:eglive": "pnpm --filter eglive dev",
+    "build": "turbo run build",
+    "build:egfilm": "pnpm --filter egfilm build",
+    "build:eglive": "pnpm --filter eglive build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "db:generate": "pnpm --filter @egfilm/db db:generate",
+    "db:migrate": "pnpm --filter @egfilm/db db:migrate",
+    "db:migrate:deploy": "pnpm --filter @egfilm/db db:migrate:deploy",
+    "db:studio": "pnpm --filter @egfilm/db db:studio",
+    "db:seed": "pnpm --filter @egfilm/db db:seed",
+    "clean": "turbo run clean && rm -rf node_modules apps/*/node_modules packages/*/node_modules .turbo apps/*/.next apps/*/.turbo packages/*/.turbo"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.6.0"
+  }
+}
