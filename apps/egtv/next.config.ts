@@ -3,6 +3,14 @@ import path from "path";
 
 const nextConfig: NextConfig = {
     outputFileTracingRoot: path.join(__dirname, '..', '..'),
+    outputFileTracingIncludes: {
+        '/**/*': [
+            './node_modules/next/**/*',
+            './node_modules/next/package.json',
+            './node_modules/@next/**/*',
+            './node_modules/.pnpm/next@*/**/*',
+        ],
+    },
     transpilePackages: [
         '@egfilm/db',
         '@egfilm/auth',

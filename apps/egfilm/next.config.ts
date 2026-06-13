@@ -4,8 +4,20 @@ import path from "path";
 const nextConfig: NextConfig = {
   // Monorepo standalone build — trace from the workspace root so that
   // every transitive dep (incl. `next` itself + the @egfilm/* packages
-  // via pnpm symlinks) is bundled into .next/standalone.
+  // via pnpm symlinks) is bundled into .next/standalone. The explicit
+  // `outputFileTracingIncludes` forces full package manifests for the
+  // few deps that pnpm's symlink layout otherwise truncates to just
+  // `dist/` (which crashes node with "Cannot find module 'next'" at
+  // boot).
   outputFileTracingRoot: path.join(__dirname, '..', '..'),
+  outputFileTracingIncludes: {
+    '/**/*': [
+      './node_modules/next/**/*',
+      './node_modules/next/package.json',
+      './node_modules/@next/**/*',
+      './node_modules/.pnpm/next@*/**/*',
+    ],
+  },
   transpilePackages: [
     '@egfilm/db',
     '@egfilm/auth',
