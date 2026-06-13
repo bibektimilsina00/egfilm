@@ -10,14 +10,42 @@ export interface AuthFactoryOptions {
      * is open. Default: `['/dashboard', '/watchlist', '/watch-party']`.
      */
     protectedPaths?: string[];
+    /**
+     * Cookie domain — set to `.your-apex.com` for cross-subdomain SSO across
+     * sibling apps (e.g. `.egfilm.xyz` shares the session cookie between
+     * `egfilm.xyz` and `sport.egfilm.xyz`). Leave undefined for local dev.
+     */
+    cookieDomain?: string;
+}
+
+function buildCookies(domain?: string): NextAuthConfig['cookies'] {
+    if (!domain) return undefined;
+    const secure = true;
+    const sameSite = 'lax' as const;
+    return {
+        sessionToken: {
+            name: '__Secure-authjs.session-token',
+            options: { httpOnly: true, sameSite, path: '/', secure, domain },
+        },
+        callbackUrl: {
+            name: '__Secure-authjs.callback-url',
+            options: { httpOnly: true, sameSite, path: '/', secure, domain },
+        },
+        csrfToken: {
+            name: '__Host-authjs.csrf-token',
+            options: { httpOnly: true, sameSite, path: '/', secure },
+        },
+    };
 }
 
 export function createAuthConfig(opts: AuthFactoryOptions = {}): NextAuthConfig {
     const signIn = opts.signInPage ?? '/login';
     const protectedPaths = opts.protectedPaths ?? ['/dashboard', '/watchlist', '/watch-party'];
+    const cookies = buildCookies(opts.cookieDomain);
 
     return {
         pages: { signIn },
+        ...(cookies ? { cookies } : {}),
         callbacks: {
             async jwt({ token, user }) {
                 if (user) {

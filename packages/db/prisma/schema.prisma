@@ -50,7 +50,7 @@ model WatchlistItem {
   title           String
   posterPath      String?
   addedAt         DateTime  @default(now())
-  // Sports (eglive) — all nullable, additive
+  // Sports (egsport) — all nullable, additive
   sport           String? // e.g. 'football', 'basketball', 'ufc'
   league          String? // league code
   matchExternalId String? // raw sportsrc id (string)
@@ -75,7 +75,7 @@ model ContinueWatching {
   season          Int? // for TV shows
   episode         Int? // for TV shows
   updatedAt       DateTime  @updatedAt
-  // Sports (eglive) — all nullable, additive
+  // Sports (egsport) — all nullable, additive
   sport           String?
   league          String?
   matchExternalId String?
@@ -103,7 +103,7 @@ model WatchRoom {
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   lastActiveAt    DateTime  @default(now())
-  // Sports (eglive) — all nullable, additive
+  // Sports (egsport) — all nullable, additive
   sport           String?
   league          String?
   matchExternalId String?
@@ -137,7 +137,7 @@ model Notification {
   mediaTitle String?
   embedUrl   String?
 
-  // Sports (eglive) — additive
+  // Sports (egsport) — additive
   sport           String?
   matchExternalId String?
 

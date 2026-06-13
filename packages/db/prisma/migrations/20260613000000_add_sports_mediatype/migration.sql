@@ -1,4 +1,4 @@
--- Sports (eglive) — additive columns + indexes only. Zero downtime.
+-- Sports (egsport) — additive columns + indexes only. Zero downtime.
 
 ALTER TABLE "WatchlistItem"
   ADD COLUMN "sport" TEXT,

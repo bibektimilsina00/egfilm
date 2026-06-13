@@ -1,16 +1,16 @@
-# egfilm + eglive monorepo
+# egfilm + egsport monorepo
 
 Two Next.js 15 streaming apps sharing a common Postgres, NextAuth, shadcn UI library, and a socket.io watch-together engine.
 
 - **apps/egfilm** — movies + TV via TMDB.
-- **apps/eglive** — live sports via sportsrc.org (`https://api.sportsrc.org/`).
+- **apps/egsport** — live sports via sportsrc.org (`https://api.sportsrc.org/`).
 
 ## Layout
 
 ```
 apps/
   egfilm/              # movies + TV streaming (port 8000)
-  eglive/              # live sports streaming (port 8001)
+  egsport/              # live sports streaming (port 8001)
 packages/
   config/              # tsconfig, tailwind preset, eslint shareables
   db/                  # Prisma schema + client (single source of truth)
@@ -20,7 +20,7 @@ packages/
   realtime/            # socket.io server + watch-together hooks
 docker/
   Dockerfile.app       # monorepo-aware multi-stage, takes ARG APP_NAME
-docker-compose.yml     # postgres + egfilm + eglive
+docker-compose.yml     # postgres + egfilm + egsport
 deploy.sh              # loops over both apps
 turbo.json             # build/dev/lint/db pipelines
 pnpm-workspace.yaml
@@ -36,7 +36,7 @@ pnpm db:generate
 pnpm db:migrate            # applies all migrations incl. 20260613 sports
 
 pnpm dev:egfilm            # http://localhost:8000
-pnpm dev:eglive            # http://localhost:8001
+pnpm dev:egsport            # http://localhost:8001
 ```
 
 Both apps read `.env` from their own `apps/<name>/.env`. Copy `.env.example` and fill in DB + auth + (egfilm only) TMDB.
@@ -47,7 +47,7 @@ Both apps read `.env` from their own `apps/<name>/.env`. Copy `.env.example` and
 |----------------------|-------------------------------------------------------|
 | `pnpm dev`           | turbo runs `dev` across all apps                      |
 | `pnpm dev:egfilm`    | egfilm dev only (port 8000)                           |
-| `pnpm dev:eglive`    | eglive dev only (port 8001)                           |
+| `pnpm dev:egsport`    | egsport dev only (port 8001)                           |
 | `pnpm build`         | turbo builds all apps with caching                    |
 | `pnpm lint`          | eslint across the workspace                           |
 | `pnpm type-check`    | tsc --noEmit per package                              |
@@ -61,12 +61,12 @@ Both apps read `.env` from their own `apps/<name>/.env`. Copy `.env.example` and
 
 ```bash
 docker build --build-arg APP_NAME=egfilm -f docker/Dockerfile.app -t egfilm:latest .
-docker build --build-arg APP_NAME=eglive -f docker/Dockerfile.app -t eglive:latest .
+docker build --build-arg APP_NAME=egsport -f docker/Dockerfile.app -t egsport:latest .
 
-docker compose up -d   # postgres + egfilm + eglive
+docker compose up -d   # postgres + egfilm + egsport
 ```
 
-## Sportsrc API (eglive)
+## Sportsrc API (egsport)
 
 | Endpoint                                                  | Purpose            |
 |-----------------------------------------------------------|--------------------|
@@ -75,4 +75,4 @@ docker compose up -d   # postgres + egfilm + eglive
 | `GET /?data=detail&category={cat}&id={id}`                | Match + embed      |
 | `GET /?data=results&category={leagues\|tables\|scores}&league={code}` | Standings/scores |
 
-Free tier: 20 rps. No API key. Eglive's client (`apps/eglive/src/lib/sportsrc.ts`) ships a token bucket to stay under the limit and a React Query layer (`apps/eglive/src/lib/hooks/useSports.ts`).
+Free tier: 20 rps. No API key. Eglive's client (`apps/egsport/src/lib/sportsrc.ts`) ships a token bucket to stay under the limit and a React Query layer (`apps/egsport/src/lib/hooks/useSports.ts`).

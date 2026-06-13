@@ -6,7 +6,7 @@ export interface WatchlistItemData {
     mediaType: MediaTypeId;
     title: string;
     posterPath?: string | null;
-    // Sports (eglive) — additive, nullable
+    // Sports (egsport) — additive, nullable
     sport?: string | null;
     league?: string | null;
     matchExternalId?: string | null;

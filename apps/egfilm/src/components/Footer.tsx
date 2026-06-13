@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import React from 'react';
-import { Instagram, Twitter, Mail, BookOpen, Home, Film, Tv } from 'lucide-react';
+import { Instagram, Twitter, Mail, BookOpen, Home, Film, Tv, Activity } from 'lucide-react';
 
 const BLOG_SITE_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
+const EGSPORT_URL = process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sport.egfilm.xyz';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
@@ -40,6 +41,7 @@ export default function Footer() {
                             <FooterLink href="/" icon={Home} text="Home" />
                             <FooterLink href="/movies" icon={Film} text="Movies" />
                             <FooterLink href="/tv" icon={Tv} text="TV Shows" />
+                            <FooterLink href={EGSPORT_URL} icon={Activity} text="Live Sports" external />
                             <FooterLink href={BLOG_SITE_URL} icon={BookOpen} text="Blog" external />
                         </ul>
                     </div>

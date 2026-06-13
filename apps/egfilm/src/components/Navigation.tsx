@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Film, Search, Menu, X, Home, Tv, Heart, LogIn, LogOut, User, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
+import { Film, Search, Menu, X, Home, Tv, Heart, LogIn, LogOut, User, ChevronDown, BookOpen, Loader2, Activity } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { searchMulti } from '@/lib/tmdb';
 
@@ -114,7 +114,8 @@ export default function Navigation() {
         { href: '/', label: 'Home', icon: Home },
         { href: '/movies', label: 'Movies', icon: Film },
         { href: '/tv', label: 'TV Shows', icon: Tv },
-        { href: process.env.NEXT_PUBLIC_BLOG_URL || 'https://blog.egfilm.xyz', label: 'Blog', icon: BookOpen, external: true },
+        { href: process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sport.egfilm.xyz', label: 'Live Sports', icon: Activity, external: true },
+        { href: process.env.NEXT_PUBLIC_BLOG_URL || process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz', label: 'Blog', icon: BookOpen, external: true },
         { href: '/watchlist', label: 'Watchlist', icon: Heart },
     ], []);
 

@@ -49,17 +49,17 @@ export default function HomePage() {
 
     return (
         <div className="container mx-auto px-4 py-8 space-y-10">
-            <section className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-orange-500/10 via-red-500/5 to-background p-8">
+            <section className="relative overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-br from-blue-500/10 via-gray-900 to-gray-950 p-8">
                 <div className="max-w-2xl space-y-3">
-                    <p className="text-xs uppercase tracking-widest text-orange-500">EGLive</p>
-                    <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+                    <p className="text-xs uppercase tracking-widest text-blue-400">EGSport</p>
+                    <h1 className="text-3xl font-bold tracking-tight md:text-4xl text-white">
                         Live sports streaming, schedules & stats.
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-gray-400">
                         Football, basketball, UFC, MMA and more. Watch live matches, follow standings, and never miss a game.
                     </p>
                 </div>
-                <Activity className="absolute -bottom-6 -right-6 h-48 w-48 text-orange-500/10" />
+                <Activity className="absolute -bottom-6 -right-6 h-48 w-48 text-blue-500/10" />
             </section>
 
             {FEATURED_CATEGORIES.map((cat) => (
@@ -68,13 +68,13 @@ export default function HomePage() {
 
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Browse Sports</h2>
-                    <Link href="/sports" className="text-sm text-muted-foreground hover:text-foreground">View all →</Link>
+                    <h2 className="text-xl font-semibold text-white">Browse Sports</h2>
+                    <Link href="/sports" className="text-sm text-gray-400 hover:text-blue-400">View all →</Link>
                 </div>
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                     {isLoading
                         ? Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="h-32 rounded-xl bg-muted animate-pulse" />
+                            <div key={i} className="h-32 rounded-xl bg-gray-900 animate-pulse" />
                         ))
                         : sports.slice(0, 12).map((s, i) => (
                             <SportsTile key={(s.category ?? s.name ?? i).toString()} sport={s} />

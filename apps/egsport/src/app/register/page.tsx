@@ -39,7 +39,7 @@ export default function RegisterPage() {
         <div className="container mx-auto max-w-md px-4 py-12">
             <div className="rounded-xl border border-border p-6 space-y-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Create your EGLive account</h1>
+                    <h1 className="text-2xl font-bold">Create your EGSport account</h1>
                     <p className="text-sm text-muted-foreground">Single account works on EGFilm too.</p>
                 </div>
                 <form onSubmit={onSubmit} className="space-y-3">

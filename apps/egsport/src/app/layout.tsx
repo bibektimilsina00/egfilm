@@ -11,8 +11,8 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
     title: {
-        default: "EGLive — Live Sports Streaming",
-        template: "%s | EGLive",
+        default: "EGSport — Live Sports Streaming",
+        template: "%s | EGSport",
     },
     description:
         "Watch live football, basketball, UFC, MMA and more. Schedules, scores, standings — all in one place.",
@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className="min-h-screen bg-background text-foreground antialiased">
+            <body className="min-h-screen bg-gray-950 text-gray-100 antialiased">
                 <SessionProvider>
                     <QueryProvider>
                         <div className="flex min-h-screen flex-col">
