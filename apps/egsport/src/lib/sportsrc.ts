@@ -52,6 +52,7 @@ async function sportsrcGet<T>(params: Record<string, string>): Promise<T> {
 export interface SportCategory {
     id: string;
     name: string;
+    category?: string;
 }
 
 // ---------- Match ----------
@@ -94,6 +95,8 @@ export interface MatchDetail extends Match {
 export interface League {
     id: string;
     name: string;
+    code?: string;
+    country?: string;
 }
 
 // ---------- Tables (standings) ----------
