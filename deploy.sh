@@ -38,9 +38,28 @@ for app in "${APPS[@]}"; do
 done
 # Remove orphan containers from previous compose layouts (e.g. egfilm-app-1
 # from the single-app era still bound to :8000) so port bindings are free.
-docker compose down --remove-orphans --rmi=false 2>/dev/null || true
-for orphan in egfilm-app-1 egfilm_app_1 egfilm-egfilm-1 egfilm-egsport-1 egfilm-egtv-1; do
-  docker rm -f "$orphan" 2>/dev/null || true
+# We do NOT call `docker compose down` here because that would also stop
+# postgres and force a long re-init cycle below.
+ORPHANS="$(docker ps -a --format '{{.Names}}' | grep -E '^egfilm[-_](app|egfilm|egsport|egtv)[-_]?[0-9]*$' | grep -vE '^egfilm-(egfilm|egsport|egtv|postgres)-1$' || true)"
+if [[ -n "${ORPHANS:-}" ]]; then
+  echo "  Removing orphan containers:"
+  while IFS= read -r c; do
+    [[ -n "$c" ]] || continue
+    echo "    - $c"
+    docker rm -f "$c" 2>/dev/null || true
+  done <<< "$ORPHANS"
+fi
+# Free any process holding our published ports (in case a stray container
+# was created with --network=host or another compose project).
+for port in "${EGFILM_PORT:-8000}" "${EGSPORT_PORT:-5555}" "${EGTV_PORT:-3333}"; do
+  cid="$(docker ps --filter "publish=$port" --format '{{.ID}}' | head -n1 || true)"
+  if [[ -n "$cid" ]]; then
+    name="$(docker inspect -f '{{.Name}}' "$cid" 2>/dev/null | sed 's|^/||' || echo unknown)"
+    case "$name" in
+      egfilm-egfilm-1|egfilm-egsport-1|egfilm-egtv-1|egfilm-postgres-1) ;;  # keep
+      *) echo "  Removing $name (holds :$port)"; docker rm -f "$cid" || true ;;
+    esac
+  fi
 done
 
 # ---------- registry login -----------------------------------------
@@ -68,9 +87,29 @@ done
 # ---------- database: start & health --------------------------------
 step "Ensuring database is running"
 docker compose up -d postgres
+
+# Wait up to 120s for Postgres. Don't let a slow first boot or a transient
+# `docker exec` failure kill the whole deploy via set -e.
 echo -n "⏳ Waiting for Postgres …"
-timeout 60 bash -c "until docker compose exec -T postgres pg_isready -U '$POSTGRES_USER' -d '$POSTGRES_DB' >/dev/null 2>&1; do sleep 2; echo -n .; done"
-echo -e " ${GREEN}✅ Postgres ready${NC}"
+pg_ready=0
+for _ in $(seq 1 60); do
+  if docker compose exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
+    pg_ready=1
+    break
+  fi
+  echo -n "."
+  sleep 2
+done
+if [[ "$pg_ready" -eq 1 ]]; then
+  echo -e " ${GREEN}✅ Postgres ready${NC}"
+else
+  echo -e " ${RED}❌ Postgres did not become healthy in 120s${NC}"
+  echo -e "${YELLOW}── postgres logs ──${NC}"
+  docker compose logs --tail=60 postgres || true
+  echo -e "${YELLOW}── postgres status ──${NC}"
+  docker compose ps postgres || true
+  exit 1
+fi
 
 # ---------- Prisma migrate (shared DB) ------------------------------
 step "Running Prisma migrate (shared DB)"
