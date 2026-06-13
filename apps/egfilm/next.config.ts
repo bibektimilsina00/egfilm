@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Monorepo standalone build — trace from the workspace root so that
+  // every transitive dep (incl. `next` itself + the @egfilm/* packages
+  // via pnpm symlinks) is bundled into .next/standalone.
+  outputFileTracingRoot: path.join(__dirname, '..', '..'),
   transpilePackages: [
     '@egfilm/db',
     '@egfilm/auth',
