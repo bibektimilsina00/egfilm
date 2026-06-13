@@ -1,15 +1,16 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use } from 'react';
 import { useMatchesByCategory } from '@/lib/hooks/useSports';
 import { isMatchLive, getMatchKickoff } from '@/lib/sportsrc';
 import MatchCard from '@/components/MatchCard';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@egfilm/ui/components/ui/tabs';
+import EmptyState from '@/components/EmptyState';
+import { Flame, Clock, CheckCircle2, CalendarOff, FlameKindling, History } from 'lucide-react';
+import type { Match } from '@/lib/sportsrc';
 
 export default function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
     const { category } = use(params);
     const { data: matches = [], isLoading, error } = useMatchesByCategory(category);
-    const [tab, setTab] = useState<'live' | 'upcoming' | 'finished'>('live');
 
     const live = matches.filter(isMatchLive);
     const upcoming = matches.filter((m) => {
@@ -24,48 +25,93 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
     });
 
     return (
-        <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="container mx-auto px-4 py-8 space-y-10">
             <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">Sport</p>
-                <h1 className="text-2xl font-bold capitalize">{category.replace(/-/g, ' ')}</h1>
+                <p className="text-xs uppercase tracking-widest text-gray-500">Sport</p>
+                <h1 className="text-3xl font-bold capitalize text-white">{category.replace(/-/g, ' ')}</h1>
             </div>
 
             {error ? (
-                <div className="rounded-md border border-red-500/30 bg-red-500/5 p-4 text-sm">
+                <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">
                     Failed to load matches. Try again in a moment.
                 </div>
             ) : null}
 
-            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-                <TabsList>
-                    <TabsTrigger value="live">Live ({live.length})</TabsTrigger>
-                    <TabsTrigger value="upcoming">Upcoming ({upcoming.length})</TabsTrigger>
-                    <TabsTrigger value="finished">Finished ({finished.length})</TabsTrigger>
-                </TabsList>
+            <Section
+                title="Live now"
+                count={live.length}
+                accent="text-red-400"
+                Icon={Flame}
+                isLoading={isLoading}
+                empty={<EmptyState Icon={FlameKindling} title="Nothing live right now" description="Check back when the next match kicks off — live matches will appear here." />}
+            >
+                <Grid items={live} category={category} />
+            </Section>
 
-                {(['live', 'upcoming', 'finished'] as const).map((key) => {
-                    const list = key === 'live' ? live : key === 'upcoming' ? upcoming : finished;
-                    return (
-                        <TabsContent key={key} value={key} className="mt-4">
-                            {isLoading ? (
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                    {Array.from({ length: 6 }).map((_, i) => (
-                                        <div key={i} className="h-32 rounded-md bg-muted animate-pulse" />
-                                    ))}
-                                </div>
-                            ) : list.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No matches in this view.</p>
-                            ) : (
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                    {list.map((m) => (
-                                        <MatchCard key={`${category}-${m.id}`} match={m} category={category} />
-                                    ))}
-                                </div>
-                            )}
-                        </TabsContent>
-                    );
-                })}
-            </Tabs>
+            <Section
+                title="Upcoming"
+                count={upcoming.length}
+                accent="text-blue-400"
+                Icon={Clock}
+                isLoading={isLoading}
+                empty={<EmptyState Icon={CalendarOff} title="No upcoming matches" description="Schedule looks empty for this sport. Try another sport or check the global schedule." />}
+            >
+                <Grid items={upcoming} category={category} />
+            </Section>
+
+            <Section
+                title="Finished"
+                count={finished.length}
+                accent="text-gray-400"
+                Icon={CheckCircle2}
+                isLoading={isLoading}
+                empty={<EmptyState Icon={History} title="No recent results" description="Past results will show up here once matches wrap up." />}
+            >
+                <Grid items={finished} category={category} />
+            </Section>
+        </div>
+    );
+}
+
+function Section({
+    title, count, accent, Icon, isLoading, empty, children,
+}: {
+    title: string;
+    count: number;
+    accent: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    isLoading: boolean;
+    empty: React.ReactNode;
+    children: React.ReactNode;
+}) {
+    return (
+        <section className="space-y-3">
+            <div className="flex items-baseline gap-2">
+                <Icon className={`h-5 w-5 ${accent}`} />
+                <h2 className={`text-xl font-semibold ${accent}`}>{title}</h2>
+                <span className="text-xs text-gray-500">({count})</span>
+            </div>
+            {isLoading ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-52 rounded-xl bg-gray-900 animate-pulse" />
+                    ))}
+                </div>
+            ) : count === 0 ? (
+                empty
+            ) : (
+                children
+            )}
+        </section>
+    );
+}
+
+function Grid({ items, category }: { items: Match[]; category: string }) {
+    return (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {items.map((m) => (
+                <MatchCard key={`${category}-${m.id}`} match={m} category={category} />
+            ))}
         </div>
     );
 }

@@ -2,9 +2,11 @@
 
 import { use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useMatchDetail } from '@/lib/hooks/useSports';
-import { getMatchTeams, getMatchKickoff, getMatchEmbedUrl, isMatchLive } from '@/lib/sportsrc';
+import { getMatchKickoff, isMatchLive } from '@/lib/sportsrc';
 import EmbedMatchPlayer from '@/components/EmbedMatchPlayer';
+import PlayerNotice from '@/components/PlayerNotice';
 import LiveBadge from '@/components/LiveBadge';
 import { Button } from '@egfilm/ui/components/ui/button';
 import { Users, CalendarClock, ArrowLeft } from 'lucide-react';
@@ -16,8 +18,8 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
     if (isLoading) {
         return (
             <div className="container mx-auto px-4 py-8 space-y-4">
-                <div className="aspect-video bg-muted rounded-md animate-pulse" />
-                <div className="h-8 w-2/3 bg-muted rounded animate-pulse" />
+                <div className="aspect-video bg-gray-900 rounded-xl animate-pulse" />
+                <div className="h-8 w-2/3 bg-gray-900 rounded animate-pulse" />
             </div>
         );
     }
@@ -25,77 +27,91 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
     if (error || !detail) {
         return (
             <div className="container mx-auto px-4 py-12 text-center">
-                <p className="text-muted-foreground">Match not found.</p>
-                <Link href={`/sports/${category}`} className="mt-3 inline-block text-sm underline">
+                <p className="text-gray-400">Match not found.</p>
+                <Link href={`/sports/${category}`} className="mt-3 inline-block text-sm underline text-blue-400">
                     ← Back to {category}
                 </Link>
             </div>
         );
     }
 
-    const { home, away } = getMatchTeams(detail);
+    const home = detail.teams?.home;
+    const away = detail.teams?.away;
     const kickoff = getMatchKickoff(detail);
-    const embedUrl = getMatchEmbedUrl(detail);
     const live = isMatchLive(detail);
+    const cat = detail.category || category;
 
     return (
         <div className="container mx-auto px-4 py-6 space-y-6">
-            <Link href={`/sports/${category}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-3 w-3" /> Back to {category.replace(/-/g, ' ')}
+            <Link href={`/sports/${cat}`} className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-400">
+                <ArrowLeft className="h-3 w-3" /> Back to {cat.replace(/-/g, ' ')}
             </Link>
 
             <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                 <div className="space-y-4">
                     <EmbedMatchPlayer
-                        embedUrl={embedUrl}
-                        title={`${home || 'Home'} vs ${away || 'Away'}`}
-                        fallbackSources={detail.sources}
+                        sources={detail.sources ?? []}
+                        title={detail.title}
                     />
 
                     <div className="flex items-center justify-between gap-3">
-                        <div>
+                        <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <p className="text-sm text-muted-foreground">{detail.league ?? category}</p>
+                                <p className="text-xs uppercase tracking-wider text-gray-500">{cat}</p>
                                 {live ? <LiveBadge /> : null}
                             </div>
-                            <h1 className="text-2xl font-bold">
-                                {home || 'Home'} <span className="text-muted-foreground">vs</span> {away || 'Away'}
+                            <h1 className="text-2xl font-bold text-white flex items-center gap-3 flex-wrap">
+                                {home?.badge ? (
+                                    <Image src={home.badge} alt={home.name} width={28} height={28} className="h-7 w-7 object-contain" unoptimized />
+                                ) : null}
+                                <span>{home?.name ?? 'Home'}</span>
+                                <span className="text-gray-500 text-base">vs</span>
+                                <span>{away?.name ?? 'Away'}</span>
+                                {away?.badge ? (
+                                    <Image src={away.badge} alt={away.name} width={28} height={28} className="h-7 w-7 object-contain" unoptimized />
+                                ) : null}
                             </h1>
-                            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
                                 <CalendarClock className="h-3.5 w-3.5" />
                                 {kickoff ? kickoff.toLocaleString() : 'Time TBD'}
                             </div>
                         </div>
                     </div>
-
-                    {detail.description ? (
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{detail.description}</p>
-                    ) : null}
                 </div>
 
                 <aside className="space-y-4">
-                    <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                        <h3 className="text-sm font-semibold">Watch together</h3>
-                        <p className="text-xs text-muted-foreground">
+                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-white">Watch together</h3>
+                        <p className="text-xs text-gray-400">
                             Create a private room and watch this match in sync with friends, with chat and live video.
                         </p>
-                        <Link href={`/match/${encodeURIComponent(category)}/${encodeURIComponent(id)}/watch-together`}>
-                            <Button className="w-full" variant="default">
+                        <Link href={`/match/${encodeURIComponent(cat)}/${encodeURIComponent(detail.id)}/watch-together`}>
+                            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
                                 <Users className="h-4 w-4 mr-1.5" /> Start watch-together
                             </Button>
                         </Link>
                     </div>
 
-                    <div className="rounded-lg border border-border p-4 space-y-2">
-                        <h3 className="text-sm font-semibold">Match info</h3>
+                    {detail.poster ? (
+                        <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+                            <div className="relative aspect-video bg-gray-950">
+                                <Image src={detail.poster} alt={detail.title} fill className="object-cover" sizes="33vw" unoptimized />
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 space-y-2">
+                        <h3 className="text-sm font-semibold text-white">Match info</h3>
                         <dl className="text-xs space-y-1">
-                            <div className="flex justify-between"><dt className="text-muted-foreground">Sport</dt><dd className="capitalize">{category.replace(/-/g, ' ')}</dd></div>
-                            <div className="flex justify-between"><dt className="text-muted-foreground">League</dt><dd>{detail.league ?? '—'}</dd></div>
-                            <div className="flex justify-between"><dt className="text-muted-foreground">Status</dt><dd>{live ? 'Live' : (detail.status ?? 'Scheduled')}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-500">Sport</dt><dd className="text-gray-300 capitalize">{cat.replace(/-/g, ' ')}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-500">Streams</dt><dd className="text-gray-300">{detail.sources?.length ?? 0}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-500">Status</dt><dd className="text-gray-300">{live ? 'Live' : (kickoff && kickoff.getTime() < Date.now() ? 'Finished' : 'Scheduled')}</dd></div>
                         </dl>
                     </div>
                 </aside>
             </div>
+
+            <PlayerNotice />
         </div>
     );
 }

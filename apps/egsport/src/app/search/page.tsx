@@ -34,16 +34,16 @@ function SearchInner() {
         <div className="container mx-auto px-4 py-8 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold">Search</h1>
-                <p className="text-muted-foreground">Find sports, leagues and matches.</p>
+                <p className="text-gray-400">Find sports, leagues and matches.</p>
             </div>
             <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="football, ufc, EPL..."
-                className="h-10 w-full max-w-lg rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="h-10 w-full max-w-lg rounded-md border border-input bg-gray-950 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
             {q.trim() ? <SearchResults q={q} /> : (
-                <p className="text-sm text-muted-foreground">Start typing to search.</p>
+                <p className="text-sm text-gray-400">Start typing to search.</p>
             )}
         </div>
     );

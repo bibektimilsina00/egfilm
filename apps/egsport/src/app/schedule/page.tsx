@@ -24,7 +24,7 @@ function ScheduleForCategory({ category, day }: { category: string; day: Date })
     if (filtered.length === 0) return null;
     return (
         <div className="space-y-3">
-            <h3 className="text-sm font-semibold capitalize text-muted-foreground">{category}</h3>
+            <h3 className="text-sm font-semibold capitalize text-gray-400">{category}</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filtered.map((m) => (
                     <MatchCard key={`${category}-${m.id}`} match={m} category={category} />
@@ -51,7 +51,7 @@ export default function SchedulePage() {
         <div className="container mx-auto px-4 py-8 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold">Schedule</h1>
-                <p className="text-muted-foreground">Upcoming matches across all sports.</p>
+                <p className="text-gray-400">Upcoming matches across all sports.</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -64,7 +64,7 @@ export default function SchedulePage() {
                             onClick={() => setDayOffset(i)}
                             className={
                                 'rounded-md border px-3 py-2 text-xs ' +
-                                (active ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted')
+                                (active ? 'bg-primary text-primary-foreground border-primary' : 'border-gray-800 hover:bg-gray-800')
                             }
                         >
                             <div className="font-semibold">
@@ -78,7 +78,7 @@ export default function SchedulePage() {
 
             <div className="space-y-8">
                 {sports.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Loading sports…</p>
+                    <p className="text-sm text-gray-400">Loading sports…</p>
                 ) : (
                     sports.slice(0, 8).map((s) => (
                         <ScheduleForCategory

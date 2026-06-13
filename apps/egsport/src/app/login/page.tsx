@@ -28,10 +28,10 @@ function LoginForm() {
 
     return (
         <div className="container mx-auto max-w-md px-4 py-12">
-            <div className="rounded-xl border border-border p-6 space-y-4">
+            <div className="rounded-xl border border-gray-800 p-6 space-y-4">
                 <div>
                     <h1 className="text-2xl font-bold">Sign in to EGSport</h1>
-                    <p className="text-sm text-muted-foreground">Same account as EGFilm.</p>
+                    <p className="text-sm text-gray-400">Same account as EGFilm.</p>
                 </div>
                 <form onSubmit={onSubmit} className="space-y-3">
                     <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -41,7 +41,7 @@ function LoginForm() {
                         {pending ? 'Signing in…' : 'Sign in'}
                     </Button>
                 </form>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-400">
                     No account? <Link href="/register" className="underline">Create one</Link>.
                 </p>
             </div>

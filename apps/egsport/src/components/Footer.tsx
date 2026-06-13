@@ -15,14 +15,14 @@ export default function Footer() {
                     <div className="space-y-4">
                         <Link href="/" className="flex items-center gap-2 group">
                             <Image
-                                src="/logo.svg"
-                                alt="EGSport"
-                                width={48}
-                                height={48}
-                                className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+                                src="/icon.svg"
+                                alt="EG"
+                                width={32}
+                                height={32}
+                                className="h-10 w-auto block group-hover:scale-105 transition-transform duration-300"
                             />
-                            <span className="text-white font-semibold tracking-tight">
-                                EG<span className="text-blue-400">Sport</span>
+                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-3 mb-0 pb-0 self-end">
+                                SPORT
                             </span>
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed">

@@ -1,39 +1,79 @@
 import Link from 'next/link';
-import { Match, getMatchTeams, getMatchKickoff, isMatchLive } from '@/lib/sportsrc';
-import { Card, CardContent } from '@egfilm/ui/components/ui/card';
+import Image from 'next/image';
+import { Match, getMatchKickoff, isMatchLive } from '@/lib/sportsrc';
 import LiveBadge from './LiveBadge';
 import { CalendarClock, Trophy } from 'lucide-react';
 
 export default function MatchCard({ match, category }: { match: Match; category: string }) {
-    const { home, away } = getMatchTeams(match);
     const kickoff = getMatchKickoff(match);
     const live = isMatchLive(match);
-    const href = `/match/${encodeURIComponent(category)}/${encodeURIComponent(String(match.id))}`;
+    const href = `/match/${encodeURIComponent(category)}/${encodeURIComponent(match.id)}`;
+    const cat = match.category || category;
 
     return (
         <Link href={href} className="block group">
-            <Card className="h-full overflow-hidden transition-transform group-hover:-translate-y-0.5 group-hover:shadow-md">
-                <CardContent className="p-4 space-y-3">
+            <div className="h-full overflow-hidden rounded-xl border border-gray-800 bg-gray-900 transition-all group-hover:-translate-y-0.5 group-hover:border-blue-500/40 group-hover:shadow-lg">
+                {match.poster ? (
+                    <div className="relative aspect-video bg-gray-950">
+                        <Image
+                            src={match.poster}
+                            alt={match.title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 25vw"
+                            className="object-cover"
+                            unoptimized
+                        />
+                        {live ? (
+                            <div className="absolute top-2 right-2">
+                                <LiveBadge />
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
+
+                <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                            <Trophy className="h-3 w-3" /> {match.league ?? category}
+                        <span className="inline-flex items-center gap-1 rounded-md bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-gray-400 uppercase">
+                            <Trophy className="h-3 w-3" /> {cat}
                         </span>
-                        {live ? <LiveBadge /> : null}
+                        {live && !match.poster ? <LiveBadge /> : null}
                     </div>
 
                     <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                            <p className="truncate font-semibold">{home || 'Home'}</p>
-                            <p className="truncate text-xs text-muted-foreground">Home</p>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {match.teams?.home?.badge ? (
+                                <Image
+                                    src={match.teams.home.badge}
+                                    alt={match.teams.home.name}
+                                    width={28}
+                                    height={28}
+                                    className="h-7 w-7 object-contain shrink-0"
+                                    unoptimized
+                                />
+                            ) : null}
+                            <span className="truncate font-semibold text-white text-sm">
+                                {match.teams?.home?.name ?? 'Home'}
+                            </span>
                         </div>
-                        <div className="text-muted-foreground text-sm">vs</div>
-                        <div className="flex-1 min-w-0 text-right">
-                            <p className="truncate font-semibold">{away || 'Away'}</p>
-                            <p className="truncate text-xs text-muted-foreground">Away</p>
+                        <div className="text-gray-500 text-xs px-1">vs</div>
+                        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                            <span className="truncate font-semibold text-white text-sm text-right">
+                                {match.teams?.away?.name ?? 'Away'}
+                            </span>
+                            {match.teams?.away?.badge ? (
+                                <Image
+                                    src={match.teams.away.badge}
+                                    alt={match.teams.away.name}
+                                    width={28}
+                                    height={28}
+                                    className="h-7 w-7 object-contain shrink-0"
+                                    unoptimized
+                                />
+                            ) : null}
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
                         <CalendarClock className="h-3.5 w-3.5" />
                         {kickoff
                             ? kickoff.toLocaleString(undefined, {
@@ -42,8 +82,8 @@ export default function MatchCard({ match, category }: { match: Match; category:
                             })
                             : 'Time TBD'}
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </Link>
     );
 }

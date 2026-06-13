@@ -4,11 +4,10 @@ export const SPORTSRC_BASE_URL = 'https://api.sportsrc.org';
 
 const httpClient: AxiosInstance = axios.create({
     baseURL: SPORTSRC_BASE_URL,
-    timeout: 12000,
+    timeout: 15000,
     headers: { Accept: 'application/json' },
 });
 
-// Token-bucket rate limiter — sportsrc free tier allows 20 rps.
 class TokenBucket {
     private tokens: number;
     private last: number;
@@ -33,129 +32,157 @@ class TokenBucket {
 
 const bucket = new TokenBucket(20, 20);
 
-async function sportsrcGet<T>(params: Record<string, string>): Promise<T> {
-    await bucket.take();
-    const res = await httpClient.get<T>('/', { params });
-    return res.data;
+interface ApiEnvelope<T> {
+    success: boolean;
+    data: T;
 }
 
+async function sportsrcGet<T>(params: Record<string, string>): Promise<T> {
+    await bucket.take();
+    const res = await httpClient.get<ApiEnvelope<T> | T>('/', { params });
+    const body = res.data as ApiEnvelope<T> & { data?: T };
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+        return body.data as T;
+    }
+    return body as T;
+}
+
+// ---------- Sports categories ----------
+
 export interface SportCategory {
-    id?: string;
+    id: string;
     name: string;
-    slug?: string;
-    icon?: string;
-    /**
-     * The query string parameter accepted by `?data=matches&category=...`.
-     * Where not provided by upstream we fall back to a slugified `name`.
-     */
-    category?: string;
-    [key: string]: unknown;
+}
+
+// ---------- Match ----------
+
+export interface MatchTeam {
+    name: string;
+    badge: string | null;
 }
 
 export interface Match {
-    id: string | number;
-    title?: string;
-    homeTeam?: string;
-    awayTeam?: string;
-    home_team?: string;
-    away_team?: string;
-    league?: string;
-    status?: 'upcoming' | 'live' | 'finished' | string;
-    startTime?: string;
-    start_time?: string;
-    date?: string;
-    poster?: string;
-    thumbnail?: string;
-    category?: string;
-    sport?: string;
-    [key: string]: unknown;
+    id: string;
+    title: string;
+    category: string;
+    /** Unix epoch in milliseconds. */
+    date: number;
+    popular?: boolean;
+    poster: string | null;
+    teams: {
+        home: MatchTeam;
+        away: MatchTeam;
+    };
+}
+
+export interface MatchSource {
+    id: string;
+    streamNo: number;
+    language: string;
+    hd: boolean;
+    embedUrl: string;
+    source?: string;
+    viewers?: number;
 }
 
 export interface MatchDetail extends Match {
-    embed?: string;
-    embedUrl?: string;
-    embed_url?: string;
-    iframe?: string;
-    sources?: Array<{ name?: string; url: string; quality?: string }>;
-    description?: string;
+    sources: MatchSource[];
 }
 
+// ---------- Leagues ----------
+
 export interface League {
-    code: string;
+    id: string;
     name: string;
-    country?: string;
-    flag?: string;
-    [key: string]: unknown;
+}
+
+// ---------- Tables (standings) ----------
+
+export interface StandingTeam {
+    id: number;
+    name: string;
+    shortName?: string;
+    tla?: string;
+    crest?: string;
 }
 
 export interface StandingRow {
-    position?: number;
-    rank?: number;
-    team?: string;
-    teamName?: string;
-    played?: number;
-    won?: number;
-    drawn?: number;
-    lost?: number;
-    goalsFor?: number;
-    goalsAgainst?: number;
-    points?: number;
+    position: number;
+    team: StandingTeam;
+    playedGames: number;
+    form?: string | null;
+    won: number;
+    draw: number;
+    lost: number;
+    points: number;
+    goalsFor: number;
+    goalsAgainst: number;
+    goalDifference: number;
+}
+
+export interface StandingsGroup {
+    stage: string;
+    type: string;
+    group: string | null;
+    table: StandingRow[];
+}
+
+export interface TablesResponse {
+    filters: { season: string };
+    area: { id: number; name: string; code: string; flag: string };
+    competition: { id: number; name: string; code: string; type: string; emblem: string };
+    season: { id: number; startDate: string; endDate: string; currentMatchday: number; winner: unknown };
+    standings: StandingsGroup[];
+}
+
+// ---------- Scores ----------
+
+export interface ScoreEntry {
+    id?: string | number;
+    utcDate?: string;
+    status?: string;
+    homeTeam?: { id?: number; name?: string; crest?: string };
+    awayTeam?: { id?: number; name?: string; crest?: string };
+    score?: {
+        fullTime?: { home?: number | null; away?: number | null };
+        halfTime?: { home?: number | null; away?: number | null };
+        winner?: string | null;
+    };
+    competition?: { id?: number; name?: string; emblem?: string };
     [key: string]: unknown;
 }
 
-export interface ScoreboardEntry {
-    date?: string;
-    homeTeam?: string;
-    awayTeam?: string;
-    homeScore?: number;
-    awayScore?: number;
-    league?: string;
-    [key: string]: unknown;
+export interface ScoresResponse {
+    live: ScoreEntry[];
+    finished: ScoreEntry[];
+    last_updated?: string;
 }
 
-function unwrap<T>(payload: unknown): T[] {
-    if (Array.isArray(payload)) return payload as T[];
-    if (payload && typeof payload === 'object') {
-        const obj = payload as Record<string, unknown>;
-        for (const key of ['data', 'results', 'items', 'matches', 'sports', 'leagues', 'standings', 'scores']) {
-            const v = obj[key];
-            if (Array.isArray(v)) return v as T[];
-        }
-    }
-    return [];
-}
+// ---------- Public client ----------
 
 export const sportsrc = {
-    async getSports(): Promise<SportCategory[]> {
-        const raw = await sportsrcGet<unknown>({ data: 'sports' });
-        return unwrap<SportCategory>(raw).map((s) => ({
-            ...s,
-            category: s.category ?? s.slug ?? (s.name ?? '').toString().toLowerCase().replace(/\s+/g, '-'),
-        }));
+    getSports(): Promise<SportCategory[]> {
+        return sportsrcGet<SportCategory[]>({ data: 'sports' });
     },
-    async getMatches(category: string): Promise<Match[]> {
-        const raw = await sportsrcGet<unknown>({ data: 'matches', category });
-        return unwrap<Match>(raw);
+    getMatches(category: string): Promise<Match[]> {
+        return sportsrcGet<Match[]>({ data: 'matches', category });
     },
     async getMatchDetail(category: string, id: string): Promise<MatchDetail | null> {
-        const raw = await sportsrcGet<unknown>({ data: 'detail', category, id });
-        if (!raw) return null;
-        if (Array.isArray(raw)) return (raw[0] as MatchDetail) ?? null;
-        return raw as MatchDetail;
+        const data = await sportsrcGet<MatchDetail | null>({ data: 'detail', category, id });
+        return data ?? null;
     },
-    async getLeagues(): Promise<League[]> {
-        const raw = await sportsrcGet<unknown>({ data: 'results', category: 'leagues' });
-        return unwrap<League>(raw);
+    getLeagues(): Promise<League[]> {
+        return sportsrcGet<League[]>({ data: 'results', category: 'leagues' });
     },
-    async getStandings(league: string): Promise<StandingRow[]> {
-        const raw = await sportsrcGet<unknown>({ data: 'results', category: 'tables', league });
-        return unwrap<StandingRow>(raw);
+    getStandings(league: string): Promise<TablesResponse | null> {
+        return sportsrcGet<TablesResponse>({ data: 'results', category: 'tables', league });
     },
-    async getScores(league: string): Promise<ScoreboardEntry[]> {
-        const raw = await sportsrcGet<unknown>({ data: 'results', category: 'scores', league });
-        return unwrap<ScoreboardEntry>(raw);
+    getScores(league: string): Promise<ScoresResponse> {
+        return sportsrcGet<ScoresResponse>({ data: 'results', category: 'scores', league });
     },
 };
+
+// ---------- Helpers ----------
 
 export function matchExternalIdHash(category: string, id: string | number): number {
     const s = `${category}:${id}`;
@@ -164,23 +191,13 @@ export function matchExternalIdHash(category: string, id: string | number): numb
     return Math.abs(hash) & 0x7fffffff;
 }
 
-export function getMatchTeams(match: Match): { home: string; away: string } {
-    return {
-        home: (match.homeTeam ?? match.home_team ?? '').toString(),
-        away: (match.awayTeam ?? match.away_team ?? '').toString(),
-    };
-}
-
-export function getMatchKickoff(match: Match): Date | null {
-    const raw = match.startTime ?? match.start_time ?? match.date;
-    if (!raw) return null;
-    const d = new Date(raw as string);
+export function getMatchKickoff(match: Match | MatchDetail | null | undefined): Date | null {
+    if (!match?.date) return null;
+    const d = new Date(match.date);
     return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export function isMatchLive(match: Match): boolean {
-    const status = (match.status ?? '').toString().toLowerCase();
-    if (status === 'live' || status === 'inprogress' || status === 'in_progress') return true;
+export function isMatchLive(match: Match | MatchDetail): boolean {
     const kickoff = getMatchKickoff(match);
     if (!kickoff) return false;
     const now = Date.now();
@@ -188,10 +205,10 @@ export function isMatchLive(match: Match): boolean {
     return now >= startedAt && now <= startedAt + 1000 * 60 * 60 * 3;
 }
 
-export function getMatchEmbedUrl(detail: MatchDetail | null | undefined): string | null {
-    if (!detail) return null;
-    const direct = detail.embedUrl ?? detail.embed_url ?? detail.embed ?? detail.iframe;
-    if (direct && typeof direct === 'string') return direct;
-    if (Array.isArray(detail.sources) && detail.sources.length > 0) return detail.sources[0].url;
-    return null;
+export function pickBestSource(detail: MatchDetail | null | undefined, preferredLanguage = 'English'): MatchSource | null {
+    if (!detail?.sources?.length) return null;
+    const english = detail.sources.filter((s) => (s.language ?? '').toLowerCase().includes(preferredLanguage.toLowerCase()));
+    const pool = english.length ? english : detail.sources;
+    const hd = pool.find((s) => s.hd);
+    return hd ?? pool[0] ?? null;
 }

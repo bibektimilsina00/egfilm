@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMatchDetail } from '@/lib/hooks/useSports';
-import { getMatchTeams, getMatchEmbedUrl, matchExternalIdHash } from '@/lib/sportsrc';
+import { pickBestSource, matchExternalIdHash } from '@/lib/sportsrc';
 import { Button } from '@egfilm/ui/components/ui/button';
 import { Users, Copy, Check } from 'lucide-react';
 
@@ -22,9 +22,10 @@ export default function MatchWatchTogetherPage({ params }: { params: Promise<{ c
         return null;
     }
 
-    const { home, away } = getMatchTeams(detail ?? { id });
-    const embedUrl = getMatchEmbedUrl(detail);
-    const mediaTitle = `${home || 'Home'} vs ${away || 'Away'}`;
+    const home = detail?.teams?.home?.name ?? 'Home';
+    const away = detail?.teams?.away?.name ?? 'Away';
+    const embedUrl = pickBestSource(detail)?.embedUrl ?? null;
+    const mediaTitle = detail?.title ?? `${home} vs ${away}`;
 
     const createRoom = async () => {
         const res = await fetch('/api/watch-room', {
@@ -36,7 +37,6 @@ export default function MatchWatchTogetherPage({ params }: { params: Promise<{ c
                 mediaTitle,
                 embedUrl,
                 sport: category,
-                league: detail?.league,
                 matchExternalId: String(id),
             }),
         });
@@ -56,13 +56,13 @@ export default function MatchWatchTogetherPage({ params }: { params: Promise<{ c
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
             <div className="space-y-1">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">Watch together</p>
+                <p className="text-xs uppercase tracking-widest text-gray-400">Watch together</p>
                 <h1 className="text-2xl font-bold">{mediaTitle}</h1>
-                <p className="text-sm text-muted-foreground">Sport: <span className="capitalize">{category.replace(/-/g, ' ')}</span></p>
+                <p className="text-sm text-gray-400">Sport: <span className="capitalize">{category.replace(/-/g, ' ')}</span></p>
             </div>
 
             {!roomCode ? (
-                <div className="rounded-lg border border-border bg-muted/30 p-6 space-y-4">
+                <div className="rounded-lg border border-gray-800 bg-gray-800/30 p-6 space-y-4">
                     <p className="text-sm">
                         You&apos;re signed in as <strong>{session?.user?.name ?? session?.user?.email}</strong>.
                         Create a room and invite friends to watch this match in sync, with chat + live video.
@@ -75,13 +75,13 @@ export default function MatchWatchTogetherPage({ params }: { params: Promise<{ c
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-6 space-y-3">
                     <p className="text-sm">Room created. Share this code:</p>
                     <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded-md bg-background px-3 py-2 font-mono text-sm">{roomCode}</code>
+                        <code className="flex-1 rounded-md bg-gray-950 px-3 py-2 font-mono text-sm">{roomCode}</code>
                         <Button variant="outline" size="sm" onClick={copyLink}>
                             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                             {copied ? 'Copied' : 'Copy link'}
                         </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-gray-400">
                         Note: Real-time video + sync UI for sports rooms reuses the same socket.io watch-together engine used for movies. A full UI for live participants is on the roadmap; for now the room is persisted in the database and chat is available via the API.
                     </p>
                     <Link href={`/match/${category}/${id}`} className="text-xs underline">← Back to match detail</Link>

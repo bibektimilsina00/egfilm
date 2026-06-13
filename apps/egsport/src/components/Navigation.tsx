@@ -89,15 +89,15 @@ export default function Navigation() {
                 <div className="flex items-center justify-between gap-3">
                     <Link href="/" className="flex items-center gap-2 group shrink-0">
                         <Image
-                            src="/logo.svg"
-                            alt="EGSport"
-                            width={48}
-                            height={48}
-                            className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+                            src="/icon.svg"
+                            alt="EG"
+                            width={32}
+                            height={32}
+                            className="h-10 w-auto block group-hover:scale-105 transition-transform duration-300"
                             priority
                         />
-                        <span className="hidden sm:inline-block text-white font-semibold tracking-tight">
-                            EG<span className="text-blue-400">Sport</span>
+                        <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-3 mb-0 pb-0 self-end">
+                            SPORT
                         </span>
                     </Link>
 
@@ -105,7 +105,7 @@ export default function Navigation() {
                         {navLinks.map((link) => {
                             const Icon = link.icon;
                             const isActive = mounted && !link.external && pathname === link.href;
-                            const baseClass = 'flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm';
+                            const baseClass = 'flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm whitespace-nowrap';
                             if (link.external) {
                                 return (
                                     <a
@@ -179,7 +179,7 @@ export default function Navigation() {
                                 ) : (
                                     <Link
                                         href="/login"
-                                        className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all text-sm"
+                                        className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all text-sm whitespace-nowrap"
                                     >
                                         <LogIn className="w-4 h-4" />
                                         <span>Sign In</span>
