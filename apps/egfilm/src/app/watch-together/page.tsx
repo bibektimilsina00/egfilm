@@ -183,20 +183,41 @@ function WatchTogetherContent() {
                 }
             }
 
-            // Initialize socket connection AFTER getting userId
+            // Initialize socket connection AFTER getting userId.
+            //
+            // We start in polling mode and let socket.io upgrade to WebSocket
+            // when the proxy supports it. With HTTP/2 reverse proxies that have
+            // not been configured for WS-over-h2 the upgrade fails and socket.io
+            // silently stays on long-polling — which is fine for chat + signaling.
+            // We also bump reconnection so a flaky first packet doesn't surface as
+            // a fatal banner.
             socket = io({
                 path: '/api/socketio',
-                autoConnect: false  // Don't connect immediately, wait for listeners
+                autoConnect: false,
+                transports: ['polling', 'websocket'],
+                upgrade: true,
+                reconnection: true,
+                reconnectionAttempts: 8,
+                reconnectionDelay: 800,
+                reconnectionDelayMax: 4000,
+                timeout: 15000,
             });
 
             // Set up all event listeners BEFORE connecting
             socket.on('connect', () => {
+                // Clear any soft error banner from a prior failed attempt.
+                setError('');
                 socket.emit('join-watch-together', { roomCode, username, userId });
             });
 
-            socket.on('connect_error', () => {
+            // Treat connect_error as soft — socket.io will keep retrying via
+            // long-polling fallback. Only surface a banner once attempts run out.
+            socket.io.on('reconnect_failed', () => {
                 setError('Failed to connect to server');
                 setIsConnecting(false);
+            });
+            socket.on('connect_error', (err) => {
+                console.warn('[socket] transient connect error, will retry:', err?.message ?? err);
             });
 
             socket.on('room-joined', (data) => {
