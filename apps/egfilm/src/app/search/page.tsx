@@ -6,12 +6,12 @@ import Image from 'next/image';
 import { Search as SearchIcon, Sparkles, TrendingUp } from 'lucide-react';
 import { searchMulti, getTrending } from '@/lib/tmdb';
 import { SearchResult, MediaItem } from '@/lib/api/tmdb';
-import { Button } from '@/components/ui/button';
+import { Button } from '@egfilm/ui/components/ui/button';
 import MediaCard from '@/components/catalog/MediaCard';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import { MediaGridSkeleton } from '@/components/ui/loading-skeletons';
+import LoadingSpinner from '@egfilm/ui/components/LoadingSpinner';
+import { MediaGridSkeleton } from '@egfilm/ui/components/ui/loading-skeletons';
 
 type SearchSuggestion = {
     id: number;

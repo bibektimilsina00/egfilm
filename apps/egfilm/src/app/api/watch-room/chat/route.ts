@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getChatHistory } from '@/lib/services/watchRoom.service';
+import { getChatHistory } from '@egfilm/services';
 
 // GET - Get chat history for a room
 export async function GET(request: NextRequest) {

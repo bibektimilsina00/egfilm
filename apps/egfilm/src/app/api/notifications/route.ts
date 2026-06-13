@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@egfilm/db';
 import {
     getUserNotifications,
     getUnreadCount,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-} from '@/lib/services/notification.service';
+} from '@egfilm/services';
 
 // GET - Fetch user's notifications
 export async function GET(request: NextRequest) {

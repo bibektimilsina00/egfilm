@@ -8,12 +8,12 @@ import { Play, ArrowLeft, Star, Calendar, Clock, Heart, Share2, Users, Check } f
 
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
 import { getImageUrl, formatVoteAverage, formatRuntime, CastMember, BaseMovie } from '@/lib/api/tmdb';
-import { Button } from '@/components/ui/button';
-import { PlayButton } from '@/components/ui/play-button';
+import { Button } from '@egfilm/ui/components/ui/button';
+import { PlayButton } from '@egfilm/ui/components/ui/play-button';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist, addToHistory } from '@/lib/storage';
 import { getMovieEmbedUrl } from '@/lib/videoSources';
-import WatchTogetherModal from '@/components/WatchTogetherModal';
+import WatchTogetherModal from '@egfilm/realtime/components/WatchTogetherModal';
 import Breadcrumb from '@/components/Breadcrumb';
 
 /**

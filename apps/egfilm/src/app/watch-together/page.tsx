@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Video, VideoOff, Mic, MicOff, Phone, MessageCircle, Users, Copy, Check, Send, X, Maximize, Minimize, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@egfilm/ui/components/ui/button';
 import io, { Socket } from 'socket.io-client';
 import { VIDEO_SOURCES } from '@/lib/videoSources';
-import { useAnalytics } from '@/lib/hooks/useAnalytics';
+import { useAnalytics } from '@egfilm/ui/hooks/useAnalytics';
 
 interface Participant {
     id: string;

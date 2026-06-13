@@ -3,9 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
-import PerformanceMonitor from "@/components/PerformanceMonitor";
-import ServiceWorker from "@/components/ServiceWorker";
-import { QueryProvider } from "@/lib/providers/QueryProvider";
+import PerformanceMonitor from "@egfilm/ui/components/PerformanceMonitor";
+import ServiceWorker from "@egfilm/ui/components/ServiceWorker";
+import { QueryProvider } from "@egfilm/realtime/client/QueryProvider";
 import { siteConfig, seoKeywords } from "@/lib/seo";
 import { seoConfig, generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seoConfig";
 

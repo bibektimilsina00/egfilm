@@ -6,9 +6,9 @@ import MediaCard from '@/components/catalog/MediaCard';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { getWatchlist, removeFromWatchlist } from '@/lib/storage';
-import { Button } from '@/components/ui/button';
+import { Button } from '@egfilm/ui/components/ui/button';
 import { MediaItem } from '@/lib/tmdb';
-import { MediaGridSkeleton } from '@/components/ui/loading-skeletons';
+import { MediaGridSkeleton } from '@egfilm/ui/components/ui/loading-skeletons';
 
 export default function WatchlistPage() {
     const [watchlist, setWatchlist] = useState<MediaItem[]>([]);

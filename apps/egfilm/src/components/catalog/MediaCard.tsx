@@ -6,8 +6,8 @@ import { useState, memo } from 'react';
 import { Star } from 'lucide-react';
 
 import { getImageUrl, getYear, formatVoteAverage } from '@/lib/api/tmdb';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@egfilm/ui/components/ui/card';
+import { Badge } from '@egfilm/ui/components/ui/badge';
 
 // Simplified interface for what MediaCard actually needs
 interface SimpleMediaItem {

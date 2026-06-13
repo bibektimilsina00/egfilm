@@ -7,7 +7,7 @@ import { Star, Calendar, Clock, Loader2, Info, Server, Globe, Film, Users } from
 import Navigation from '@/components/Navigation';
 import { MediaCard } from '@/components/media-card';
 import Image from 'next/image';
-import { PageLoader } from '@/components/ui/loading-spinner';
+import { PageLoader } from '@egfilm/ui/components/ui/loading-spinner';
 
 interface VideoProvider {
   id: string;

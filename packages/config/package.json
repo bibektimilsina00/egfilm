@@ -1,0 +1,22 @@
+{
+  "name": "@egfilm/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "tsconfig",
+    "tailwind",
+    "eslint"
+  ],
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/next.json": "./tsconfig/next.json",
+    "./tailwind/preset": "./tailwind/preset.js",
+    "./tailwind/globals.css": "./tailwind/globals.css",
+    "./eslint/base": "./eslint/base.mjs",
+    "./eslint/next": "./eslint/next.mjs"
+  },
+  "dependencies": {
+    "@eslint/eslintrc": "^3",
+    "eslint-config-next": "15.5.11"
+  }
+}

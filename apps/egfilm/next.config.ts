@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: [
+    '@egfilm/db',
+    '@egfilm/auth',
+    '@egfilm/ui',
+    '@egfilm/services',
+    '@egfilm/realtime',
+  ],
   images: {
     remotePatterns: [
       {
@@ -37,10 +44,6 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // React compiler for better performance
   reactStrictMode: true,
-  // Optimize fonts
-  optimizeFonts: true,
-  // Reduce bundle size by removing unused code
-  swcMinify: true,
   // Turbopack configuration (new location)
   turbopack: {
     rules: {

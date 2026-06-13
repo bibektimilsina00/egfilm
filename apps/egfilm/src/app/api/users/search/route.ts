@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { searchUsersForInvite } from '@/lib/services/notification.service';
+import { searchUsersForInvite } from '@egfilm/services';
 
 // GET - Search users for invites
 export async function GET(request: NextRequest) {

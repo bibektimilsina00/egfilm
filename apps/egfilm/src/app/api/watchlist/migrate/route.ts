@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { migrateWatchlistFromLocalStorage } from '@/lib/services/watchlist.service';
+import { migrateWatchlistFromLocalStorage } from '@egfilm/services';
 
 // POST - Migrate localStorage watchlist to database
 export async function POST(request: NextRequest) {

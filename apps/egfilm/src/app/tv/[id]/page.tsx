@@ -6,13 +6,13 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { Play, ArrowLeft, Star, Calendar, Tv as TvIcon, Heart, Share2, Check, Users } from 'lucide-react';
 import { getTVDetails, getImageUrl, MediaDetail, MediaItem } from '@/lib/tmdb';
-import { Button } from '@/components/ui/button';
-import { PlayButton } from '@/components/ui/play-button';
+import { Button } from '@egfilm/ui/components/ui/button';
+import { PlayButton } from '@egfilm/ui/components/ui/play-button';
 import { formatVoteAverage, Genre } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '@/lib/storage';
 import { getTVEmbedUrl } from '@/lib/videoSources';
-import WatchTogetherModal from '@/components/WatchTogetherModal';
+import WatchTogetherModal from '@egfilm/realtime/components/WatchTogetherModal';
 import Breadcrumb from '@/components/Breadcrumb';
 
 export default function TVDetailPage() {

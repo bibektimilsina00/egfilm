@@ -5,7 +5,7 @@ import {
     getContinueWatching,
     removeContinueWatching,
     getProgress,
-} from '@/lib/services/continueWatching.service';
+} from '@egfilm/services';
 
 // GET - Fetch user's continue watching list
 export async function GET(request: NextRequest) {

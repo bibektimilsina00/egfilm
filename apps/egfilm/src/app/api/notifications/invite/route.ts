@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { sendWatchInvite } from '@/lib/services/notification.service';
+import { sendWatchInvite } from '@egfilm/services';
 
 // POST - Send watch together invite
 export async function POST(request: NextRequest) {

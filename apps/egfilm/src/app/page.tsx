@@ -15,15 +15,15 @@ import {
 } from '@/lib/hooks/useTMDb';
 import { getImageUrl, formatVoteAverage } from '@/lib/api/tmdb';
 import MediaCard from '@/components/catalog/MediaCard';
-import { Button } from '@/components/ui/button';
-import { PlayButton } from '@/components/ui/play-button';
+import { Button } from '@egfilm/ui/components/ui/button';
+import { PlayButton } from '@egfilm/ui/components/ui/play-button';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import HomePageSEO from '@/components/HomePageSEO';
 import FAQSchema from '@/components/FAQSchema';
 import { getContinueWatching } from '@/lib/storage';
-import { HomePageSkeleton, MediaGridSkeleton } from '@/components/ui/loading-skeletons';
-import { ErrorState } from '@/components/ui/error-states';
+import { HomePageSkeleton, MediaGridSkeleton } from '@egfilm/ui/components/ui/loading-skeletons';
+import { ErrorState } from '@egfilm/ui/components/ui/error-states';
 import type { MediaItem } from '@/lib/api/tmdb';
 import type { ContinueWatchingItem } from '@/lib/storage';
 

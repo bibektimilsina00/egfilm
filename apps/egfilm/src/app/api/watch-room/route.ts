@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@egfilm/db';
 import {
     createWatchRoom,
     getWatchRoomByCode,
     getUserWatchRooms,
     closeWatchRoom,
-} from '@/lib/services/watchRoom.service';
+} from '@egfilm/services';
 
 // GET - Get watch room by code or user's room history
 export async function GET(request: NextRequest) {

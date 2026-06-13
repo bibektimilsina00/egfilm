@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { isInWatchlist } from '@/lib/services/watchlist.service';
+import { isInWatchlist } from '@egfilm/services';
 
 // GET - Check if item is in watchlist
 export async function GET(request: NextRequest) {

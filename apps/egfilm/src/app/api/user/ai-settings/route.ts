@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@egfilm/db';
 import { z } from 'zod';
 
 const aiSettingsSchema = z.object({

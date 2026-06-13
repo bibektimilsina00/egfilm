@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, Star, Calendar, Filter } from 'lucide-react'; // Added 'Filter' icon
 
 import MediaCard from '@/components/catalog/MediaCard';
-import { Button } from '@/components/ui/button';
+import { Button } from '@egfilm/ui/components/ui/button';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import {
@@ -15,8 +15,8 @@ import {
     useDiscoverByGenre
 } from '@/lib/hooks/useTMDb';
 import { MediaItem } from '@/lib/api/tmdb';
-import Pagination from '@/components/ui/pagination';
-import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
+import Pagination from '@egfilm/ui/components/ui/pagination';
+import { useInfiniteScroll } from '@egfilm/ui/hooks/useInfiniteScroll';
 
 export default function MoviesPage() {
     const [filter, setFilter] = useState<'popular' | 'top_rated' | 'trending'>('popular');

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Bell, X, Check, Trash2 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '@egfilm/ui/components/ui/button';
 import {
     useNotifications,
     useUnreadNotificationsCount,
@@ -12,7 +12,7 @@ import {
     useMarkAllNotificationsAsRead,
     useDeleteNotification,
     type Notification as NotificationType,
-} from '@/lib/hooks/useNotifications';
+} from '@egfilm/realtime/client/useNotifications';
 
 interface Notification extends NotificationType {
     roomCode?: string;

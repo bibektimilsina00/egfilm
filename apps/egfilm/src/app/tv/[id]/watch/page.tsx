@@ -18,7 +18,7 @@ import Navigation from "@/components/Navigation";
 import { MediaCard } from "@/components/media-card";
 import Image from "next/image";
 import { getSeasonDetails, type Episode } from "@/lib/api/tmdb";
-import { PageLoader } from "@/components/ui/loading-spinner";
+import { PageLoader } from "@egfilm/ui/components/ui/loading-spinner";
 
 interface VideoProvider {
   id: string;

@@ -4,7 +4,7 @@ import {
     addToWatchlist,
     removeFromWatchlist,
     getWatchlist,
-} from '@/lib/services/watchlist.service';
+} from '@egfilm/services';
 
 // GET - Fetch user's watchlist
 export async function GET() {
