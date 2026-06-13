@@ -1,6 +1,5 @@
 import { prisma } from '@egfilm/db';
-
-export type MediaTypeId = 'movie' | 'tv' | 'match' | string;
+import type { MediaTypeId } from './types';
 
 export interface WatchlistItemData {
     mediaId: number;

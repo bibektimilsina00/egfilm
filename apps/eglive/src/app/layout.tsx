@@ -7,6 +7,8 @@ import { QueryProvider } from "@egfilm/realtime/client/QueryProvider";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
     title: {
         default: "EGLive — Live Sports Streaming",

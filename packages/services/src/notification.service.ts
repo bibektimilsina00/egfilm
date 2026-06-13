@@ -8,7 +8,7 @@ export type NotificationType =
     | 'match_starting'
     | string;
 
-export type MediaTypeId = 'movie' | 'tv' | 'match' | string;
+import type { MediaTypeId } from './types';
 
 export interface CreateNotificationData {
     type: NotificationType;

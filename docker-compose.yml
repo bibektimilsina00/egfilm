@@ -12,26 +12,58 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 5
     ports:
       - "5432:5432"
-  
-  app:
-    image: ${IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:latest}
+
+  egfilm:
+    image: ${EGFILM_IMAGE_NAME:-ghcr.io/bibektimilsina00/egfilm:latest}
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8000:3000"
+      - "${EGFILM_PORT:-8000}:3000"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      TMDB_API_KEY: ${TMDB_API_KEY}
-      NEXT_PUBLIC_TMDB_API_KEY: ${TMDB_API_KEY}
-      AUTH_SECRET: ${AUTH_SECRET}
-      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST}
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_URL: ${EGFILM_AUTH_URL}
+      NEXTAUTH_URL: ${EGFILM_AUTH_URL}
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      NEXT_PUBLIC_TMDB_API_KEY: ${TMDB_API_KEY}
+      NEXT_PUBLIC_APP_NAME: EGFilm
+      NEXT_PUBLIC_APP_URL: ${EGFILM_URL}
+      NEXT_PUBLIC_BLOG_SITE_URL: ${NEXT_PUBLIC_BLOG_SITE_URL:-}
+      NEXT_PUBLIC_TURN_SERVER: ${NEXT_PUBLIC_TURN_SERVER:-}
+      NEXT_PUBLIC_TURN_USERNAME: ${NEXT_PUBLIC_TURN_USERNAME:-}
+      TURN_PASSWORD: ${TURN_PASSWORD:-}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+
+  eglive:
+    image: ${EGLIVE_IMAGE_NAME:-ghcr.io/bibektimilsina00/eglive:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${EGLIVE_PORT:-8001}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_URL: ${EGLIVE_AUTH_URL}
+      NEXTAUTH_URL: ${EGLIVE_AUTH_URL}
+      NEXT_PUBLIC_APP_NAME: EGLive
+      NEXT_PUBLIC_APP_URL: ${EGLIVE_URL}
+      NEXT_PUBLIC_TURN_SERVER: ${NEXT_PUBLIC_TURN_SERVER:-}
+      NEXT_PUBLIC_TURN_USERNAME: ${NEXT_PUBLIC_TURN_USERNAME:-}
+      TURN_PASSWORD: ${TURN_PASSWORD:-}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
 
 volumes:
   postgres_data:

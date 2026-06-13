@@ -21,19 +21,15 @@ export function createAuthConfig(opts: AuthFactoryOptions = {}): NextAuthConfig 
         callbacks: {
             async jwt({ token, user }) {
                 if (user) {
-                    // @ts-expect-error - role + id are augmented in apps via next-auth.d.ts
-                    token.role = user.role;
-                    // @ts-expect-error
-                    token.id = user.id;
+                    (token as unknown as Record<string, unknown>).role = (user as unknown as Record<string, unknown>).role;
+                    (token as unknown as Record<string, unknown>).id = (user as unknown as Record<string, unknown>).id;
                 }
                 return token;
             },
             async session({ session, token }) {
                 if (session.user) {
-                    // @ts-expect-error
-                    session.user.role = token.role as string;
-                    // @ts-expect-error
-                    session.user.id = token.id as string;
+                    (session.user as unknown as Record<string, unknown>).role = (token as unknown as Record<string, unknown>).role;
+                    (session.user as unknown as Record<string, unknown>).id = (token as unknown as Record<string, unknown>).id;
                 }
                 return session;
             },

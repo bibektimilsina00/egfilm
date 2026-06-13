@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSportsCategories, useMatchesByCategory } from '@/lib/hooks/useSports';
 import { isMatchLive } from '@/lib/sportsrc';
 import MatchCard from '@/components/MatchCard';
@@ -68,7 +69,7 @@ export default function HomePage() {
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Browse Sports</h2>
-                    <a href="/sports" className="text-sm text-muted-foreground hover:text-foreground">View all →</a>
+                    <Link href="/sports" className="text-sm text-muted-foreground hover:text-foreground">View all →</Link>
                 </div>
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                     {isLoading

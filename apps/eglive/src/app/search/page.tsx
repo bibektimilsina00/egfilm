@@ -27,7 +27,7 @@ function SearchResults({ q }: { q: string }) {
 
 function SearchInner() {
     const params = useSearchParams();
-    const initial = params.get('q') ?? '';
+    const initial = params?.get('q') ?? '';
     const [q, setQ] = useState(initial);
 
     return (

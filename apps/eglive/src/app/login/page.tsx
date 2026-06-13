@@ -10,7 +10,7 @@ import { Input } from '@egfilm/ui/components/ui/input';
 function LoginForm() {
     const params = useSearchParams();
     const router = useRouter();
-    const callbackUrl = params.get('callbackUrl') ?? '/';
+    const callbackUrl = params?.get('callbackUrl') ?? '/';
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
