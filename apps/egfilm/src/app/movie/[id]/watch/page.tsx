@@ -2,7 +2,8 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useMovieDetails } from '@/lib/hooks/useTMDb';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Star, Calendar, Clock, Loader2, Info, Server, Globe, Film, Users } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { MediaCard } from '@/components/media-card';
@@ -26,42 +27,45 @@ export default function WatchMoviePage() {
   const movieId = Number(params?.id as string);
 
   const { data: movie, isLoading } = useMovieDetails(movieId);
-  const [providers, setProviders] = useState<VideoProvider[]>([]);
+  const {
+    data: providers = [],
+    isLoading: providersLoading,
+  } = useQuery<VideoProvider[]>({
+    queryKey: ['video-providers'],
+    queryFn: async () => {
+      const r = await fetch('/api/video-providers');
+      if (!r.ok) throw new Error('Failed to load providers');
+      return r.json();
+    },
+    staleTime: 1000 * 60 * 10, // 10 min: providers list rarely changes
+    gcTime: 1000 * 60 * 60,
+  });
+
   const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
   const [showAllServers, setShowAllServers] = useState(false);
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
-  const [providersLoading, setProvidersLoading] = useState(true);
+
+  // Pick the default provider once on load.
+  useEffect(() => {
+    if (providers.length === 0) return;
+    const defaultIndex = providers.findIndex((p) => p.isDefault);
+    setCurrentSourceIndex(defaultIndex >= 0 ? defaultIndex : 0);
+  }, [providers]);
 
   // Get similar movies from movie details
   const similarMovies = movie?.similar?.results || [];
 
   // Show first 5 servers by default
   const defaultServersCount = 5;
-  const visibleServers = showAllServers ? providers : providers.slice(0, defaultServersCount);
+  const visibleServers = useMemo(
+    () => (showAllServers ? providers : providers.slice(0, defaultServersCount)),
+    [showAllServers, providers],
+  );
   const hasMoreServers = providers.length > defaultServersCount;
 
-  // Fetch video providers
-  useEffect(() => {
-    const fetchProviders = async () => {
-      try {
-        const response = await fetch('/api/video-providers');
-        if (response.ok) {
-          const data = await response.json();
-          setProviders(data);
-          const defaultIndex = data.findIndex((p: VideoProvider) => p.isDefault);
-          setCurrentSourceIndex(defaultIndex >= 0 ? defaultIndex : 0);
-        }
-      } catch (error) {
-        console.error('Failed to fetch providers:', error);
-      } finally {
-        setProvidersLoading(false);
-      }
-    };
-
-    fetchProviders();
-  }, []);
-
-  // Loading state
+  // Loading state — block only while movie details are coming in. Providers
+  // load in parallel; their own skeleton renders below once `providersLoading`
+  // resolves.
   if (isLoading || !movie) {
     return <PageLoader text="Loading movie..." />;
   }

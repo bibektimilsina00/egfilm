@@ -41,6 +41,14 @@ export default function MovieDetailPage() {
   const handleBack = useCallback(() => router.back(), [router]);
   const handleGoHome = useCallback(() => router.push('/'), [router]);
   const handleWatchNow = useCallback(() => router.push(`/movie/${movieId}/watch`), [router, movieId]);
+
+  // Prefetch watch route + warm providers cache so play-button click feels instant.
+  useEffect(() => {
+    if (!movieId) return;
+    router.prefetch(`/movie/${movieId}/watch`);
+    // Warm CDN/browser cache for providers list (response is now Cache-Control: 5 min).
+    fetch('/api/video-providers').catch(() => { /* ignore */ });
+  }, [router, movieId]);
   const handleWatchTogether = useCallback(() => {
     if (status === 'unauthenticated') {
       router.push('/login');

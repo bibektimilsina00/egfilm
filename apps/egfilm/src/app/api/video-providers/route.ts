@@ -31,7 +31,12 @@ export async function GET() {
             }
         });
 
-        return NextResponse.json(providers);
+        return NextResponse.json(providers, {
+            headers: {
+                // Browser caches 5 min; CDN/edge caches 5 min and serves stale for up to 1h while revalidating.
+                'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600',
+            },
+        });
     } catch (error) {
         console.error('Error fetching video providers:', error);
         return NextResponse.json(
@@ -42,4 +47,3 @@ export async function GET() {
 }
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 60; // Cache for 1 minute

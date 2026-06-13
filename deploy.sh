@@ -36,6 +36,12 @@ for app in "${APPS[@]}"; do
   docker compose stop "$app" || true
   docker compose rm -f "$app" || true
 done
+# Remove orphan containers from previous compose layouts (e.g. egfilm-app-1
+# from the single-app era still bound to :8000) so port bindings are free.
+docker compose down --remove-orphans --rmi=false 2>/dev/null || true
+for orphan in egfilm-app-1 egfilm_app_1 egfilm-egfilm-1 egfilm-egsport-1 egfilm-egtv-1; do
+  docker rm -f "$orphan" 2>/dev/null || true
+done
 
 # ---------- registry login -----------------------------------------
 step "Logging into container registry"
@@ -68,15 +74,20 @@ echo -e " ${GREEN}✅ Postgres ready${NC}"
 
 # ---------- Prisma migrate (shared DB) ------------------------------
 step "Running Prisma migrate (shared DB)"
-# Use egfilm image as the runner since both share the schema.
-docker compose run --rm egfilm sh -c 'node node_modules/.prisma/client/index.js >/dev/null 2>&1 || true; cd packages/db && npx prisma migrate deploy --schema=./prisma/schema.prisma' || {
+# Use egfilm image as the runner since all 3 apps share the schema.
+# Pin prisma CLI to v6 — Prisma 7 dropped `url = env(...)` syntax in schema.prisma
+# which would break our existing migrations. Use --remove-orphans to suppress
+# the orphan-container warning that compose now treats as noise.
+docker compose run --rm --remove-orphans egfilm sh -c '
+  cd packages/db && npx --yes prisma@6.17.1 migrate deploy --schema=./prisma/schema.prisma
+' || {
   echo -e "${YELLOW}⚠️  Prisma migration failed – continuing anyway${NC}"
 }
 
 # ---------- start apps ----------------------------------------------
 step "Starting application containers"
 for app in "${APPS[@]}"; do
-  docker compose up -d --wait "$app"
+  docker compose up -d --wait --remove-orphans "$app"
 done
 
 # ---------- final smoke test ---------------------------------------
