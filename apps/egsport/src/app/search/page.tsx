@@ -10,7 +10,7 @@ function SearchResults({ q }: { q: string }) {
     const term = q.trim().toLowerCase();
     const matches = useMemo(() => sports.filter((s) =>
         (s.name ?? '').toString().toLowerCase().includes(term) ||
-        (s.category ?? '').toString().toLowerCase().includes(term),
+        (s.id ?? '').toString().toLowerCase().includes(term),
     ), [sports, term]);
 
     return (
@@ -18,7 +18,7 @@ function SearchResults({ q }: { q: string }) {
             <h2 className="text-lg font-semibold">{matches.length} sport{matches.length === 1 ? '' : 's'} match &quot;{q}&quot;</h2>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
                 {matches.map((s, i) => (
-                    <SportsTile key={(s.category ?? s.name ?? i).toString()} sport={s} />
+                    <SportsTile key={(s.id ?? s.name ?? i).toString()} sport={s} />
                 ))}
             </div>
         </div>

@@ -25,15 +25,15 @@ export default function LeaguesPage() {
             ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {leagues.map((l) => (
-                        <div key={l.code ?? l.name} className="rounded-xl border border-gray-800 bg-gray-900 p-4 flex items-center gap-3 transition-all hover:border-blue-500/40">
+                        <div key={l.id ?? l.name} className="rounded-xl border border-gray-800 bg-gray-900 p-4 flex items-center gap-3 transition-all hover:border-blue-500/40">
                             <Trophy className="h-5 w-5 text-blue-400" />
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold truncate text-white">{l.name}</p>
-                                <p className="text-xs text-gray-500 truncate">{l.country ?? l.code}</p>
+                                <p className="text-xs text-gray-500 truncate">{l.id}</p>
                             </div>
                             <div className="flex gap-1">
-                                <Link href={`/leagues/${encodeURIComponent(l.code ?? l.name)}/tables`} className="text-xs rounded-md border border-gray-700 text-gray-300 px-2 py-1 hover:bg-gray-800 hover:text-blue-400 transition-colors">Table</Link>
-                                <Link href={`/leagues/${encodeURIComponent(l.code ?? l.name)}/scores`} className="text-xs rounded-md border border-gray-700 text-gray-300 px-2 py-1 hover:bg-gray-800 hover:text-blue-400 transition-colors">Scores</Link>
+                                <Link href={`/leagues/${encodeURIComponent(l.id ?? l.name)}/tables`} className="text-xs rounded-md border border-gray-700 text-gray-300 px-2 py-1 hover:bg-gray-800 hover:text-blue-400 transition-colors">Table</Link>
+                                <Link href={`/leagues/${encodeURIComponent(l.id ?? l.name)}/scores`} className="text-xs rounded-md border border-gray-700 text-gray-300 px-2 py-1 hover:bg-gray-800 hover:text-blue-400 transition-colors">Scores</Link>
                             </div>
                         </div>
                     ))}

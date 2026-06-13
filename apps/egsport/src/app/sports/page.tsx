@@ -18,7 +18,7 @@ export default function SportsPage() {
                         <div key={i} className="h-32 rounded-xl bg-gray-800 animate-pulse" />
                     ))
                     : sports.map((s, i) => (
-                        <SportsTile key={(s.category ?? s.name ?? i).toString()} sport={s} />
+                        <SportsTile key={(s.id ?? s.name ?? i).toString()} sport={s} />
                     ))}
             </div>
         </div>

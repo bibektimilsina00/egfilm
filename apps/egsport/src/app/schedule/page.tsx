@@ -82,8 +82,8 @@ export default function SchedulePage() {
                 ) : (
                     sports.slice(0, 8).map((s) => (
                         <ScheduleForCategory
-                            key={(s.category ?? s.name).toString()}
-                            category={(s.category ?? s.name ?? '').toString().toLowerCase()}
+                            key={(s.id ?? s.name).toString()}
+                            category={(s.id ?? s.name ?? '').toString().toLowerCase()}
                             day={day}
                         />
                     ))

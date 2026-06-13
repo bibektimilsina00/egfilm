@@ -77,7 +77,7 @@ export default function HomePage() {
                             <div key={i} className="h-32 rounded-xl bg-gray-900 animate-pulse" />
                         ))
                         : sports.slice(0, 12).map((s, i) => (
-                            <SportsTile key={(s.category ?? s.name ?? i).toString()} sport={s} />
+                            <SportsTile key={(s.id ?? s.name ?? i).toString()} sport={s} />
                         ))}
                 </div>
             </section>
