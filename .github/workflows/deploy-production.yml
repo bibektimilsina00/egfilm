@@ -167,7 +167,9 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
+          # GITHUB_TOKEN has packages:write for this repo's owner namespace;
+          # avoids depending on a separately-configured REGISTRY_TOKEN secret.
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/metadata-action@v5
         id: meta
@@ -228,7 +230,9 @@ jobs:
           NEXT_TELEMETRY_DISABLED=1
           REGISTRY=${REG}
           DEPLOY_USER=${{ github.actor }}
-          REGISTRY_TOKEN=${{ secrets.REGISTRY_TOKEN }}
+          # Ephemeral GITHUB_TOKEN is valid for this run; lets the server pull the
+          # just-pushed ghcr images without a separately-configured PAT.
+          REGISTRY_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           POSTGRES_DB=${{ secrets.POSTGRES_DB }}
