@@ -3,3 +3,8 @@ export * from './watchlist.service';
 export * from './continueWatching.service';
 export * from './watchRoom.service';
 export * from './notification.service';
+export * from './iptv.types';
+export * from './iptv.normalize';
+export * from './iptv.service';
+export * from './streamProxy.rewrite';
+export * from './iptvFavorites.service';

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # ===================================================================
-#  EGFilm + EGSport — monorepo zero-downtime remote deployment.
+#  EGFilm + EGSport + EGTV — monorepo zero-downtime remote deployment.
 #  Pulls fresh images, runs prisma migrate against shared DB,
-#  brings up egfilm (:8000) and egsport (:8001).
+#  brings up egfilm (:8000), egsport (:5555) and egtv (:3333).
 # ===================================================================
 
 cd ~/egfilm
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; NC='\033[0m'
 
-APPS=("egfilm" "egsport")
+APPS=("egfilm" "egsport" "egtv")
 
 step() { echo -e "\n${GREEN}▶${NC} $*"; }
 
@@ -23,6 +23,7 @@ if [[ -f .env ]]; then
   echo -e "${GREEN}✓ Loaded .env${NC}"
   echo "  EGFILM_IMAGE_NAME: ${EGFILM_IMAGE_NAME:-<not set>}"
   echo "  EGSPORT_IMAGE_NAME: ${EGSPORT_IMAGE_NAME:-<not set>}"
+  echo "  EGTV_IMAGE_NAME: ${EGTV_IMAGE_NAME:-<not set>}"
   echo "  DATABASE_URL: ${DATABASE_URL:0:30}... (truncated)"
 else
   echo -e "${RED}❌ .env file not found in $(pwd). Aborting.${NC}"
@@ -80,7 +81,7 @@ done
 
 # ---------- final smoke test ---------------------------------------
 step "Final health checks"
-for port in "${EGFILM_PORT:-8000}" "${EGSPORT_PORT:-8001}"; do
+for port in "${EGFILM_PORT:-8000}" "${EGSPORT_PORT:-5555}" "${EGTV_PORT:-3333}"; do
   echo -n "  :${port}/api/health …"
   timeout 60 bash -c "until curl -sf http://localhost:${port}/api/health >/dev/null; do sleep 2; echo -n .; done"
   echo -e " ${GREEN}✅${NC}"

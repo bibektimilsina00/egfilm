@@ -13,13 +13,19 @@
   },
   "scripts": {
     "lint": "echo 'no lint'",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@egfilm/db": "workspace:*"
   },
+  "peerDependencies": {
+    "next": "^15"
+  },
   "devDependencies": {
     "@egfilm/config": "workspace:*",
-    "typescript": "^5"
+    "next": "15.5.11",
+    "typescript": "^5",
+    "vitest": "^2.1.0"
   }
 }
