@@ -1,9 +1,9 @@
 # Monorepo-aware multi-stage Dockerfile.
 #
 # Build a specific app from the monorepo:
-#   docker build --build-arg APP_NAME=egfilm -f docker/Dockerfile.app -t egfilm:latest .
+#   docker build --build-arg APP_NAME=egfilm  -f docker/Dockerfile.app -t egfilm:latest  .
 #   docker build --build-arg APP_NAME=egsport -f docker/Dockerfile.app -t egsport:latest .
-#   docker build --build-arg APP_NAME=egtv   -f docker/Dockerfile.app -t egtv:latest .
+#   docker build --build-arg APP_NAME=egtv    -f docker/Dockerfile.app -t egtv:latest    .
 
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
@@ -11,7 +11,6 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /repo
 
 # ---------- Pruner ----------
-# Use turbo prune to generate a minimal workspace subset for the target app.
 FROM base AS pruner
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}
@@ -19,7 +18,6 @@ COPY . .
 RUN pnpm dlx turbo@2 prune --scope=${APP_NAME} --docker
 
 # ---------- Deps ----------
-# Install dependencies from the pruned lockfile (cache friendly).
 FROM base AS deps
 COPY --from=pruner /repo/out/json/ ./
 COPY --from=pruner /repo/out/pnpm-lock.yaml ./pnpm-lock.yaml
@@ -30,7 +28,6 @@ FROM base AS builder
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}
 
-# Build-time public env vars (Next.js bakes these into the client bundle).
 ARG NEXT_PUBLIC_APP_NAME
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_TMDB_API_KEY
@@ -61,13 +58,26 @@ ENV NEXT_PUBLIC_BUILD_DATE=${NEXT_PUBLIC_BUILD_DATE}
 ENV NEXT_PUBLIC_GIT_SHA=${NEXT_PUBLIC_GIT_SHA}
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
 
-# Bring the full installed workspace (root + per-package node_modules, e.g. the
-# prisma CLI in packages/db/node_modules/.bin), then overlay the full source.
+# Bring in installed workspace then overlay the full source.
 COPY --from=deps /repo/ ./
 COPY --from=pruner /repo/out/full/ ./
 
 RUN pnpm --filter @egfilm/db db:generate
 RUN pnpm --filter ${APP_NAME} build
+
+# Materialise a self-contained production node_modules tree using `pnpm deploy`.
+# Walks the workspace graph, resolves every transitive dep, emits a flat
+# (symlink-free) directory. Canonical fix for the "standalone trace missed
+# styled-jsx / next / etc" pnpm symlink trap.
+RUN pnpm --filter ${APP_NAME} --prod deploy --legacy /deploy
+
+# Overlay the built Next output + public + prisma into the deploy tree.
+RUN cp -r apps/${APP_NAME}/.next /deploy/.next \
+ && (cp -r apps/${APP_NAME}/public /deploy/public || true) \
+ && cp apps/${APP_NAME}/package.json /deploy/package.json \
+ && mkdir -p /deploy/packages/db \
+ && cp -r packages/db/prisma /deploy/packages/db/prisma \
+ && cp packages/db/package.json /deploy/packages/db/package.json
 
 # ---------- Runner ----------
 FROM base AS runner
@@ -78,16 +88,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
+WORKDIR /app
+
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
 
-# Standalone server bundle + static + public assets + prisma migrations.
-COPY --from=builder --chown=nextjs:nodejs /repo/apps/${APP_NAME}/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /repo/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
-COPY --from=builder --chown=nextjs:nodejs /repo/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
-COPY --from=builder --chown=nextjs:nodejs /repo/packages/db/prisma ./packages/db/prisma
-# Prisma client + query engine are bundled inside the Next.js standalone output
-# (apps/${APP_NAME}/.next/standalone/node_modules/.pnpm/...); no root copy needed.
+# Self-contained deploy tree (app + flat prod node_modules + prisma) from builder.
+COPY --from=builder --chown=nextjs:nodejs /deploy ./
 
 USER nextjs
 EXPOSE 3000
@@ -95,5 +102,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3000/api/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1));"
 
-# Standalone entry varies by app — `apps/${APP_NAME}/server.js` after Next.js standalone.
-CMD ["sh", "-c", "node apps/${APP_NAME}/server.js"]
+# Run next directly from the deployed node_modules — no standalone tracer
+# in the loop, no missing transitive dep surprises.
+CMD ["sh", "-c", "node_modules/.bin/next start -p 3000 -H 0.0.0.0"]
