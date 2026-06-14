@@ -77,9 +77,9 @@ export default function RegisterPage() {
 
                 <div className="relative rounded-2xl border border-gray-800/80 bg-gray-900/85 backdrop-blur-sm shadow-xl shadow-black/40 p-7 space-y-6">
                     <div className="flex flex-col items-center text-center space-y-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-end gap-2 leading-none">
                             <Image src="/icon.svg" alt="EG" width={36} height={36} className="h-9 w-auto" priority />
-                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-1.5">SPORTS</span>
+                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none">SPORTS</span>
                         </div>
                         <div className="space-y-1">
                             <h1 className="text-2xl font-bold tracking-tight text-white">Create your account</h1>
