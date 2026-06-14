@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@egfilm/db';
+import { invalidateTmdbKeyCache } from '@egfilm/services';
 import { z } from 'zod';
 
 const aiSettingsSchema = z.object({
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
                 preferredAiModel: validated.preferredAiModel || undefined,
             },
         });
+
+        // Bust the shared TMDB key cache so the new key is picked up immediately.
+        if (validated.tmdbApiKey !== undefined) invalidateTmdbKeyCache();
 
         return NextResponse.json({
             success: true,

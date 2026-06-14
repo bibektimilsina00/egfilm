@@ -1,18 +1,22 @@
 import axios, { AxiosResponse } from 'axios';
 
-// Direct TMDB API access with public key
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+// All TMDB calls go through our `/api/tmdb` proxy. The proxy reads the
+// active TMDB key from the database (admin user's `tmdbApiKey`, with
+// env fallback). This keeps the key off the client bundle and lets admins
+// rotate it without redeploys.
+const PROXY_PATH = '/api/tmdb';
+const SSR_ORIGIN =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    'http://localhost:8000';
 
-/**
- * Axios instance configured for direct TMDb API calls
- */
+function tmdbBaseUrl() {
+    return typeof window === 'undefined' ? `${SSR_ORIGIN}${PROXY_PATH}` : PROXY_PATH;
+}
+
 const tmdbAxios = axios.create({
-    baseURL: TMDB_BASE_URL,
+    baseURL: tmdbBaseUrl(),
     timeout: 10000,
-    params: {
-        api_key: TMDB_API_KEY,
-    },
 });
 
 // Add response interceptor for error handling

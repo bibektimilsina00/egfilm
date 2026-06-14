@@ -8,3 +8,4 @@ export * from './iptv.normalize';
 export * from './iptv.service';
 export * from './streamProxy.rewrite';
 export * from './iptvFavorites.service';
+export * from './tmdbKey.service';

@@ -1,14 +1,14 @@
 import axios from 'axios';
 
-// Direct TMDb API access with public key
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+// Proxied through /api/tmdb so the key never reaches the browser.
+const PROXY_PATH = '/api/tmdb';
+const SSR_ORIGIN =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    'http://localhost:8000';
 
 export const tmdbApi = axios.create({
-    baseURL: TMDB_BASE_URL,
-    params: {
-        api_key: TMDB_API_KEY,
-    },
+    baseURL: typeof window === 'undefined' ? `${SSR_ORIGIN}${PROXY_PATH}` : PROXY_PATH,
 });
 
 export interface Movie {
