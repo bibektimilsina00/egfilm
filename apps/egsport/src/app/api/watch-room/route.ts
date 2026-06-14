@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const code = searchParams.get('code');
+    // Accept either `code` (egsport originals) or `roomCode` (egfilm's watch-together
+    // lobby uses this name); without the alias the lobby got a 404 → fell back to
+    // an empty localStorage and the iframe rendered "No video source available".
+    const code = searchParams.get('code') ?? searchParams.get('roomCode');
     if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 });
     const room = await getWatchRoomByCode(code);
     if (!room) return NextResponse.json({ error: 'Not found' }, { status: 404 });
