@@ -52,19 +52,6 @@ else
     warn "REGISTRY_TOKEN unset — falling back to cached creds"
 fi
 
-# ---------- pull images (with retry) -------------------------------
-pull_with_retry() {
-    local app=$1
-    for i in 1 2 3 4 5; do
-        docker compose pull "$app" && return 0
-        warn "pull ${app} failed (${i}/5) — retry in 5s"
-        sleep 5
-    done
-    fail "could not pull image for ${app}"
-}
-log "Pulling images"
-for app in "${APPS[@]}"; do pull_with_retry "$app"; done
-
 # ---------- postgres ready -----------------------------------------
 log "Starting postgres"
 docker compose up -d postgres
@@ -87,19 +74,37 @@ else
 fi
 
 # ---------- prisma migrate (shared schema) -------------------------
-# Use egfilm image as runner. Pin prisma@6 — Prisma 7 dropped env() syntax.
+# Use the *current* egfilm image (pre-deploy) as runner. Pin prisma@6
+# (Prisma 7 dropped env() syntax). Migration runs once against shared DB
+# before we start replacing app containers — same behaviour for all apps.
 log "Running prisma migrate deploy"
 docker compose run --rm --remove-orphans egfilm sh -c \
     'cd packages/db && npx --yes prisma@6.17.1 migrate deploy --schema=./prisma/schema.prisma' \
     || warn "prisma migrate failed — continuing (manual fix may be needed)"
 
-# ---------- recreate apps one-by-one (near-zero downtime) ----------
-# Sequential `up -d --wait` per app: compose stops the old container,
-# starts the new one, waits for healthcheck pass before moving on.
-# Per-app blip ~5-15s; other 2 apps keep serving meanwhile.
-log "Recreating app containers (rolling, one at a time)"
+# ---------- rolling per-app: stop → rm → prune → pull → up ---------
+# 24GB VPS can't fit 5 × ~2GB images × 2 versions during a global pull,
+# so we do it one app at a time. Stopping the old container first frees
+# the old image for pruning, which makes room for the new pull. Per-app
+# blip ~30-60s (pull + start); other 4 apps keep serving meanwhile.
+pull_with_retry() {
+    local app=$1
+    for i in 1 2 3 4 5; do
+        docker compose pull "$app" && return 0
+        warn "pull ${app} failed (${i}/5) — retry in 5s"
+        sleep 5
+    done
+    fail "could not pull image for ${app}"
+}
+
+log "Rolling per-app replace (frees old image before pulling new)"
 for app in "${APPS[@]}"; do
     echo "  → ${app}"
+    docker compose stop "$app" 2>/dev/null || true
+    docker compose rm -f "$app" 2>/dev/null || true
+    # Prune now: previous image of THIS app has no container → reclaimable.
+    docker image prune -af >/dev/null 2>&1 || true
+    pull_with_retry "$app"
     docker compose up -d --wait --remove-orphans "$app"
 done
 
