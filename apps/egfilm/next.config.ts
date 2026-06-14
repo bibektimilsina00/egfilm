@@ -16,8 +16,7 @@ const nextConfig: NextConfig = {
       './node_modules/next/package.json',
       './node_modules/@next/**/*',
       './node_modules/.pnpm/next@*/**/*',
-            '../../node_modules/.pnpm/styled-jsx@*/node_modules/styled-jsx/**/*',
-            '../../node_modules/.pnpm/@swc+helpers@*/node_modules/@swc/helpers/**/*',    ],
+    ],
   },
   transpilePackages: [
     '@egfilm/db',

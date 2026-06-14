@@ -100,21 +100,6 @@ RUN mkdir -p /app/packages/db \
  && cp -r packages/db/prisma /app/packages/db/prisma \
  && cp packages/db/package.json /app/packages/db/package.json
 
-# Next's runtime require-hook calls `require('styled-jsx/package.json')` and
-# `require('@swc/helpers/...')` directly. The tracer copies the file content
-# into .next/standalone/node_modules/.pnpm/ but it does NOT create the
-# top-level `node_modules/<pkg>` symlinks pnpm normally builds, so node's
-# module resolver can't find them at boot. Materialise those resolution
-# entrypoints explicitly. Copying (not symlinking) keeps the runtime image
-# free of dangling links if the .pnpm dir is later flattened.
-RUN set -e \
- && SJ=$(ls -d /repo/node_modules/.pnpm/styled-jsx@*/node_modules/styled-jsx | head -1) \
- && SW=$(ls -d /repo/node_modules/.pnpm/@swc+helpers@*/node_modules/@swc/helpers | head -1) \
- && mkdir -p /app/node_modules \
- && cp -r "$SJ" /app/node_modules/styled-jsx \
- && mkdir -p /app/node_modules/@swc \
- && cp -r "$SW" /app/node_modules/@swc/helpers
-
 # The standalone tree has its own node_modules. Re-run `prisma generate`
 # inside it so the engines land in the right place at boot.
 RUN cd /app && npx --yes prisma@6.17.1 generate --schema=./packages/db/prisma/schema.prisma
