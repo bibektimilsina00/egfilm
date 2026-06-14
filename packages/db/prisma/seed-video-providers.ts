@@ -2,45 +2,28 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const videoProviders = [
-  // ⭐ MINIMAL ADS - Best User Experience (Default: VidSrc ICU)
+// 18 working providers confirmed by smoke-test against TMDB id 550 (Fight Club).
+// Order = recommended priority. First entry is the default.
+const WORKING_PROVIDERS = [
+  // ⭐ Top picks
   {
-    name: 'VidSrc ICU',
-    slug: 'vidsrc-icu',
-    baseUrl: 'https://vidsrc.icu',
+    name: 'VidSrc.mov',
+    slug: 'vidsrc-mov',
+    baseUrl: 'https://vidsrc.mov',
     quality: '1080p',
     isEnabled: true,
     isDefault: true,
     sortOrder: 0,
-    movieTemplate: 'https://vidsrc.icu/embed/movie/{tmdbId}',
-    tvTemplate: 'https://vidsrc.icu/embed/tv/{tmdbId}/{season}/{episode}',
+    movieTemplate: 'https://vidsrc.mov/embed/movie/{tmdbId}',
+    tvTemplate: 'https://vidsrc.mov/embed/tv/{tmdbId}/{season}/{episode}',
     supportsImdb: true,
     supportsTmdb: true,
     hasMultiQuality: true,
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'BEST - Clean interface with minimal ads, supports movies, TV shows, anime and manga',
-    homepage: 'https://vidsrc.icu',
-  },
-  {
-    name: 'VidSrc.cc',
-    slug: 'vidsrc-cc',
-    baseUrl: 'https://vidsrc.cc',
-    quality: '1080p',
-    isEnabled: true,
-    isDefault: false,
-    sortOrder: 1,
-    movieTemplate: 'https://vidsrc.cc/v2/embed/movie/{tmdbId}',
-    tvTemplate: 'https://vidsrc.cc/v2/embed/tv/{tmdbId}/{season}/{episode}',
-    supportsImdb: false,
-    supportsTmdb: true,
-    hasMultiQuality: true,
-    hasSubtitles: true,
-    hasAutoplay: false,
-    requiresAuth: false,
-    description: 'V2 player with custom subtitles, player events and minimal ads',
-    homepage: 'https://vidsrc.cc',
+    description: 'Top-rated mirror — clean player, minimal ads',
+    homepage: 'https://vidsrc.mov',
   },
   {
     name: 'VidLink Pro',
@@ -49,7 +32,7 @@ const videoProviders = [
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 2,
+    sortOrder: 1,
     movieTemplate: 'https://vidlink.pro/movie/{tmdbId}',
     tvTemplate: 'https://vidlink.pro/tv/{tmdbId}/{season}/{episode}',
     supportsImdb: false,
@@ -58,7 +41,7 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Biggest library: 51K+ movies and 36K+ shows from 13+ sources with minimal ads',
+    description: 'Large catalog, multi-source aggregator',
     homepage: 'https://vidlink.pro',
   },
   {
@@ -68,7 +51,7 @@ const videoProviders = [
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 3,
+    sortOrder: 2,
     movieTemplate: 'https://vidsrc.to/embed/movie/{tmdbId}',
     tvTemplate: 'https://vidsrc.to/embed/tv/{tmdbId}/{season}/{episode}',
     supportsImdb: true,
@@ -77,27 +60,143 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Next-gen API with auto-update links and minimal ads',
+    description: 'Next-gen API with auto-update links',
     homepage: 'https://vidsrc.to',
   },
   {
-    name: 'VidSrc.net',
-    slug: 'vidsrc-net',
-    baseUrl: 'https://vidsrc.net',
+    name: 'VidRock',
+    slug: 'vidrock',
+    baseUrl: 'https://vidrock.net',
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 4,
-    movieTemplate: 'https://vidsrc.net/embed/movie/{tmdbId}',
-    tvTemplate: 'https://vidsrc.net/embed/tv/{tmdbId}/{season}/{episode}',
+    sortOrder: 3,
+    movieTemplate: 'https://vidrock.net/movie/{tmdbId}',
+    tvTemplate: 'https://vidrock.net/tv/{tmdbId}/{season}/{episode}',
     supportsImdb: true,
     supportsTmdb: true,
     hasMultiQuality: true,
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Official VidSrc mirror with reliable uptime and minimal ads',
-    homepage: 'https://vidsrc.net',
+    description: 'Clean player with TMDB/IMDB support',
+    homepage: 'https://vidrock.net',
+  },
+  {
+    name: 'VidFast',
+    slug: 'vidfast',
+    baseUrl: 'https://vidfast.pro',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 4,
+    movieTemplate: 'https://vidfast.pro/movie/{tmdbId}',
+    tvTemplate: 'https://vidfast.pro/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: false,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'Fast loading player with minimal ads',
+    homepage: 'https://vidfast.pro',
+  },
+  {
+    name: 'Vidnest',
+    slug: 'vidnest',
+    baseUrl: 'https://vidnest.fun',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 5,
+    movieTemplate: 'https://vidnest.fun/movie/{tmdbId}',
+    tvTemplate: 'https://vidnest.fun/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: false,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'Reliable mirror with steady uptime',
+    homepage: 'https://vidnest.fun',
+  },
+  {
+    name: 'Videasy',
+    slug: 'videasy',
+    baseUrl: 'https://player.videasy.net',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 6,
+    movieTemplate: 'https://player.videasy.net/movie/{tmdbId}',
+    tvTemplate: 'https://player.videasy.net/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: false,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'Lightweight player with multi-source support',
+    homepage: 'https://videasy.net',
+  },
+
+  // Mirrors
+  {
+    name: 'VidSrc.fyi',
+    slug: 'vidsrc-fyi',
+    baseUrl: 'https://vidsrc.fyi',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 7,
+    movieTemplate: 'https://vidsrc.fyi/embed/movie/{tmdbId}',
+    tvTemplate: 'https://vidsrc.fyi/embed/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: true,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'VidSrc mirror with reliable uptime',
+    homepage: 'https://vidsrc.fyi',
+  },
+  {
+    name: 'VidSrc.pm',
+    slug: 'vidsrc-pm',
+    baseUrl: 'https://vidsrc.pm',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 8,
+    movieTemplate: 'https://vidsrc.pm/embed/movie/{tmdbId}',
+    tvTemplate: 'https://vidsrc.pm/embed/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: true,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'VidSrc.pm mirror',
+    homepage: 'https://vidsrc.pm',
+  },
+  {
+    name: 'VidSrc Embed',
+    slug: 'vidsrc-embed',
+    baseUrl: 'https://vidsrc-embed.ru',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 9,
+    movieTemplate: 'https://vidsrc-embed.ru/embed/movie/{tmdbId}',
+    tvTemplate: 'https://vidsrc-embed.ru/embed/tv/{tmdbId}',
+    supportsImdb: true,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'Season/episode selection inside the player',
+    homepage: 'https://vidsrc-embed.ru',
   },
   {
     name: 'VidSrc.me',
@@ -106,7 +205,7 @@ const videoProviders = [
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 5,
+    sortOrder: 10,
     movieTemplate: 'https://vidsrc.me/embed/movie?tmdb={tmdbId}',
     tvTemplate: 'https://vidsrc.me/embed/tv?tmdb={tmdbId}&season={season}&episode={episode}',
     supportsImdb: false,
@@ -115,11 +214,9 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Original VidSrc with query-based URLs and minimal ads',
+    description: 'Original VidSrc with query-based URLs',
     homepage: 'https://vidsrc.me',
   },
-
-  // 📺 STANDARD ADS - Acceptable Experience
   {
     name: 'VidSrc NEW',
     slug: 'vidsrc-new',
@@ -127,7 +224,7 @@ const videoProviders = [
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 6,
+    sortOrder: 11,
     movieTemplate: 'https://vidsrcme.ru/embed/movie/{tmdbId}',
     tvTemplate: 'https://vidsrcme.ru/embed/tv/{tmdbId}/{season}/{episode}',
     supportsImdb: false,
@@ -136,28 +233,11 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Official VidSrc domain (replaces .me/.xyz/.net) with standard ads',
+    description: 'VidSrc.me successor domain',
     homepage: 'https://vidsrc.domains',
   },
-  {
-    name: 'VidSrc.xyz',
-    slug: 'vidsrc-xyz',
-    baseUrl: 'https://vidsrc.xyz',
-    quality: '1080p',
-    isEnabled: true,
-    isDefault: false,
-    sortOrder: 7,
-    movieTemplate: 'https://vidsrc.xyz/embed/movie/{tmdbId}',
-    tvTemplate: 'https://vidsrc.xyz/embed/tv/{tmdbId}/{season}/{episode}',
-    supportsImdb: true,
-    supportsTmdb: true,
-    hasMultiQuality: true,
-    hasSubtitles: true,
-    hasAutoplay: false,
-    requiresAuth: false,
-    description: 'Legacy VidSrc domain with standard ads (may redirect)',
-    homepage: 'https://vidsrc.xyz',
-  },
+
+  // Aggregators
   {
     name: '2Embed',
     slug: '2embed',
@@ -165,7 +245,7 @@ const videoProviders = [
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 8,
+    sortOrder: 12,
     movieTemplate: 'https://www.2embed.cc/embed/{tmdbId}',
     tvTemplate: 'https://www.2embed.cc/embedtv/{tmdbId}&s={season}&e={episode}',
     supportsImdb: true,
@@ -174,17 +254,17 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Popular embed with multiple servers and standard ads',
+    description: 'Multi-server embed with wide coverage',
     homepage: 'https://2embed.cc',
   },
   {
-    name: 'SuperEmbed',
-    slug: 'superembed',
+    name: 'MultiEmbed',
+    slug: 'multiembed',
     baseUrl: 'https://multiembed.mov',
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 9,
+    sortOrder: 13,
     movieTemplate: 'https://multiembed.mov/?video_id={tmdbId}&tmdb=1',
     tvTemplate: 'https://multiembed.mov/?video_id={tmdbId}&tmdb=1&s={season}&e={episode}',
     supportsImdb: true,
@@ -193,36 +273,17 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Multi-source aggregator with standard ads',
+    description: 'Multi-source aggregator',
     homepage: 'https://multiembed.mov',
   },
   {
-    name: 'MoviesAPI',
-    slug: 'moviesapi',
-    baseUrl: 'https://moviesapi.club',
-    quality: '1080p',
-    isEnabled: true,
-    isDefault: false,
-    sortOrder: 10,
-    movieTemplate: 'https://moviesapi.club/movie/{tmdbId}',
-    tvTemplate: 'https://moviesapi.club/tv/{tmdbId}-{season}-{episode}',
-    supportsImdb: false,
-    supportsTmdb: true,
-    hasMultiQuality: true,
-    hasSubtitles: true,
-    hasAutoplay: false,
-    requiresAuth: false,
-    description: 'RESTful API with embed support and standard ads',
-    homepage: 'https://moviesapi.club',
-  },
-  {
-    name: 'Smashystream',
+    name: 'SmashyStream',
     slug: 'smashystream',
     baseUrl: 'https://embed.smashystream.com',
     quality: '1080p',
     isEnabled: true,
     isDefault: false,
-    sortOrder: 11,
+    sortOrder: 14,
     movieTemplate: 'https://embed.smashystream.com/playere.php?tmdb={tmdbId}',
     tvTemplate: 'https://embed.smashystream.com/playere.php?tmdb={tmdbId}&season={season}&episode={episode}',
     supportsImdb: false,
@@ -231,19 +292,55 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Alternative embed with good compatibility and standard ads',
+    description: 'Alternative embed with good compatibility',
     homepage: 'https://embed.smashystream.com',
   },
-
-  // ⚠️ HEAVY ADS - Use as Last Resort
+  {
+    name: '111Movies',
+    slug: '111movies',
+    baseUrl: 'https://111movies.com',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 15,
+    movieTemplate: 'https://111movies.com/movie/{tmdbId}',
+    tvTemplate: 'https://111movies.com/tv/{tmdbId}/{season}/{episode}',
+    supportsImdb: false,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'Direct TMDB-keyed player',
+    homepage: 'https://111movies.com',
+  },
+  {
+    name: 'Frembed',
+    slug: 'frembed-icu',
+    baseUrl: 'https://frembed.icu',
+    quality: '1080p',
+    isEnabled: true,
+    isDefault: false,
+    sortOrder: 16,
+    movieTemplate: 'https://frembed.icu/api/film.php?id={tmdbId}',
+    tvTemplate: 'https://frembed.icu/api/serie.php?id={tmdbId}&sa={season}&epi={episode}',
+    supportsImdb: false,
+    supportsTmdb: true,
+    hasMultiQuality: true,
+    hasSubtitles: true,
+    hasAutoplay: false,
+    requiresAuth: false,
+    description: 'French-language friendly aggregator',
+    homepage: 'https://frembed.icu',
+  },
   {
     name: 'NontonGo',
     slug: 'nontongo',
     baseUrl: 'https://www.NontonGo.win',
     quality: '720p',
-    isEnabled: false,
+    isEnabled: true,
     isDefault: false,
-    sortOrder: 12,
+    sortOrder: 17,
     movieTemplate: 'https://www.NontonGo.win/embed/movie/{tmdbId}',
     tvTemplate: 'https://www.NontonGo.win/embed/tv/{tmdbId}/{season}/{episode}',
     supportsImdb: false,
@@ -252,47 +349,55 @@ const videoProviders = [
     hasSubtitles: true,
     hasAutoplay: false,
     requiresAuth: false,
-    description: 'Indonesian provider with heavy ads (disabled by default)',
+    description: 'Indonesian regional player (720p only)',
     homepage: 'https://nontongo.win',
   },
 ];
 
 async function main() {
-  console.log('🌱 Seeding video providers...');
+  console.log('🌱 Sync video providers — keep only working set\n');
 
-  for (const provider of videoProviders) {
-    const existing = await prisma.videoProvider.findUnique({
+  const workingSlugs = WORKING_PROVIDERS.map((p) => p.slug);
+
+  // 1. Upsert every working provider (creates new, updates existing).
+  for (const provider of WORKING_PROVIDERS) {
+    await prisma.videoProvider.upsert({
       where: { slug: provider.slug },
+      create: provider,
+      update: provider,
     });
-
-    if (existing) {
-      console.log(`   ⏭️  Skipping ${provider.name} (already exists)`);
-      continue;
-    }
-
-    await prisma.videoProvider.create({
-      data: provider,
-    });
-
-    console.log(`   ✅ Created ${provider.name}`);
+    console.log(`   ✅ upserted ${provider.name}`);
   }
 
-  console.log('');
-  console.log('✨ Seeding complete!');
-  console.log('');
-  console.log('📊 Summary:');
+  // 2. Delete every other provider (broken / removed).
+  const stale = await prisma.videoProvider.findMany({
+    where: { slug: { notIn: workingSlugs } },
+    select: { slug: true, name: true },
+  });
+  if (stale.length) {
+    console.log('\n🗑  Deleting non-working providers:');
+    for (const s of stale) console.log(`   - ${s.name} (${s.slug})`);
+    await prisma.videoProvider.deleteMany({
+      where: { slug: { notIn: workingSlugs } },
+    });
+  } else {
+    console.log('\nNo stale providers to delete.');
+  }
+
+  // 3. Summary.
   const total = await prisma.videoProvider.count();
   const enabled = await prisma.videoProvider.count({ where: { isEnabled: true } });
   const defaultProvider = await prisma.videoProvider.findFirst({ where: { isDefault: true } });
 
-  console.log(`   Total providers: ${total}`);
-  console.log(`   Enabled providers: ${enabled}`);
-  console.log(`   Default provider: ${defaultProvider?.name || 'None'}`);
+  console.log('\n📊 Final state:');
+  console.log(`   Total providers : ${total}`);
+  console.log(`   Enabled         : ${enabled}`);
+  console.log(`   Default         : ${defaultProvider?.name ?? '<none>'}`);
 }
 
 main()
   .catch((e) => {
-    console.error('Error seeding video providers:', e);
+    console.error('seed-video-providers failed:', e);
     process.exit(1);
   })
   .finally(async () => {
