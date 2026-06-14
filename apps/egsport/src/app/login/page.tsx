@@ -61,7 +61,7 @@ function LoginForm() {
                     <div className="flex flex-col items-center text-center space-y-3">
                         <div className="flex items-center gap-2">
                             <Image src="/icon.svg" alt="EG" width={36} height={36} className="h-9 w-auto" priority />
-                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-1.5">SPORT</span>
+                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-1.5">SPORTS</span>
                         </div>
                         <div className="space-y-1">
                             <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back</h1>
@@ -124,7 +124,7 @@ function LoginForm() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-[11px] text-gray-500">
                             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                            <span>Single account works on EGFilm + EGSport.</span>
+                            <span>Single account works on EGFilm + EGSports.</span>
                         </div>
                         <p className="text-xs text-gray-400 text-center">
                             No account yet?{' '}

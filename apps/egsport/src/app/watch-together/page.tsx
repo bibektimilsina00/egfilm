@@ -798,7 +798,7 @@ function WatchTogetherContent() {
         }
     };
 
-    // EGSport rooms use a single embed URL provided by sportsrc.
+    // EGSports rooms use a single embed URL provided by sportsrc.
     // Source switching is not available here.
 
     const leaveRoom = () => {

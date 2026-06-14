@@ -22,7 +22,7 @@ export default function Footer() {
                                 className="h-10 w-auto block group-hover:scale-105 transition-transform duration-300"
                             />
                             <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-3 mb-0 pb-0 self-end">
-                                SPORT
+                                SPORTS
                             </span>
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed">
@@ -57,13 +57,13 @@ export default function Footer() {
                     <div>
                         <h3 className="text-white font-semibold mb-4 text-lg">About</h3>
                         <p className="text-gray-400 text-sm leading-relaxed">
-                            One account across EGFilm and EGSport. Stream data via sportsrc.org.
+                            One account across EGFilm and EGSports. Stream data via sportsrc.org.
                         </p>
                     </div>
                 </div>
 
                 <div className="border-t border-gray-800 mt-10 pt-6 text-center text-xs text-gray-500">
-                    &copy; {year} EGFilm Network. EGSport is part of the EGFilm family.
+                    &copy; {year} EGFilm Network. EGSports is part of the EGFilm family.
                 </div>
             </div>
         </footer>

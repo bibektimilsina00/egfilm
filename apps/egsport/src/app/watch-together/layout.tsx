@@ -1,10 +1,10 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'Watch Together — EGSport',
+    title: 'Watch Together — EGSports',
     description: 'Watch live matches together with friends in real-time. Chat, react, and share the moment in sync.',
     openGraph: {
-        title: 'Watch Together — EGSport',
+        title: 'Watch Together — EGSports',
         description: 'Watch live matches together with friends in real-time.',
     },
 }

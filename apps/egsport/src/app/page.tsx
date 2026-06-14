@@ -51,7 +51,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-8 space-y-10">
             <section className="relative overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-br from-blue-500/10 via-gray-900 to-gray-950 p-8">
                 <div className="max-w-2xl space-y-3">
-                    <p className="text-xs uppercase tracking-widest text-blue-400">EGSport</p>
+                    <p className="text-xs uppercase tracking-widest text-blue-400">EGSports</p>
                     <h1 className="text-3xl font-bold tracking-tight md:text-4xl text-white">
                         Live sports streaming, schedules & stats.
                     </h1>

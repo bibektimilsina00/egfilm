@@ -97,7 +97,7 @@ export default function Navigation() {
                             priority
                         />
                         <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-3 mb-0 pb-0 self-end">
-                            SPORT
+                            SPORTS
                         </span>
                     </Link>
 

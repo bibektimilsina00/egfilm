@@ -65,12 +65,12 @@ export default function RegisterPage() {
                     <div className="flex flex-col items-center text-center space-y-3">
                         <div className="flex items-center gap-2">
                             <Image src="/icon.svg" alt="EG" width={36} height={36} className="h-9 w-auto" priority />
-                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-1.5">SPORT</span>
+                            <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-1.5">SPORTS</span>
                         </div>
                         <div className="space-y-1">
                             <h1 className="text-2xl font-bold tracking-tight text-white">Create your account</h1>
                             <p className="text-sm text-gray-400">
-                                One login works on EGFilm + EGSport.
+                                One login works on EGFilm + EGSports.
                             </p>
                         </div>
                     </div>
