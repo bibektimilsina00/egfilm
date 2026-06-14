@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
             './node_modules/next/package.json',
             './node_modules/@next/**/*',
             './node_modules/.pnpm/next@*/**/*',
+            './node_modules/styled-jsx/**/*',
+            './node_modules/styled-jsx/package.json',
         ],
     },
     transpilePackages: [

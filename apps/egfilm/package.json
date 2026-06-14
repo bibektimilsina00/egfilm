@@ -6,7 +6,7 @@
     "dev": "TURBOPACK=1 NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 8000 --turbo",
     "dev:webpack": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 8000",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
-    "start": "next start",
+    "start": "PORT=3000 HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "test": "echo 'No tests specified' && exit 0",
     "lint": "eslint",
     "type-check": "tsc --noEmit",

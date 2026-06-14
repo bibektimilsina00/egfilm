@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--max-old-space-size=2048' next dev --port 5555 --turbo",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
-    "start": "next start --port 5555",
+    "start": "PORT=5555 HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next .turbo node_modules"
