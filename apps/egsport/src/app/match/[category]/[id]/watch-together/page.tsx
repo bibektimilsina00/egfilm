@@ -72,6 +72,11 @@ export default function MatchWatchTogetherCreatePage({
         return () => { active = false; clearTimeout(t); };
     }, [search]);
 
+    const filteredResults = useMemo(
+        () => results.filter((u) => !invitees.some((s) => s.id === u.id)),
+        [results, invitees],
+    );
+
     if (status === 'unauthenticated') {
         router.push(`/login?callbackUrl=/match/${category}/${id}/watch-together`);
         return null;
@@ -83,11 +88,6 @@ export default function MatchWatchTogetherCreatePage({
     const embedUrl = pickBestSource(detail)?.embedUrl ?? null;
     const username = session?.user?.name ?? session?.user?.email ?? 'Guest';
     const canCreate = !detailLoading && !!detail && !!embedUrl && !creating;
-
-    const filteredResults = useMemo(
-        () => results.filter((u) => !invitees.some((s) => s.id === u.id)),
-        [results, invitees],
-    );
 
     const addInvitee = (u: UserHit) => {
         setInvitees((prev) => (prev.some((p) => p.id === u.id) ? prev : [...prev, u]));
