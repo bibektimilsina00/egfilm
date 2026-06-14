@@ -33,17 +33,32 @@ export async function GET() {
 
         return NextResponse.json(providers, {
             headers: {
-                // Browser caches 5 min; CDN/edge caches 5 min and serves stale for up to 1h while revalidating.
                 'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
             },
         });
     } catch (error) {
         console.error('Error fetching video providers:', error);
         return NextResponse.json(
             { error: 'Failed to fetch video providers' },
-            { status: 500 }
+            {
+                status: 500,
+                headers: { 'Access-Control-Allow-Origin': '*' },
+            }
         );
     }
+}
+
+export async function OPTIONS() {
+    return new Response(null, {
+        status: 204,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Max-Age': '86400',
+        },
+    });
 }
 
 export const dynamic = 'force-dynamic';

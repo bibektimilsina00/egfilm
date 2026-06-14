@@ -49,3 +49,37 @@ export async function getUserByEmail(email: string) {
         select: { id: true, email: true, name: true },
     });
 }
+
+export async function getUserAccount(email: string) {
+    return prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+    });
+}
+
+export async function updateUserName(email: string, name: string) {
+    const trimmed = name.trim();
+    if (trimmed.length < 1 || trimmed.length > 60) {
+        throw new Error('Name must be 1-60 characters');
+    }
+    return prisma.user.update({
+        where: { email },
+        data: { name: trimmed },
+        select: { id: true, email: true, name: true },
+    });
+}
+
+export async function changeUserPassword(email: string, currentPassword: string, newPassword: string) {
+    if (newPassword.length < 6) throw new Error('New password must be at least 6 characters');
+    if (currentPassword === newPassword) throw new Error('New password must differ from current');
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) throw new Error('User not found');
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) throw new Error('Current password is incorrect');
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { email }, data: { password: hashed } });
+    return { ok: true };
+}

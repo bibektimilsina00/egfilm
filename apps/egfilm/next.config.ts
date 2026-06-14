@@ -307,11 +307,10 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Faster module resolution
-    config.resolve = {
-      ...config.resolve,
-      symlinks: false,
-    };
+    // NOTE: do NOT set `symlinks: false` here. pnpm uses symlinks; disabling
+    // their resolution causes webpack to bundle two copies of any package
+    // imported through both the app and a workspace pkg (e.g. @egfilm/realtime),
+    // which broke <QueryClientProvider> in production. Default (true) is correct.
 
     return config;
   },

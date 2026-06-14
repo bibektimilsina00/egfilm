@@ -15,15 +15,17 @@ import {
     Search,
     Menu,
     X,
-    User,
-    ChevronDown,
     LogIn,
     LogOut,
     Loader2,
+    Tv,
+    LifeBuoy,
+    Settings,
 } from 'lucide-react';
 
 const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
 const EGFILM_URL = process.env.NEXT_PUBLIC_EGFILM_URL || 'https://egfilm.xyz';
+const EGTV_URL = process.env.NEXT_PUBLIC_EGTV_URL || 'https://tv.egfilm.xyz';
 
 interface NavLink {
     href: string;
@@ -153,26 +155,73 @@ export default function Navigation() {
                                     <>
                                         <button
                                             onClick={() => setUserMenuOpen((v) => !v)}
-                                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 hover:bg-gray-800 rounded-full transition-all"
+                                            aria-label="Open user menu"
+                                            aria-haspopup="menu"
+                                            aria-expanded={userMenuOpen}
+                                            className="relative h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 ring-2 ring-gray-800 hover:ring-blue-500/40 transition-all flex items-center justify-center shadow-md focus:outline-none focus-visible:ring-blue-500/60"
                                         >
-                                            <User className="w-4 h-4 text-gray-300" />
-                                            <span className="text-sm text-gray-300 max-w-[100px] truncate">{session.user?.name}</span>
-                                            <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                                            <span className="text-sm font-semibold text-white select-none">
+                                                {((session.user?.name || session.user?.email || 'U').trim().charAt(0) || 'U').toUpperCase()}
+                                            </span>
                                         </button>
                                         {userMenuOpen && (
-                                            <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-xl py-2 z-50">
-                                                <div className="px-4 py-2 border-b border-gray-800">
-                                                    <p className="text-sm text-gray-400">Signed in as</p>
-                                                    <p className="text-sm text-white font-medium truncate">{session.user?.email}</p>
+                                            <div
+                                                role="menu"
+                                                className="absolute right-0 mt-3 w-72 bg-gray-900/95 backdrop-blur-md border border-gray-800 rounded-2xl shadow-2xl shadow-black/40 py-2 z-50 animate-in fade-in slide-in-from-top-2 max-h-[80vh] overflow-y-auto"
+                                            >
+                                                {/* Header card */}
+                                                <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-800/60">
+                                                    <div className="h-11 w-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md flex-shrink-0 ring-2 ring-blue-500/20">
+                                                        <span className="text-base font-bold text-white select-none">
+                                                            {((session.user?.name || session.user?.email || 'U').trim().charAt(0) || 'U').toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm text-white font-semibold truncate">{session.user?.name ?? 'Account'}</p>
+                                                        <p className="text-xs text-gray-400 truncate">{session.user?.email}</p>
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    onClick={handleSignOut}
-                                                    disabled={isSigningOut}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-gray-800/50 transition-all disabled:opacity-50"
-                                                >
-                                                    {isSigningOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-                                                    {isSigningOut ? 'Signing Out...' : 'Sign Out'}
-                                                </button>
+
+                                                {/* My Library */}
+                                                <MenuSection label="My Library">
+                                                    <MenuLink href="/watchlist" icon={ListVideo} label="Watchlist" onSelect={() => setUserMenuOpen(false)} />
+                                                    <MenuLink href="/schedule" icon={CalendarDays} label="Schedule" onSelect={() => setUserMenuOpen(false)} />
+                                                    <MenuLink href="/leagues" icon={Trophy} label="Leagues" onSelect={() => setUserMenuOpen(false)} />
+                                                </MenuSection>
+
+                                                {/* Account */}
+                                                <MenuSection label="Account">
+                                                    <MenuLink href="/account" icon={Settings} label="Profile & Password" onSelect={() => setUserMenuOpen(false)} />
+                                                </MenuSection>
+
+                                                {/* Sister apps */}
+                                                <MenuSection label="More from EGFilm">
+                                                    <MenuExternal href={EGFILM_URL} icon={Film} label="Movies & TV" sub="EGFilm" />
+                                                    <MenuExternal href={EGTV_URL} icon={Tv} label="Live TV" sub="EGTV" />
+                                                    <MenuExternal href={BLOG_URL} icon={BookOpen} label="Blog" />
+                                                </MenuSection>
+
+                                                {/* Support */}
+                                                <MenuSection label="Support">
+                                                    <MenuExternal href="mailto:support@khareedlow.com" icon={LifeBuoy} label="Help & Feedback" />
+                                                </MenuSection>
+
+                                                {/* Sign out */}
+                                                <div className="border-t border-gray-800/60 mt-1 pt-1">
+                                                    <button
+                                                        onClick={handleSignOut}
+                                                        disabled={isSigningOut}
+                                                        role="menuitem"
+                                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isSigningOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                                                        <span>{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
+                                                    </button>
+                                                </div>
+
+                                                <p className="px-4 pt-2 pb-1 text-[10px] text-gray-600 text-center">
+                                                    EGSports · v{process.env.NEXT_PUBLIC_BUILD_VERSION?.slice(0, 12) || 'dev'}
+                                                </p>
                                             </div>
                                         )}
                                     </>
@@ -246,5 +295,67 @@ export default function Navigation() {
                 )}
             </div>
         </header>
+    );
+}
+
+function MenuSection({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="py-1">
+            <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">{label}</p>
+            <div className="mt-0.5">{children}</div>
+        </div>
+    );
+}
+
+function MenuLink({
+    href,
+    icon: Icon,
+    label,
+    sub,
+    onSelect,
+}: {
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    sub?: string;
+    onSelect?: () => void;
+}) {
+    return (
+        <Link
+            href={href}
+            onClick={onSelect}
+            role="menuitem"
+            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800/60 transition-colors"
+        >
+            <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span className="flex-1 truncate">{label}</span>
+            {sub ? <span className="text-[10px] text-gray-500 uppercase tracking-wider">{sub}</span> : null}
+        </Link>
+    );
+}
+
+function MenuExternal({
+    href,
+    icon: Icon,
+    label,
+    sub,
+}: {
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    sub?: string;
+}) {
+    return (
+        <a
+            href={href}
+            target={href.startsWith('mailto:') ? undefined : '_blank'}
+            rel={href.startsWith('mailto:') ? undefined : 'noopener noreferrer'}
+            role="menuitem"
+            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800/60 transition-colors"
+        >
+            <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <span className="flex-1 truncate">{label}</span>
+            {sub ? <span className="text-[10px] text-gray-500 uppercase tracking-wider">{sub}</span> : null}
+        </a>
     );
 }
