@@ -4,7 +4,7 @@ import React from 'react';
 import { Instagram, Twitter, Mail, BookOpen, Home, Film, Tv, Activity } from 'lucide-react';
 
 const BLOG_SITE_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
-const EGSPORT_URL = process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sport.egfilm.xyz';
+const EGSPORT_URL = process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sports.egfilm.xyz';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();

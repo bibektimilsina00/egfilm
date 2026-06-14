@@ -144,7 +144,7 @@ jobs:
           - app: egsport
             public_app_name: EGSport
             app_url_var: EGSPORT_URL
-            default_url: https://live.egfilm.xyz
+            default_url: https://sports.egfilm.xyz
           - app: egtv
             public_app_name: EGTV
             app_url_var: EGTV_URL
@@ -193,7 +193,7 @@ jobs:
             NEXT_PUBLIC_TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
             NEXT_PUBLIC_EGFILM_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
-            NEXT_PUBLIC_EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+            NEXT_PUBLIC_EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://sports.egfilm.xyz' }}
             NEXT_PUBLIC_EGTV_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
             NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
             NEXT_PUBLIC_TURN_USERNAME=${{ vars.TURN_USERNAME || '' }}
@@ -251,13 +251,13 @@ jobs:
           EGADMIN_PORT=${{ vars.EGADMIN_PORT || '5566' }}
 
           EGFILM_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
-          EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+          EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://sports.egfilm.xyz' }}
           EGTV_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
           EGBLOG_URL=${{ vars.EGBLOG_URL || 'https://blog.egfilm.xyz' }}
           EGADMIN_URL=${{ vars.EGADMIN_URL || 'https://admin.egfilm.xyz' }}
 
           EGFILM_AUTH_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
-          EGSPORT_AUTH_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
+          EGSPORT_AUTH_URL=${{ vars.EGSPORT_URL || 'https://sports.egfilm.xyz' }}
           EGTV_AUTH_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
           EGBLOG_AUTH_URL=${{ vars.EGBLOG_URL || 'https://blog.egfilm.xyz' }}
           EGADMIN_AUTH_URL=${{ vars.EGADMIN_URL || 'https://admin.egfilm.xyz' }}

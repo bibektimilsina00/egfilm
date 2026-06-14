@@ -23,7 +23,7 @@ import {
 
 const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz';
 const EGFILM_URL = process.env.NEXT_PUBLIC_EGFILM_URL || 'https://egfilm.xyz';
-const EGSPORT_URL = process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://live.egfilm.xyz';
+const EGSPORT_URL = process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sports.egfilm.xyz';
 
 interface NavLink {
     href: string;

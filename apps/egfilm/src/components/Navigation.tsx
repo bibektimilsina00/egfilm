@@ -114,7 +114,7 @@ export default function Navigation() {
         { href: '/', label: 'Home', icon: Home },
         { href: '/movies', label: 'Movies', icon: Film },
         { href: '/tv', label: 'TV Shows', icon: Tv },
-        { href: process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sport.egfilm.xyz', label: 'Live Sports', icon: Activity, external: true },
+        { href: process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sports.egfilm.xyz', label: 'Live Sports', icon: Activity, external: true },
         { href: process.env.NEXT_PUBLIC_BLOG_URL || process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz', label: 'Blog', icon: BookOpen, external: true },
         { href: '/watchlist', label: 'Watchlist', icon: Heart },
     ], []);
@@ -335,7 +335,7 @@ export default function Navigation() {
 
                                                 {/* Apps */}
                                                 <MenuSection label="More from EGFilm">
-                                                    <MenuExternal href={process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sport.egfilm.xyz'} icon={Activity} label="Live Sports" sub="EGSports" />
+                                                    <MenuExternal href={process.env.NEXT_PUBLIC_EGSPORT_URL || 'https://sports.egfilm.xyz'} icon={Activity} label="Live Sports" sub="EGSports" />
                                                     <MenuExternal href={process.env.NEXT_PUBLIC_EGTV_URL || 'https://tv.egfilm.xyz'} icon={Tv} label="Live TV" sub="EGTV" />
                                                     <MenuExternal href={process.env.NEXT_PUBLIC_BLOG_URL || process.env.NEXT_PUBLIC_BLOG_SITE_URL || 'https://blog.egfilm.xyz'} icon={BookOpen} label="Blog" />
                                                 </MenuSection>
