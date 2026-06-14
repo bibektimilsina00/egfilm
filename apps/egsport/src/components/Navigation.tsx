@@ -85,23 +85,23 @@ export default function Navigation() {
 
     return (
         <header className="sticky top-0 z-50 bg-gray-950/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
-            <div className="container mx-auto px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                    <Link href="/" className="flex items-center gap-2 group shrink-0">
+            <div className="container mx-auto px-4 pt-0.5 pb-2">
+                <div className="flex items-end justify-between gap-3">
+                    <Link href="/" className="flex items-end gap-2 group shrink-0 mb-2">
                         <Image
                             src="/icon.svg"
                             alt="EG"
                             width={32}
                             height={32}
-                            className="h-10 w-auto block group-hover:scale-105 transition-transform duration-300"
+                            className="h-8 w-auto block group-hover:scale-105 transition-transform duration-300"
                             priority
                         />
-                        <span className="text-white font-black text-2xl tracking-tight uppercase leading-none mt-3 mb-0 pb-0 self-end">
+                        <span className="text-white font-black text-xl tracking-tight uppercase leading-none mt-2 mb-0 pb-0 self-end">
                             SPORTS
                         </span>
                     </Link>
 
-                    <nav className="hidden lg:flex items-center gap-4">
+                    <nav className="hidden lg:flex items-end gap-4">
                         {navLinks.map((link) => {
                             const Icon = link.icon;
                             const isActive = mounted && !link.external && pathname === link.href;
@@ -133,7 +133,7 @@ export default function Navigation() {
                         })}
                     </nav>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-end gap-2">
                         <form onSubmit={handleSearch} className="relative hidden md:block">
                             <input
                                 type="text"

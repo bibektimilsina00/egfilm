@@ -23,14 +23,14 @@
     "@egfilm/db": "workspace:*",
     "@egfilm/services": "workspace:*",
     "@egfilm/ui": "workspace:*",
-    "@tanstack/react-query": "^5.90.5",
-    "@tanstack/react-query-devtools": "^5.90.2",
     "axios": "^1.12.2",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "lucide-react": "^0.545.0"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-query-devtools": "^5",
     "next": "^15",
     "next-auth": "^5.0.0-beta.29",
     "react": "^19",

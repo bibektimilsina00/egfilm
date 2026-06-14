@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Trophy, Search, X, Sparkles, Globe2, MapPin } from 'lucide-react';
+import { Trophy, Search, X, Globe2, MapPin } from 'lucide-react';
 import { useLeagues } from '@/lib/hooks/useSports';
 import LeagueCard from '@/components/LeagueCard';
 import EmptyState from '@/components/EmptyState';
@@ -56,27 +56,41 @@ export default function LeaguesPage() {
     return (
         <div className="container mx-auto px-4 py-8 space-y-10">
             {/* Hero */}
-            <section className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-blue-500/15 via-indigo-500/10 to-gray-950 p-8">
-                <div className="pointer-events-none absolute -top-20 -right-20 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" aria-hidden />
-                <div className="pointer-events-none absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-indigo-500/15 blur-3xl" aria-hidden />
+            <section className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/60 p-8">
+                {/* one subtle radial accent, no full-card gradient */}
+                <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" aria-hidden />
+
+                {/* Animated trophy mark — native colour emoji bobs gently. */}
+                <div className="pointer-events-none absolute right-6 top-1/2 hidden -translate-y-1/2 md:block" aria-hidden>
+                    <span className="relative block text-[8rem] leading-none animate-trophy-float">
+                        🏆
+                    </span>
+                </div>
 
                 <div className="relative max-w-2xl space-y-3">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] font-medium text-blue-200">
-                        <Sparkles className="h-3 w-3" /> Live tables, refreshed automatically
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-widest text-blue-300/90">
+                        <Trophy className="h-3 w-3" /> Live tables
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Football Leagues</h1>
-                    <p className="text-gray-400">
-                        Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and more —
-                        full standings, live scores and every fixture wrapped up in one hub.
+                    <p className="text-sm md:text-base text-gray-400 max-w-xl">
+                        Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League —
+                        full standings, live scores, every fixture, in one place.
                     </p>
 
-                    {/* Quick stats */}
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2 pt-1">
                         <Stat icon={Trophy} value={totalLeagues || '—'} label="Leagues" />
                         <Stat icon={Globe2} value={totalCountries || '—'} label="Countries" />
                         <Stat icon={MapPin} value="Live" label="Updates" pulse />
                     </div>
                 </div>
+
+                <style jsx>{`
+                    @keyframes trophy-float {
+                        0%, 100% { transform: translateY(0) rotate(-2deg); }
+                        50%      { transform: translateY(-6px) rotate(2deg); }
+                    }
+                    .animate-trophy-float { animation: trophy-float 5s ease-in-out infinite; transform-origin: center; }
+                `}</style>
             </section>
 
             {/* Search */}

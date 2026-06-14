@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -42,14 +42,28 @@ export default function RegisterPage() {
                 <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
                 <div className="absolute -bottom-32 -right-32 h-[28rem] w-[28rem] rounded-full bg-indigo-600/15 blur-3xl" />
                 <div className="absolute top-1/3 right-1/4 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-                <div
-                    className="absolute inset-0 opacity-[0.04]"
-                    style={{
-                        backgroundImage:
-                            'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
-                        backgroundSize: '48px 48px',
-                    }}
-                />
+                {/* Football pitch lines — subtle SVG overlay */}
+                <svg
+                    className="absolute inset-0 h-full w-full opacity-[0.07]"
+                    viewBox="0 0 1200 800"
+                    preserveAspectRatio="xMidYMid slice"
+                    aria-hidden
+                >
+                    <g fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                        <rect x="40" y="40" width="1120" height="720" />
+                        <line x1="600" y1="40" x2="600" y2="760" />
+                        <circle cx="600" cy="400" r="90" />
+                        <circle cx="600" cy="400" r="3" fill="currentColor" stroke="none" />
+                        <rect x="40" y="220" width="180" height="360" />
+                        <rect x="40" y="310" width="70" height="180" />
+                        <path d="M 220 340 A 90 90 0 0 1 220 460" />
+                        <circle cx="160" cy="400" r="3" fill="currentColor" stroke="none" />
+                        <rect x="980" y="220" width="180" height="360" />
+                        <rect x="1090" y="310" width="70" height="180" />
+                        <path d="M 980 460 A 90 90 0 0 1 980 340" />
+                        <circle cx="1040" cy="400" r="3" fill="currentColor" stroke="none" />
+                    </g>
+                </svg>
                 <FloatingEmoji emoji="⚽" className="left-[6%] top-[18%] text-5xl" delay="0s" />
                 <FloatingEmoji emoji="🏀" className="right-[8%] top-[22%] text-4xl" delay="1.4s" />
                 <FloatingEmoji emoji="🥊" className="left-[10%] bottom-[18%] text-4xl" delay="2.6s" />
@@ -59,9 +73,9 @@ export default function RegisterPage() {
             </div>
 
             <div className="relative w-full max-w-md">
-                <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-blue-500/40 via-indigo-500/20 to-transparent blur-sm" aria-hidden />
+                <div className="absolute inset-x-6 -top-px h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" aria-hidden />
 
-                <div className="relative rounded-2xl border border-gray-800 bg-gray-900/80 backdrop-blur-xl shadow-2xl shadow-blue-500/10 p-7 space-y-6">
+                <div className="relative rounded-2xl border border-gray-800/80 bg-gray-900/85 backdrop-blur-sm shadow-xl shadow-black/40 p-7 space-y-6">
                     <div className="flex flex-col items-center text-center space-y-3">
                         <div className="flex items-center gap-2">
                             <Image src="/icon.svg" alt="EG" width={36} height={36} className="h-9 w-auto" priority />
@@ -70,12 +84,12 @@ export default function RegisterPage() {
                         <div className="space-y-1">
                             <h1 className="text-2xl font-bold tracking-tight text-white">Create your account</h1>
                             <p className="text-sm text-gray-400">
-                                One login works on EGFilm + EGSports.
+                                Free, takes a minute. No spam.
                             </p>
                         </div>
                     </div>
 
-                    <form onSubmit={onSubmit} className="space-y-3">
+                    <form onSubmit={onSubmit} className="relative space-y-3">
                         <Field
                             icon={User}
                             type="text"
@@ -124,20 +138,30 @@ export default function RegisterPage() {
 
                         <button
                             type="submit"
-                            disabled={pending || !name || !email || password.length < 8}
-                            className="group relative w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                            disabled={pending}
+                            className="auth-cta group relative w-full inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 via-blue-500 to-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 hover:shadow-blue-500/40 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                         >
-                            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                            <span>{pending ? 'Creating…' : 'Create account'}</span>
-                            {!pending ? <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /> : null}
+                            <span className="cta-shine pointer-events-none absolute inset-0" aria-hidden />
+                            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/40" aria-hidden />
+
+                            {pending ? (
+                                <Loader2 className="relative h-4 w-4 animate-spin" />
+                            ) : (
+                                <span
+                                    className="relative text-[15px] leading-none transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110"
+                                    aria-hidden
+                                >
+                                    🏆
+                                </span>
+                            )}
+                            <span className="relative tracking-wide">{pending ? 'Creating account…' : 'Join the squad'}</span>
+                            {!pending ? (
+                                <ArrowRight className="relative h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                            ) : null}
                         </button>
                     </form>
 
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                            <span>We hash your password with bcrypt. No tracking, no spam.</span>
-                        </div>
+                    <div className="relative">
                         <p className="text-xs text-gray-400 text-center">
                             Already have an account?{' '}
                             <Link href="/login" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
@@ -153,6 +177,20 @@ export default function RegisterPage() {
                     0% { transform: translateY(0px) rotate(-4deg); opacity: 0.45; }
                     50% { transform: translateY(-14px) rotate(4deg); opacity: 0.7; }
                     100% { transform: translateY(0px) rotate(-4deg); opacity: 0.45; }
+                }
+                .auth-cta :global(.cta-shine) {
+                    background: linear-gradient(
+                        110deg,
+                        transparent 35%,
+                        rgba(255, 255, 255, 0.28) 50%,
+                        transparent 65%
+                    );
+                    background-size: 220% 100%;
+                    background-position: 200% 0;
+                    transition: background-position 700ms ease;
+                }
+                .auth-cta:not(:disabled):hover :global(.cta-shine) {
+                    background-position: -50% 0;
                 }
             `}</style>
         </div>
