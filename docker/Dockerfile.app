@@ -79,6 +79,11 @@ RUN cp -r apps/${APP_NAME}/.next /deploy/.next \
  && cp -r packages/db/prisma /deploy/packages/db/prisma \
  && cp packages/db/package.json /deploy/packages/db/package.json
 
+# Generate the Prisma client INSIDE /deploy. `pnpm deploy --prod` copies the
+# @prisma/client package but not the generated `.prisma/client` engine output
+# that PrismaClient s constructor needs at boot. Re-run prisma generate.
+RUN cd /deploy && npx --yes prisma@6.17.1 generate --schema=./packages/db/prisma/schema.prisma
+
 # ---------- Runner ----------
 FROM base AS runner
 ARG APP_NAME
