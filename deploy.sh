@@ -25,15 +25,12 @@ echo "  egfilm  → ${EGFILM_IMAGE_NAME:-<unset>}"
 echo "  egsport → ${EGSPORT_IMAGE_NAME:-<unset>}"
 echo "  egtv    → ${EGTV_IMAGE_NAME:-<unset>}"
 
-# ---------- stop previous app containers ---------------------------
-# rm -fs = force + stop. Postgres untouched.
-log "Stopping previous app containers"
-docker compose rm -fs "${APPS[@]}" 2>/dev/null || true
-
 # ---------- disk hygiene -------------------------------------------
 # Free space BEFORE pulling so registry pull doesn't run out of disk.
-# Volumes (postgres data) never touched.
-log "Disk hygiene (volumes preserved)"
+# Old app containers keep serving during pull (near-zero-downtime).
+# `docker image prune -af` only reaps images with NO running container,
+# so the in-use images stay. Volumes (postgres data) never touched.
+log "Disk hygiene (volumes preserved, apps still serving)"
 df -h / | awk 'NR==2 {printf "  before: %s used of %s (%s)\n", $3, $2, $5}'
 docker image prune -af     >/dev/null 2>&1 || true
 docker container prune -f  >/dev/null 2>&1 || true
@@ -94,9 +91,13 @@ docker compose run --rm --remove-orphans egfilm sh -c \
     'cd packages/db && npx --yes prisma@6.17.1 migrate deploy --schema=./prisma/schema.prisma' \
     || warn "prisma migrate failed — continuing (manual fix may be needed)"
 
-# ---------- start apps ---------------------------------------------
-log "Starting app containers"
+# ---------- recreate apps one-by-one (near-zero downtime) ----------
+# Sequential `up -d --wait` per app: compose stops the old container,
+# starts the new one, waits for healthcheck pass before moving on.
+# Per-app blip ~5-15s; other 2 apps keep serving meanwhile.
+log "Recreating app containers (rolling, one at a time)"
 for app in "${APPS[@]}"; do
+    echo "  → ${app}"
     docker compose up -d --wait --remove-orphans "$app"
 done
 
