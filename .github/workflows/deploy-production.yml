@@ -107,18 +107,9 @@ jobs:
       - name: Unit tests
         run: pnpm --filter @egfilm/services test
 
-      - name: Build all apps
-        run: pnpm run build
-        env:
-          NODE_ENV: production
-          NEXT_TELEMETRY_DISABLED: 1
-          NEXT_PUBLIC_TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          NEXT_PUBLIC_APP_URL: ${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
-          NEXT_PUBLIC_EGFILM_URL: ${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
-          NEXT_PUBLIC_EGSPORT_URL: ${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
-          NEXT_PUBLIC_EGTV_URL: ${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
-          NEXT_PUBLIC_GIT_SHA: ${{ github.sha }}
-          NEXT_PUBLIC_BUILD_VERSION: ${{ needs.validate.outputs.version }}
+      # Note: we used to run `pnpm run build` here, but each app is
+      # already rebuilt inside its docker image in the matrix job below.
+      # Doing it twice wasted ~2 minutes per deploy with zero benefit.
 
   security-scan:
     name: 🔒 Trivy Security Scan

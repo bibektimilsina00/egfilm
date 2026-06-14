@@ -15,13 +15,15 @@ FROM base AS pruner
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}
 COPY . .
-RUN pnpm dlx turbo@2 prune --scope=${APP_NAME} --docker
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm dlx turbo@2 prune --scope=${APP_NAME} --docker
 
 # ---------- Deps ----------
 FROM base AS deps
 COPY --from=pruner /repo/out/json/ ./
 COPY --from=pruner /repo/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # ---------- Builder ----------
 FROM base AS builder

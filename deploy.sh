@@ -62,6 +62,35 @@ for port in "${EGFILM_PORT:-8000}" "${EGSPORT_PORT:-5555}" "${EGTV_PORT:-3333}";
   fi
 done
 
+# ---------- disk hygiene -------------------------------------------
+# Free disk BEFORE pulling new images so the registry pull does not run
+# out of space mid-extraction (we have hit this repeatedly on the 24 GB
+# VPS). Volumes are NEVER touched here — postgres data lives in
+# `egfilm_postgres_data` and must survive.
+step "Disk hygiene (volumes preserved)"
+df -h / | awk 'NR==2{printf "  before: used %s of %s (%s)\n", $3, $2, $5}'
+
+# 1. Remove every image that no running container references. The egsport
+#    and egtv app containers have already been `docker compose rm`-ed above,
+#    so their previous tags become unused and are reclaimed here. Postgres
+#    + the currently running egfilm image stay because they're in use.
+docker image prune -af 2>/dev/null | grep -E "^Total" || true
+
+# 2. Drop dangling images, stopped containers, unused networks.
+docker container prune -f 2>/dev/null | grep -E "^Total" || true
+docker network prune -f 2>/dev/null | grep -E "^Total" || true
+
+# 3. Wipe the buildx + builder cache. We never build on this server (CI
+#    pushes images to ghcr); the cache is purely buildx state from past
+#    troubleshooting and contributes 1-5 GB.
+docker builder prune -af 2>/dev/null | tail -2 || true
+docker buildx prune -af 2>/dev/null | tail -2 || true
+
+# 4. Trim old systemd journals (kept 200 MB).
+command -v journalctl >/dev/null 2>&1 && journalctl --vacuum-size=200M >/dev/null 2>&1 || true
+
+df -h / | awk 'NR==2{printf "  after : used %s of %s (%s)\n", $3, $2, $5}'
+
 # ---------- registry login -----------------------------------------
 step "Logging into container registry"
 if [[ -n "${REGISTRY_TOKEN:-}" ]]; then
