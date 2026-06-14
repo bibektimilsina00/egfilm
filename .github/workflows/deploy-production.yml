@@ -102,7 +102,7 @@ jobs:
         run: pnpm run lint
 
       - name: Type-check apps
-        run: pnpm --filter egfilm --filter egsport --filter egtv type-check
+        run: pnpm --filter egfilm --filter egsport --filter egtv --filter egblog --filter egadmin type-check
 
       - name: Unit tests
         run: pnpm --filter @egfilm/services test
@@ -149,6 +149,14 @@ jobs:
             public_app_name: EGTV
             app_url_var: EGTV_URL
             default_url: https://tv.egfilm.xyz
+          - app: egblog
+            public_app_name: EGFilm Blog
+            app_url_var: EGBLOG_URL
+            default_url: https://blog.egfilm.xyz
+          - app: egadmin
+            public_app_name: EGFilm Admin
+            app_url_var: EGADMIN_URL
+            default_url: https://admin.egfilm.xyz
     steps:
       - uses: actions/checkout@v4
 
@@ -233,18 +241,26 @@ jobs:
           EGFILM_IMAGE_NAME=${REG}/${OWNER}/egfilm:${VER}
           EGSPORT_IMAGE_NAME=${REG}/${OWNER}/egsport:${VER}
           EGTV_IMAGE_NAME=${REG}/${OWNER}/egtv:${VER}
+          EGBLOG_IMAGE_NAME=${REG}/${OWNER}/egblog:${VER}
+          EGADMIN_IMAGE_NAME=${REG}/${OWNER}/egadmin:${VER}
 
           EGFILM_PORT=${{ vars.EGFILM_PORT || '8000' }}
           EGSPORT_PORT=${{ vars.EGSPORT_PORT || '5555' }}
           EGTV_PORT=${{ vars.EGTV_PORT || '3333' }}
+          EGBLOG_PORT=${{ vars.EGBLOG_PORT || '4444' }}
+          EGADMIN_PORT=${{ vars.EGADMIN_PORT || '5566' }}
 
           EGFILM_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
           EGSPORT_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
           EGTV_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
+          EGBLOG_URL=${{ vars.EGBLOG_URL || 'https://blog.egfilm.xyz' }}
+          EGADMIN_URL=${{ vars.EGADMIN_URL || 'https://admin.egfilm.xyz' }}
 
           EGFILM_AUTH_URL=${{ vars.EGFILM_URL || 'https://egfilm.xyz' }}
           EGSPORT_AUTH_URL=${{ vars.EGSPORT_URL || 'https://live.egfilm.xyz' }}
           EGTV_AUTH_URL=${{ vars.EGTV_URL || 'https://tv.egfilm.xyz' }}
+          EGBLOG_AUTH_URL=${{ vars.EGBLOG_URL || 'https://blog.egfilm.xyz' }}
+          EGADMIN_AUTH_URL=${{ vars.EGADMIN_URL || 'https://admin.egfilm.xyz' }}
 
           NEXT_PUBLIC_BLOG_SITE_URL=${{ vars.BLOG_SITE_URL || 'https://blog.egfilm.xyz' }}
           NEXT_PUBLIC_TURN_SERVER=${{ vars.TURN_SERVER || '' }}
@@ -288,7 +304,7 @@ jobs:
           port: ${{ vars.SSH_PORT || 22 }}
           script: |
             set -e
-            for p in "${{ vars.EGFILM_PORT || '8000' }}" "${{ vars.EGSPORT_PORT || '5555' }}" "${{ vars.EGTV_PORT || '3333' }}"; do
+            for p in "${{ vars.EGFILM_PORT || '8000' }}" "${{ vars.EGSPORT_PORT || '5555' }}" "${{ vars.EGTV_PORT || '3333' }}" "${{ vars.EGBLOG_PORT || '4444' }}" "${{ vars.EGADMIN_PORT || '5566' }}"; do
               echo -n "  :$p/api/health … "
               curl -sf "http://localhost:$p/api/health" >/dev/null && echo "✅" || { echo "❌"; exit 1; }
             done
@@ -307,5 +323,5 @@ jobs:
             echo "## ❌ Deployment Failed (${{ needs.deploy.result }})" >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "- **Version**: ${{ needs.validate.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Apps**: egfilm, egsport, egtv" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Apps**: egfilm, egsport, egtv, egblog, egadmin" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Triggered by**: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"

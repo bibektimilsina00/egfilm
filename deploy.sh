@@ -9,7 +9,7 @@ set -Eeuo pipefail
 cd ~/egfilm
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; NC='\033[0m'
-APPS=(egfilm egsport egtv)
+APPS=(egfilm egsport egtv egblog egadmin)
 
 log()  { echo -e "\n${GREEN}▶${NC} $*"; }
 warn() { echo -e "${YELLOW}⚠ $*${NC}"; }
@@ -24,6 +24,8 @@ log "Loaded .env"
 echo "  egfilm  → ${EGFILM_IMAGE_NAME:-<unset>}"
 echo "  egsport → ${EGSPORT_IMAGE_NAME:-<unset>}"
 echo "  egtv    → ${EGTV_IMAGE_NAME:-<unset>}"
+echo "  egblog  → ${EGBLOG_IMAGE_NAME:-<unset>}"
+echo "  egadmin → ${EGADMIN_IMAGE_NAME:-<unset>}"
 
 # ---------- disk hygiene -------------------------------------------
 # Free space BEFORE pulling so registry pull doesn't run out of disk.
@@ -115,5 +117,7 @@ check_health() {
 check_health "${EGFILM_PORT:-8000}"  egfilm
 check_health "${EGSPORT_PORT:-5555}" egsport
 check_health "${EGTV_PORT:-3333}"    egtv
+check_health "${EGBLOG_PORT:-4444}"  egblog
+check_health "${EGADMIN_PORT:-5566}" egadmin
 
 log "Deploy complete"

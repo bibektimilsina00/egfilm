@@ -11,6 +11,11 @@ export interface AuthFactoryOptions {
      */
     protectedPaths?: string[];
     /**
+     * Path prefixes that require an authenticated user AND `role==='admin'`.
+     * Non-admin users get redirected to the sign-in page. Use for admin panels.
+     */
+    adminPaths?: string[];
+    /**
      * Cookie domain — set to `.your-apex.com` for cross-subdomain SSO across
      * sibling apps (e.g. `.egfilm.xyz` shares the session cookie between
      * `egfilm.xyz` and `sport.egfilm.xyz`). Leave undefined for local dev.
@@ -41,6 +46,7 @@ function buildCookies(domain?: string): NextAuthConfig['cookies'] {
 export function createAuthConfig(opts: AuthFactoryOptions = {}): NextAuthConfig {
     const signIn = opts.signInPage ?? '/login';
     const protectedPaths = opts.protectedPaths ?? ['/dashboard', '/watchlist', '/watch-party'];
+    const adminPaths = opts.adminPaths ?? [];
     const cookies = buildCookies(opts.cookieDomain);
 
     return {
@@ -63,6 +69,9 @@ export function createAuthConfig(opts: AuthFactoryOptions = {}): NextAuthConfig 
             },
             authorized({ auth, request: { nextUrl } }) {
                 const isLoggedIn = !!auth?.user;
+                const isAdmin = (auth?.user as unknown as Record<string, unknown> | undefined)?.role === 'admin';
+                const requiresAdmin = adminPaths.some((p) => nextUrl.pathname.startsWith(p));
+                if (requiresAdmin) return isLoggedIn && isAdmin;
                 const requiresAuth = protectedPaths.some((p) => nextUrl.pathname.startsWith(p));
                 if (requiresAuth) return isLoggedIn;
                 return true;

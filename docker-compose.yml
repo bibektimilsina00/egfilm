@@ -100,5 +100,58 @@ services:
       TURN_PASSWORD: ${TURN_PASSWORD:-}
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
 
+  egblog:
+    image: ${EGBLOG_IMAGE_NAME:-ghcr.io/bibektimilsina00/egblog:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${EGBLOG_PORT:-4444}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_URL: ${EGBLOG_AUTH_URL}
+      NEXTAUTH_URL: ${EGBLOG_AUTH_URL}
+      NEXT_PUBLIC_APP_NAME: EGFilm Blog
+      NEXT_PUBLIC_APP_URL: ${EGBLOG_URL}
+      NEXT_PUBLIC_EGFILM_URL: ${EGFILM_URL}
+      NEXT_PUBLIC_EGSPORT_URL: ${EGSPORT_URL}
+      NEXT_PUBLIC_EGTV_URL: ${EGTV_URL}
+      NEXT_PUBLIC_EGBLOG_URL: ${EGBLOG_URL}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+
+  egadmin:
+    image: ${EGADMIN_IMAGE_NAME:-ghcr.io/bibektimilsina00/egadmin:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${EGADMIN_PORT:-5566}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_URL: ${EGADMIN_AUTH_URL}
+      NEXTAUTH_URL: ${EGADMIN_AUTH_URL}
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      NEXT_PUBLIC_TMDB_API_KEY: ${TMDB_API_KEY}
+      NEXT_PUBLIC_APP_NAME: EGFilm Admin
+      NEXT_PUBLIC_APP_URL: ${EGADMIN_URL}
+      NEXT_PUBLIC_EGFILM_URL: ${EGFILM_URL}
+      NEXT_PUBLIC_EGSPORT_URL: ${EGSPORT_URL}
+      NEXT_PUBLIC_EGTV_URL: ${EGTV_URL}
+      NEXT_PUBLIC_EGBLOG_URL: ${EGBLOG_URL}
+      NEXT_PUBLIC_EGADMIN_URL: ${EGADMIN_URL}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+
 volumes:
   postgres_data:
