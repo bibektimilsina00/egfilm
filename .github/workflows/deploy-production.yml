@@ -236,6 +236,7 @@ jobs:
 
           AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           AUTH_TRUST_HOST=true
+          AUTH_COOKIE_DOMAIN=${{ vars.AUTH_COOKIE_DOMAIN || '.egfilm.xyz' }}
           TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
 
           EGFILM_IMAGE_NAME=${REG}/${OWNER}/egfilm:${VER}
