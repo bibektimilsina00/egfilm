@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
-import type { MatchSource } from '@/lib/sportsrc';
+import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { resolveEmbedUrl, type MatchSource } from '@/lib/sportsrc';
 
 export default function EmbedMatchPlayer({
     sources,
@@ -13,27 +13,10 @@ export default function EmbedMatchPlayer({
     title?: string;
     initialIndex?: number;
 }) {
-    const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(initialIndex);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-
-    useEffect(() => {
-        const handler = () => setIsFullscreen(!!document.fullscreenElement);
-        document.addEventListener('fullscreenchange', handler);
-        return () => document.removeEventListener('fullscreenchange', handler);
-    }, []);
 
     const active = sources?.[activeIndex] ?? null;
-
-    const toggleFullscreen = async () => {
-        const el = containerRef.current;
-        if (!el) return;
-        if (document.fullscreenElement) {
-            await document.exitFullscreen();
-        } else {
-            await el.requestFullscreen();
-        }
-    };
+    const activeSrc = active ? resolveEmbedUrl(active) : '';
 
     if (!sources || sources.length === 0 || !active) {
         return (
@@ -46,23 +29,16 @@ export default function EmbedMatchPlayer({
 
     return (
         <div className="space-y-2">
-            <div ref={containerRef} className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-800">
+            <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-800">
                 <iframe
-                    key={active.embedUrl}
-                    src={active.embedUrl}
-                    title={title ?? 'Live match stream'}
-                    allowFullScreen
-                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    referrerPolicy="origin"
+                    key={activeSrc}
+                    src={activeSrc}
+                    title={title ?? 'Live stream'}
                     className="absolute inset-0 h-full w-full"
+                    allow="encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    referrerPolicy="no-referrer"
                 />
-                <button
-                    onClick={toggleFullscreen}
-                    className="absolute right-2 top-2 inline-flex items-center justify-center h-8 w-8 rounded-md bg-black/60 hover:bg-black/80 text-white"
-                    aria-label="Toggle fullscreen"
-                >
-                    {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-                </button>
             </div>
 
             {sources.length > 1 ? (

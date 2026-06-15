@@ -208,6 +208,23 @@ export function isMatchLive(match: Match | MatchDetail): boolean {
     return now >= startedAt && now <= startedAt + 1000 * 60 * 60 * 3;
 }
 
+/**
+ * Resolve the iframe URL for a source.
+ *
+ * The API's `embedUrl` points at the `embed.streamapi.cc` wrapper, which injects
+ * a rotating pop-under ad script + a Histats tracker around the real player
+ * (`embed.st`). When we have the underlying `source`/`id`/`streamNo`, we build the
+ * inner `embed.st` URL directly and skip that wrapper layer — removing one ad
+ * layer. The inner player still serves its own ads; this is a partial reduction,
+ * not full ad-block. Falls back to the original `embedUrl` if fields are missing.
+ */
+export function resolveEmbedUrl(s: MatchSource): string {
+    if (s.source && s.id && s.streamNo != null) {
+        return `https://embed.st/embed/${s.source}/${s.id}/${s.streamNo}`;
+    }
+    return s.embedUrl;
+}
+
 export function pickBestSource(detail: MatchDetail | null | undefined, preferredLanguage = 'English'): MatchSource | null {
     if (!detail?.sources?.length) return null;
     const english = detail.sources.filter((s) => (s.language ?? '').toLowerCase().includes(preferredLanguage.toLowerCase()));
