@@ -2,8 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
 import { Search as SearchIcon, Sparkles, TrendingUp, X, Loader2 } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { searchMulti, getTrending } from '@/lib/tmdb';
@@ -16,16 +14,8 @@ import { useInfiniteScroll } from '@egfilm/ui/hooks/useInfiniteScroll';
 
 type MediaSearchResult = SearchResult & { media_type: 'movie' | 'tv' };
 
-const SUGGESTION_LIMIT = 8;
-
 function detailHref(item: { id: number; media_type: 'movie' | 'tv' }) {
     return `/${item.media_type}/${item.id}`;
-}
-
-function titleOf(item: SearchResult): string {
-    if (item.media_type === 'movie') return item.title ?? '';
-    if (item.media_type === 'tv') return item.name ?? '';
-    return '';
 }
 
 function SearchContent() {
@@ -34,8 +24,6 @@ function SearchContent() {
     const urlQuery = searchParams?.get('q') ?? '';
 
     const [input, setInput] = useState(urlQuery);
-    const [highlighted, setHighlighted] = useState(-1);
-    const [openSuggest, setOpenSuggest] = useState(false);
     const [trending, setTrending] = useState<MediaItem[]>([]);
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -92,16 +80,6 @@ function SearchContent() {
 
     const totalResults = data?.pages[0]?.total_results ?? 0;
 
-    const suggestions = useMemo(
-        () => allResults.slice(0, SUGGESTION_LIMIT),
-        [allResults],
-    );
-
-    // Clamp highlighted to valid range
-    useEffect(() => {
-        if (highlighted >= suggestions.length) setHighlighted(-1);
-    }, [suggestions.length, highlighted]);
-
     // Trending (only when URL is empty / no query)
     useEffect(() => {
         if (activeQuery) return;
@@ -129,22 +107,10 @@ function SearchContent() {
     });
 
     const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (!openSuggest || suggestions.length === 0) return;
-        if (e.key === 'ArrowDown') {
+        if (e.key === 'Enter' && allResults[0]) {
             e.preventDefault();
-            setHighlighted((h) => Math.min(h + 1, suggestions.length - 1));
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setHighlighted((h) => Math.max(h - 1, 0));
-        } else if (e.key === 'Enter') {
-            if (highlighted >= 0 && suggestions[highlighted]) {
-                e.preventDefault();
-                const sel = suggestions[highlighted];
-                router.push(detailHref(sel));
-                setOpenSuggest(false);
-            }
+            router.push(detailHref(allResults[0]));
         } else if (e.key === 'Escape') {
-            setOpenSuggest(false);
             inputRef.current?.blur();
         }
     };
@@ -152,12 +118,8 @@ function SearchContent() {
     const clearInput = () => {
         setInput('');
         setActiveQuery('');
-        setOpenSuggest(false);
         inputRef.current?.focus();
     };
-
-    const showSuggestions =
-        openSuggest && activeQuery.length >= 2 && suggestions.length > 0;
 
     return (
         <div className="min-h-screen bg-gray-950 page-transition">
@@ -178,22 +140,11 @@ function SearchContent() {
                             <input
                                 ref={inputRef}
                                 type="search"
-                                role="combobox"
                                 value={input}
-                                onChange={(e) => {
-                                    setInput(e.target.value);
-                                    setHighlighted(-1);
-                                    setOpenSuggest(true);
-                                }}
-                                onFocus={() => setOpenSuggest(true)}
-                                onBlur={() => window.setTimeout(() => setOpenSuggest(false), 120)}
+                                onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={onKeyDown}
                                 placeholder="Search movies and TV shows..."
                                 aria-label="Search movies and TV shows"
-                                aria-autocomplete="list"
-                                aria-expanded={showSuggestions}
-                                aria-controls="search-suggest-list"
-                                aria-activedescendant={highlighted >= 0 ? `search-suggest-${highlighted}` : undefined}
                                 className="w-full bg-gray-800/50 backdrop-blur-sm text-white pl-14 pr-14 py-4 rounded-full outline-none focus:ring-2 focus:ring-blue-500 focus:bg-gray-800 transition-all text-lg placeholder:text-gray-500"
                                 autoFocus
                                 autoComplete="off"
@@ -209,43 +160,6 @@ function SearchContent() {
                                 </button>
                             ) : null}
 
-                            {showSuggestions && (
-                                <ul
-                                    id="search-suggest-list"
-                                    role="listbox"
-                                    className="absolute left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-sm border border-gray-800 rounded-2xl shadow-xl z-50 max-h-80 overflow-auto text-left"
-                                >
-                                    {suggestions.map((sugg, idx) => (
-                                        <li
-                                            id={`search-suggest-${idx}`}
-                                            key={`${sugg.media_type}-${sugg.id}`}
-                                            role="option"
-                                            aria-selected={highlighted === idx}
-                                            onMouseEnter={() => setHighlighted(idx)}
-                                            className={`${highlighted === idx ? 'bg-gray-800' : ''} hover:bg-gray-800`}
-                                        >
-                                            <Link
-                                                href={detailHref(sugg)}
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => setOpenSuggest(false)}
-                                                className="flex items-center gap-3 px-4 py-3"
-                                            >
-                                                <Image
-                                                    src={sugg.poster_path ? `https://image.tmdb.org/t/p/w92${sugg.poster_path}` : '/placeholder-movie.jpg'}
-                                                    alt=""
-                                                    width={40}
-                                                    height={56}
-                                                    className="w-10 h-14 object-cover rounded-md flex-shrink-0"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-white font-medium truncate">{titleOf(sugg)}</div>
-                                                    <div className="text-gray-400 text-sm">{sugg.media_type === 'movie' ? 'Movie' : 'TV Show'}</div>
-                                                </div>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useTransition } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -26,6 +26,13 @@ export default function TVDetailPage() {
     const [error, setError] = useState('');
     const [inWatchlist, setInWatchlist] = useState(false);
     const [showWatchTogether, setShowWatchTogether] = useState(false);
+    const [isNavigatingToWatch, startWatchTransition] = useTransition();
+
+    const handleWatchNow = useCallback(() => {
+        startWatchTransition(() => {
+            router.push(`/tv/${tvId}/watch`);
+        });
+    }, [router, tvId]);
 
     async function loadTVDetails() {
         try {
@@ -178,9 +185,10 @@ export default function TVDetailPage() {
 
                                 <div className="flex flex-wrap gap-4">
                                     <PlayButton
-                                        onClick={() => router.push(`/tv/${tvId}/watch`)}
+                                        onClick={handleWatchNow}
+                                        loading={isNavigatingToWatch}
                                     >
-                                        Watch Now
+                                        {isNavigatingToWatch ? 'Loading…' : 'Watch Now'}
                                     </PlayButton>
 
                                     <Button

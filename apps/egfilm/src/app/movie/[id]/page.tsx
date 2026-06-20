@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useTransition } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -36,11 +36,16 @@ export default function MovieDetailPage() {
   // Local state
   const [inWatchlist, setInWatchlist] = useState(false);
   const [showWatchTogether, setShowWatchTogether] = useState(false);
+  const [isNavigatingToWatch, startWatchTransition] = useTransition();
 
   // Memoize handlers
   const handleBack = useCallback(() => router.back(), [router]);
   const handleGoHome = useCallback(() => router.push('/'), [router]);
-  const handleWatchNow = useCallback(() => router.push(`/movie/${movieId}/watch`), [router, movieId]);
+  const handleWatchNow = useCallback(() => {
+    startWatchTransition(() => {
+      router.push(`/movie/${movieId}/watch`);
+    });
+  }, [router, movieId]);
 
   // Prefetch watch route + warm providers cache so play-button click feels instant.
   useEffect(() => {
@@ -242,7 +247,10 @@ export default function MovieDetailPage() {
                 <div className="flex flex-wrap gap-4">
                   <PlayButton
                     onClick={handleWatchNow}
-                  />
+                    loading={isNavigatingToWatch}
+                  >
+                    {isNavigatingToWatch ? 'Loading…' : 'Play Now'}
+                  </PlayButton>
 
                   <Button
                     onClick={handleWatchTogether}

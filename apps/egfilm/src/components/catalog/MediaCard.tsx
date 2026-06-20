@@ -74,7 +74,7 @@ const MediaCard = memo(function MediaCard({ item, type }: MediaCardProps) {
                         )}
 
                         {/* Overlay gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                         {/* Rating badge */}
                         {item.vote_average && item.vote_average > 0 && (
@@ -91,7 +91,7 @@ const MediaCard = memo(function MediaCard({ item, type }: MediaCardProps) {
                     </div>
 
                     {/* Content info - always visible */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
                         <h3 className="text-sm font-semibold text-white line-clamp-2 mb-1">
                             {title}
                         </h3>

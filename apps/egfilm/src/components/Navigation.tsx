@@ -66,6 +66,12 @@ export default function Navigation() {
             return;
         }
 
+        // Skip suggestions on /search — the results grid already filters live.
+        if (pathname === '/search') {
+            setSuggestions([]);
+            return;
+        }
+
         // debounce 300ms
         suggestDebounceRef.current = window.setTimeout(async () => {
             try {
@@ -98,7 +104,7 @@ export default function Navigation() {
         return () => {
             if (suggestDebounceRef.current) window.clearTimeout(suggestDebounceRef.current);
         };
-    }, [searchQuery]);
+    }, [searchQuery, pathname]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -221,7 +227,7 @@ export default function Navigation() {
                                         if (highlighted >= 0 && suggestions[highlighted]) {
                                             e.preventDefault();
                                             const sel = suggestions[highlighted];
-                                            router.push(`/search?q=${encodeURIComponent(sel.title)}`);
+                                            router.push(`/${sel.media_type}/${sel.id}`);
                                             setSuggestions([]);
                                             setSearchQuery('');
                                         }
@@ -257,7 +263,7 @@ export default function Navigation() {
                                             onMouseDown={(e) => {
                                                 // onMouseDown to prevent blur before click
                                                 e.preventDefault();
-                                                router.push(`/search?q=${encodeURIComponent(sugg.title)}`);
+                                                router.push(`/${sugg.media_type}/${sugg.id}`);
                                                 setSuggestions([]);
                                                 setSearchQuery('');
                                             }}

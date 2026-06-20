@@ -46,7 +46,7 @@ export function MediaCard({ media, mediaType }: MediaCardProps) {
                 )}
 
                 {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="pointer-events-none absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <div className="flex flex-col items-center gap-2">
                         <div className="bg-blue-600 rounded-full p-3">
                             <Play className="w-6 h-6 text-white fill-white" />
