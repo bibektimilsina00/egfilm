@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -140,8 +141,16 @@ export default function RootLayout({
                         }),
                     }}
                 />
+                <link rel="dns-prefetch" href="//cloud.umami.is" />
             </head>
             <body className="min-h-screen bg-gray-950 text-gray-100 antialiased">
+                {/* Umami Analytics */}
+                <Script
+                    defer
+                    src="https://cloud.umami.is/script.js"
+                    data-website-id="22c46fce-dd53-4613-a2d1-8f9ab59f3b3e"
+                    strategy="afterInteractive"
+                />
                 <SessionProvider>
                     <QueryProvider>
                         <div className="flex min-h-screen flex-col">

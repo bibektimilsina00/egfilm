@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import SessionProvider from '@egfilm/auth/components/SessionProvider'
 import { QueryProvider as ReactQueryProvider } from '@egfilm/realtime/client/QueryProvider'
@@ -130,7 +129,6 @@ export default function RootLayout({
                 {/* DNS Prefetch for external domains */}
                 <link rel="dns-prefetch" href="//image.tmdb.org" />
                 <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-                <link rel="dns-prefetch" href="//cloud.umami.is" />
                 {gaId && <link rel="dns-prefetch" href="//www.googletagmanager.com" />}
 
                 {/* Preconnect for critical external resources */}
@@ -160,14 +158,6 @@ export default function RootLayout({
                 <link rel="apple-touch-icon" href="/icon.svg" />
             </head>
             <body className={inter.className} suppressHydrationWarning>
-                {/* Umami Analytics - loaded after page interactive */}
-                <Script
-                    defer
-                    src="https://cloud.umami.is/script.js"
-                    data-website-id="22c46fce-dd53-4613-a2d1-8f9ab59f3b3e"
-                    strategy="afterInteractive"
-                />
-
                 <SessionProvider>
                     <ReactQueryProvider>
                         <div className="min-h-screen bg-gray-950">
