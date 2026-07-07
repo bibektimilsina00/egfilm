@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (session?.user?.id) {
         author = { authorKey: session.user.id, authorName: session.user.name ?? 'Member', isGuest: false, userId: session.user.id };
     } else if (body.guestId?.trim()) {
-        author = { authorKey: `guest:${body.guestId.trim()}`, authorName: (body.guestName ?? '').trim() || 'Guest', isGuest: true, userId: null };
+        author = { authorKey: `guest:${body.guestId.trim()}`, authorName: 'Anonymous', isGuest: true, userId: null };
     }
     if (!author) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

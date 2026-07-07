@@ -13,14 +13,18 @@ function isAdmin(session: Session): boolean {
     return role === 'admin' || role === 'moderator';
 }
 
-/** Build an author identity from the session (member) or guest fields (anon). */
-function authorFrom(session: Session, guestId?: string | null, guestName?: string | null): CommentAuthor | null {
+/**
+ * Build an author identity. Members post under their account name; everyone
+ * else posts as "Anonymous" (a per-device guest id is still used behind the
+ * scenes so a guest can react once and delete their own comments).
+ */
+function authorFrom(session: Session, guestId?: string | null): CommentAuthor | null {
     if (session?.user?.id) {
         return { authorKey: session.user.id, authorName: session.user.name ?? 'Member', isGuest: false, userId: session.user.id };
     }
     const gid = (guestId ?? '').trim();
     if (gid) {
-        return { authorKey: `guest:${gid}`, authorName: (guestName ?? '').trim() || 'Guest', isGuest: true, userId: null };
+        return { authorKey: `guest:${gid}`, authorName: 'Anonymous', isGuest: true, userId: null };
     }
     return null;
 }
@@ -45,14 +49,14 @@ export async function GET(req: NextRequest) {
 /** POST /api/match-comments — create a comment (member or anonymous guest). */
 export async function POST(req: NextRequest) {
     const session = (await auth()) as Session;
-    let body: { matchKey?: string; content?: string; parentId?: string | null; guestId?: string; guestName?: string };
+    let body: { matchKey?: string; content?: string; parentId?: string | null; guestId?: string };
     try {
         body = await req.json();
     } catch {
         return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
     }
-    const author = authorFrom(session, body.guestId, body.guestName);
-    if (!author) return NextResponse.json({ error: 'Identify yourself (sign in or provide a guest name)' }, { status: 401 });
+    const author = authorFrom(session, body.guestId);
+    if (!author) return NextResponse.json({ error: 'Missing identity' }, { status: 401 });
     if (!body.matchKey || !body.content?.trim()) return NextResponse.json({ error: 'Missing matchKey or content' }, { status: 400 });
 
     try {
