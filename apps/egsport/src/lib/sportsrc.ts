@@ -1,54 +1,15 @@
-import axios, { AxiosInstance } from 'axios';
+/**
+ * Shared sports data model + helpers.
+ *
+ * The concrete data client (`sportsrc`) lives in `./providers/client` and
+ * transparently fails over across multiple upstream mirrors. This module owns
+ * only the normalised types every provider maps onto, plus pure helpers.
+ */
 
 export const SPORTSRC_BASE_URL = 'https://api.sportsrc.org';
 
-const httpClient: AxiosInstance = axios.create({
-    baseURL: SPORTSRC_BASE_URL,
-    timeout: 15000,
-    headers: { Accept: 'application/json' },
-});
-
-class TokenBucket {
-    private tokens: number;
-    private last: number;
-    constructor(private capacity: number, private refillPerSecond: number) {
-        this.tokens = capacity;
-        this.last = Date.now();
-    }
-    async take(): Promise<void> {
-        const now = Date.now();
-        const elapsed = (now - this.last) / 1000;
-        this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.refillPerSecond);
-        this.last = now;
-        if (this.tokens >= 1) {
-            this.tokens -= 1;
-            return;
-        }
-        const waitMs = ((1 - this.tokens) / this.refillPerSecond) * 1000;
-        await new Promise((r) => setTimeout(r, waitMs));
-        return this.take();
-    }
-}
-
-const bucket = new TokenBucket(20, 20);
-
-interface ApiEnvelope<T> {
-    success: boolean;
-    data: T;
-}
-
-async function sportsrcGet<T>(params: Record<string, string>): Promise<T> {
-    await bucket.take();
-    const res = await httpClient.get<ApiEnvelope<T> | T>('/', { params });
-    const body = res.data as ApiEnvelope<T> & { data?: T; error?: string };
-    if (body && typeof body === 'object' && 'success' in body) {
-        if (body.success === false) {
-            throw new Error(body.error || 'sportsrc request failed');
-        }
-        if ('data' in body) return body.data as T;
-    }
-    return body as T;
-}
+/** Re-exported failover client. Same shape the app has always imported. */
+export { sportsrc, providerNames } from './providers/client';
 
 // ---------- Sports categories ----------
 
@@ -77,6 +38,8 @@ export interface Match {
         home: MatchTeam;
         away: MatchTeam;
     };
+    /** Which upstream provider served this match. */
+    provider?: string;
 }
 
 export interface MatchSource {
@@ -87,6 +50,8 @@ export interface MatchSource {
     embedUrl: string;
     source?: string;
     viewers?: number;
+    /** Which upstream provider resolved this stream. */
+    provider?: string;
 }
 
 export interface MatchDetail extends Match {
@@ -163,50 +128,6 @@ export interface ScoresResponse {
     finished: ScoreEntry[];
     last_updated?: string;
 }
-
-// ---------- Public client ----------
-
-export const sportsrc = {
-    getSports(): Promise<SportCategory[]> {
-        return sportsrcGet<SportCategory[]>({ data: 'sports' });
-    },
-    async getMatches(category: string): Promise<Match[]> {
-        // The provider's per-sport `matches` buckets are now empty; all active
-        // matches are served from the single `live` bucket. Try the requested
-        // category first, then fall back to `live` filtered by the match's own
-        // `category` field so per-sport UI sections keep working.
-        const direct = await sportsrcGet<Match[]>({ data: 'matches', category });
-        if (Array.isArray(direct) && direct.length > 0) return direct;
-        if (category === 'live') return direct ?? [];
-        const live = await sportsrcGet<Match[]>({ data: 'matches', category: 'live' });
-        if (!Array.isArray(live)) return [];
-        return live.filter((m) => (m.category ?? '').toLowerCase() === category.toLowerCase());
-    },
-    async getMatchDetail(category: string, id: string): Promise<MatchDetail | null> {
-        // Detail lookups only resolve under the `live` bucket now; the per-sport
-        // category returns "not found". Try the given category, then retry `live`.
-        try {
-            const data = await sportsrcGet<MatchDetail | null>({ data: 'detail', category, id });
-            if (data) return data;
-        } catch {
-            // fall through to the `live` bucket
-        }
-        if (category !== 'live') {
-            const live = await sportsrcGet<MatchDetail | null>({ data: 'detail', category: 'live', id });
-            if (live) return live;
-        }
-        return null;
-    },
-    getLeagues(): Promise<League[]> {
-        return sportsrcGet<League[]>({ data: 'results', category: 'leagues' });
-    },
-    getStandings(league: string): Promise<TablesResponse | null> {
-        return sportsrcGet<TablesResponse>({ data: 'results', category: 'tables', league });
-    },
-    getScores(league: string): Promise<ScoresResponse> {
-        return sportsrcGet<ScoresResponse>({ data: 'results', category: 'scores', league });
-    },
-};
 
 // ---------- Helpers ----------
 
