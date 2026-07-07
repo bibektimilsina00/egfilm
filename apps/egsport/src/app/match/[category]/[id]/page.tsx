@@ -107,9 +107,9 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
                 </aside>
             </div>
 
-            <PlayerNotice />
-
             <MatchCenter home={home?.name} away={away?.name} date={detail.date} />
+
+            <PlayerNotice />
         </div>
     );
 }
