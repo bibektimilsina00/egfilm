@@ -8,6 +8,7 @@ import { useSession, signOut } from 'next-auth/react';
 import {
     Activity,
     Trophy,
+    Medal,
     Users,
     Shield,
     CalendarDays,
@@ -63,6 +64,7 @@ export default function Navigation() {
         { href: '/sports', label: 'Sports', icon: Activity },
         { href: '/schedule', label: 'Schedule', icon: CalendarDays },
         { href: '/leagues', label: 'Leagues', icon: Trophy },
+        { href: '/worldcup', label: 'World Cup', icon: Medal },
         { href: '/players', label: 'Players', icon: Users },
         { href: '/teams', label: 'Teams', icon: Shield },
         { href: '/watchlist', label: 'Watchlist', icon: ListVideo },

@@ -25,12 +25,16 @@ export default function MatchCenter({
     }
     if (!data?.found) return null;
 
+    const ex = data.extras;
     return (
         <div className="space-y-4">
             <ScoreHeader mc={data} />
             {data.incidents.length > 0 ? <GameEvents mc={data} /> : null}
+            {ex.momentum.length > 0 ? <Momentum data={data} /> : null}
             {(data.possession || data.stats.length > 0) ? <StatsPanel mc={data} /> : null}
-            {data.prediction ? <Prediction mc={data} /> : null}
+            {ex.shotmap.length > 0 ? <Shotmap data={data} /> : null}
+            {ex.mlPrediction ? <MLPredictionCard mc={data} /> : (data.prediction ? <Prediction mc={data} /> : null)}
+            {ex.h2h ? <H2HCard mc={data} /> : null}
             {data.lineups ? <Lineups mc={data} /> : null}
             <GameInfo mc={data} />
         </div>
@@ -282,13 +286,147 @@ function LineupCol({ title, players, subs, align = 'left' }: { title: string; pl
     );
 }
 
+// ---------- momentum ----------
+
+function Momentum({ data }: { data: MC }) {
+    const pts = data.extras.momentum;
+    const max = Math.max(1, ...pts.map((p) => Math.abs(p.value)));
+    return (
+        <Card title="Momentum" icon={<Activity className="h-4 w-4 text-blue-400" />}>
+            <div className="flex h-24 items-center gap-[1px]">
+                {pts.map((p, i) => {
+                    const h = (Math.abs(p.value) / max) * 50;
+                    const up = p.value >= 0;
+                    return (
+                        <div key={i} className="flex h-full flex-1 flex-col justify-center" title={`${p.minute}'`}>
+                            <div className="flex h-1/2 items-end">{up ? <div className="w-full rounded-sm" style={{ height: `${h}%`, background: HOME }} /> : null}</div>
+                            <div className="flex h-1/2 items-start">{!up ? <div className="w-full rounded-sm" style={{ height: `${h}%`, background: AWAY }} /> : null}</div>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="mt-1 flex justify-between text-[10px] text-gray-500">
+                <span style={{ color: HOME }}>{data.home.name}</span>
+                <span style={{ color: AWAY }}>{data.away.name}</span>
+            </div>
+        </Card>
+    );
+}
+
+// ---------- shotmap ----------
+
+function Shotmap({ data }: { data: MC }) {
+    const shots = data.extras.shotmap;
+    // Home attacks left→right; mirror away shots so the two teams face opposite goals.
+    return (
+        <Card title="Shotmap" icon={<Goal className="h-4 w-4 text-blue-400" />}>
+            <div className="w-full overflow-hidden rounded-lg bg-gray-950/60 ring-1 ring-gray-800">
+                <svg viewBox="0 0 105 68" className="h-auto w-full">
+                    <rect x="0.5" y="0.5" width="104" height="67" fill="none" stroke="#374151" strokeWidth="0.4" />
+                    <line x1="52.5" y1="0.5" x2="52.5" y2="67.5" stroke="#374151" strokeWidth="0.3" />
+                    <circle cx="52.5" cy="34" r="8" fill="none" stroke="#374151" strokeWidth="0.3" />
+                    <rect x="0.5" y="14" width="16" height="40" fill="none" stroke="#374151" strokeWidth="0.3" />
+                    <rect x="88.5" y="14" width="16" height="40" fill="none" stroke="#374151" strokeWidth="0.3" />
+                    {shots.map((sh, i) => {
+                        const cx = (sh.home ? sh.x : 100 - sh.x) / 100 * 105;
+                        const cy = sh.y / 100 * 68;
+                        const r = 0.7 + Math.min(3, sh.xg * 4);
+                        const color = sh.home ? HOME : AWAY;
+                        return (
+                            <circle key={i} cx={cx} cy={cy} r={r}
+                                fill={sh.isGoal ? color : 'none'} stroke={color}
+                                strokeWidth={sh.isGoal ? 0.6 : 0.5} opacity={sh.isGoal ? 1 : 0.75}>
+                                <title>{`${sh.minute ?? ''}' ${sh.isGoal ? 'GOAL ' : ''}xG ${sh.xg.toFixed(2)}${sh.body ? ` · ${sh.body}` : ''}`}</title>
+                            </circle>
+                        );
+                    })}
+                </svg>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
+                <span><span style={{ color: HOME }}>●</span> {data.home.name}</span>
+                <span>Circle size = xG · filled = goal</span>
+                <span>{data.away.name} <span style={{ color: AWAY }}>●</span></span>
+            </div>
+        </Card>
+    );
+}
+
+// ---------- ML prediction ----------
+
+function MLPredictionCard({ mc }: { mc: MC }) {
+    const p = mc.extras.mlPrediction!;
+    return (
+        <Card title="Prediction" icon={<Activity className="h-4 w-4 text-blue-400" />}>
+            <div className="mb-2 flex h-2 overflow-hidden rounded-full bg-gray-800">
+                <div style={{ width: `${p.probHome}%`, background: HOME }} />
+                <div style={{ width: `${p.probDraw}%` }} className="bg-gray-600" />
+                <div style={{ width: `${p.probAway}%`, background: AWAY }} />
+            </div>
+            <div className="flex items-center justify-between text-xs">
+                <div className="text-left"><p className="font-bold text-white">{p.probHome}%</p><p className="text-gray-500">{mc.home.name}</p></div>
+                <div className="text-center"><p className="font-bold text-white">{p.probDraw}%</p><p className="text-gray-500">Draw</p></div>
+                <div className="text-right"><p className="font-bold text-white">{p.probAway}%</p><p className="text-gray-500">{mc.away.name}</p></div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {p.mostLikelyScore ? <Stat label="Likely score" value={p.mostLikelyScore} /> : null}
+                {p.expGoalsHome != null && p.expGoalsAway != null ? <Stat label="xG" value={`${p.expGoalsHome.toFixed(1)}–${p.expGoalsAway.toFixed(1)}`} /> : null}
+                {p.over25 != null ? <Stat label="Over 2.5" value={`${Math.round(p.over25)}%`} /> : null}
+                {p.bttsYes != null ? <Stat label="BTTS" value={`${Math.round(p.bttsYes)}%`} /> : null}
+            </div>
+            {p.confidence != null ? <p className="mt-2 text-center text-[10px] text-gray-600">Model confidence {p.confidence}%</p> : null}
+        </Card>
+    );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg border border-gray-800 bg-gray-900/60 p-2 text-center">
+            <p className="text-[10px] uppercase tracking-wide text-gray-500">{label}</p>
+            <p className="text-sm font-bold text-white">{value}</p>
+        </div>
+    );
+}
+
+// ---------- head to head ----------
+
+function H2HCard({ mc }: { mc: MC }) {
+    const h = mc.extras.h2h!;
+    const total = Math.max(1, h.total);
+    return (
+        <Card title="Head to Head" icon={<Activity className="h-4 w-4 text-blue-400" />}>
+            <div className="mb-3 flex items-center justify-between text-center text-xs">
+                <div><p className="text-lg font-black" style={{ color: HOME }}>{h.homeWins}</p><p className="text-gray-500">{mc.home.name}</p></div>
+                <div><p className="text-lg font-black text-gray-400">{h.draws}</p><p className="text-gray-500">Draws</p></div>
+                <div><p className="text-lg font-black" style={{ color: AWAY }}>{h.awayWins}</p><p className="text-gray-500">{mc.away.name}</p></div>
+            </div>
+            <div className="flex h-1.5 overflow-hidden rounded-full bg-gray-800">
+                <div style={{ width: `${(h.homeWins / total) * 100}%`, background: HOME }} />
+                <div style={{ width: `${(h.draws / total) * 100}%` }} className="bg-gray-600" />
+                <div style={{ width: `${(h.awayWins / total) * 100}%`, background: AWAY }} />
+            </div>
+            {h.recent.length > 0 ? (
+                <ul className="mt-3 space-y-1">
+                    {h.recent.map((m, i) => (
+                        <li key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
+                            <span className="truncate text-right text-gray-300">{m.home}</span>
+                            <span className="rounded bg-gray-800 px-1.5 py-0.5 font-bold tabular-nums text-white">{m.homeScore ?? '-'}–{m.awayScore ?? '-'}</span>
+                            <span className="truncate text-gray-300">{m.away}</span>
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
+        </Card>
+    );
+}
+
 // ---------- game info ----------
 
 function GameInfo({ mc }: { mc: MC }) {
-    const rows: Array<[ReactNode, string, string | null]> = [
-        [<MapPin key="v" className="h-3.5 w-3.5" />, 'Stadium', mc.venue ? `${mc.venue.name}${mc.venue.city ? ` (${mc.venue.city})` : ''}` : null],
+    const stadiumLabel = mc.venue ? `${mc.venue.name}${mc.venue.city ? ` (${mc.venue.city})` : ''}` : null;
+    const rows: Array<[ReactNode, string, ReactNode]> = [
+        [<MapPin key="v" className="h-3.5 w-3.5" />, 'Stadium', stadiumLabel ? (mc.venueId ? <Link href={`/venues/${mc.venueId}`} className="text-blue-400 hover:underline">{stadiumLabel}</Link> : stadiumLabel) : null],
         [<Users key="c" className="h-3.5 w-3.5" />, 'Capacity', mc.venue?.capacity ? mc.venue.capacity.toLocaleString() : null],
-        [<User key="r" className="h-3.5 w-3.5" />, 'Referee', mc.referee],
+        [<User key="r" className="h-3.5 w-3.5" />, 'Referee', mc.referee ? (mc.refereeId ? <Link href={`/referees/${mc.refereeId}`} className="text-blue-400 hover:underline">{mc.referee}</Link> : mc.referee) : null],
         [<Flag key="f" className="h-3.5 w-3.5" />, 'Form', mc.home.form || mc.away.form ? `${mc.home.form ?? '—'}  vs  ${mc.away.form ?? '—'}` : null],
     ];
     const visible = rows.filter(([, , v]) => v);

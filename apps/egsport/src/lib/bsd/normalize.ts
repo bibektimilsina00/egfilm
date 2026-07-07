@@ -191,8 +191,8 @@ export function normalizeMatchCenter(event: RawEvent, incidents: unknown[]): Mat
           }
         : null;
 
-    const venueRaw = event.venue as { name?: string; city?: string; capacity?: number } | undefined;
-    const refereeRaw = event.referee as { name?: string } | undefined;
+    const venueRaw = event.venue as { id?: number; name?: string; city?: string; capacity?: number } | undefined;
+    const refereeRaw = event.referee as { id?: number; name?: string } | undefined;
     const homeTeamId = (event.home_team_obj as { id?: number } | undefined)?.id ?? null;
     const awayTeamId = (event.away_team_obj as { id?: number } | undefined)?.id ?? null;
     const homeForm = event.home_form as { form_string?: string } | undefined;
@@ -226,7 +226,9 @@ export function normalizeMatchCenter(event: RawEvent, incidents: unknown[]): Mat
             form: awayForm?.form_string ?? null,
         },
         venue: venueRaw?.name ? { name: venueRaw.name, city: venueRaw.city ?? null, capacity: venueRaw.capacity ?? null } : null,
+        venueId: venueRaw?.id ?? null,
         referee: refereeRaw?.name ?? null,
+        refereeId: refereeRaw?.id ?? null,
         possession,
         stats,
         incidents: mapIncidents(incidents),

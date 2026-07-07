@@ -108,6 +108,83 @@ export interface TeamDetail extends TeamListItem {
     fixtures: TeamFixture[];
 }
 
+export interface ManagerDetail {
+    id: number;
+    name: string;
+    country: string | null;
+    tacticalProfile: string | null;
+    preferredFormation: string | null;
+    currentTeamId: number | null;
+    matchesTotal: number | null;
+    wins: number | null;
+    draws: number | null;
+    losses: number | null;
+    winPct: number | null;
+    avgGoalsScored: number | null;
+    avgGoalsConceded: number | null;
+    avgPossession: number | null;
+    cleanSheetPct: number | null;
+    team: TeamListItem | null;
+}
+
+export interface RefereeDetail {
+    id: number;
+    name: string;
+    country: string | null;
+    matches: number | null;
+    totalYellow: number | null;
+    totalRed: number | null;
+    avgYellowPerMatch: number | null;
+    avgRedPerMatch: number | null;
+    avgFoulsPerMatch: number | null;
+    avgGoalsPerMatch: number | null;
+    careerGames: number | null;
+}
+
+export interface VenueDetail extends Venue {
+    countryCode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    pitchLengthM: number | null;
+    pitchWidthM: number | null;
+    homeTeamId: number | null;
+}
+
+export interface WCFixture {
+    id: number;
+    homeTeam: string;
+    awayTeam: string;
+    homeTeamId: number | null;
+    awayTeamId: number | null;
+    homeScore: number | null;
+    awayScore: number | null;
+    date: string | null;
+    status: string | null;
+    round: string | null;
+    live: boolean;
+}
+
+export interface WCSquadPlayer {
+    playerId: number | null;
+    name: string;
+    position: string | null;
+    jerseyNumber: string | null;
+    club: string | null;
+    caps: number | null;
+    goals: number | null;
+    age: number | null;
+}
+
+export interface WCTeamSquad {
+    teamId: number;
+    players: WCSquadPlayer[];
+}
+
+export interface WorldCup {
+    fixtures: WCFixture[];
+    squads: WCTeamSquad[];
+}
+
 export interface Paged<T> {
     count: number;
     results: T[];

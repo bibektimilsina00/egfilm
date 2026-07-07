@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bsdConfigured, findEventId, getEvent, getIncidents } from '@/lib/bsd/client';
+import { getEventExtras } from '@/lib/bsd/v2';
 import { normalizeMatchCenter } from '@/lib/bsd/normalize';
 import { EMPTY_MATCH_CENTER } from '@/lib/bsd/types';
 
@@ -28,8 +29,12 @@ export async function GET(req: NextRequest) {
         const eventId = await findEventId(home, away, dateMs);
         if (!eventId) return NextResponse.json(EMPTY_MATCH_CENTER);
 
-        const [event, incidents] = await Promise.all([getEvent(eventId), getIncidents(eventId)]);
-        const data = normalizeMatchCenter(event, incidents);
+        const [event, incidents, extras] = await Promise.all([
+            getEvent(eventId),
+            getIncidents(eventId),
+            getEventExtras(eventId),
+        ]);
+        const data = { ...normalizeMatchCenter(event, incidents), extras };
 
         // Cache at the edge/CDN: short for live, longer once finished.
         const ttl = data.live ? 20 : 120;

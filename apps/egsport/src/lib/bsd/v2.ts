@@ -2,7 +2,9 @@ import 'server-only';
 import type {
     PlayerListItem, PlayerDetail, PlayerStatLine, CareerEntry, TransferEntry,
     TeamListItem, TeamDetail, SquadPlayer, TeamFixture, Venue, Paged,
+    ManagerDetail, RefereeDetail, VenueDetail, WorldCup, WCFixture, WCSquadPlayer,
 } from './v2-types';
+import type { MatchExtras, MCShot, MCMomentum, MLPrediction, H2HSummary } from './types';
 
 /**
  * BSD v2 server-side client for players & teams (and their sub-resources).
@@ -272,6 +274,99 @@ export async function getTeam(id: number): Promise<TeamDetail | null> {
     return { ...toTeamListItem(raw), venue, squad, fixtures };
 }
 
+// ---------- match-center v2 extras (shotmap / momentum / prediction / h2h) ----------
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+function normalizeExtras(stats: Record<string, unknown>, pred: Record<string, unknown>, h2h: Record<string, unknown>): MatchExtras {
+    // shotmap
+    const shotmap: MCShot[] = (Array.isArray(stats.shotmap) ? stats.shotmap : []).map((raw) => {
+        const s0 = raw as Record<string, unknown>;
+        const pos = (s0.pos as { x?: number; y?: number }) ?? {};
+        return {
+            x: clamp(n(pos.x) ?? 0, 0, 100),
+            y: clamp(n(pos.y) ?? 0, 0, 100),
+            xg: n(s0.xg) ?? 0,
+            home: s0.home === true,
+            isGoal: String(s0.type) === 'goal',
+            minute: n(s0.min),
+            player: null,
+            playerId: n(s0.player_id),
+            body: s(s0.body),
+            situation: s(s0.sit),
+        };
+    });
+
+    // momentum
+    const momentum: MCMomentum[] = (Array.isArray(stats.momentum) ? stats.momentum : []).map((raw) => {
+        const m0 = raw as Record<string, unknown>;
+        return { minute: n(m0.m) ?? 0, value: n(m0.v) ?? 0 };
+    });
+
+    // ML prediction
+    const markets = (pred.markets as Record<string, Record<string, unknown>>) ?? {};
+    const mr = markets.match_result ?? {};
+    const eg = markets.expected_goals ?? {};
+    const ou = markets.over_under ?? {};
+    const btts = markets.btts ?? {};
+    const score = markets.score ?? {};
+    const model = (pred.model as { confidence?: number }) ?? {};
+    const predictedRaw = s(mr.predicted);
+    const mlPrediction: MLPrediction | null = mr.prob_home != null || mr.prob_away != null
+        ? {
+              probHome: Math.round(n(mr.prob_home) ?? 0),
+              probDraw: Math.round(n(mr.prob_draw) ?? 0),
+              probAway: Math.round(n(mr.prob_away) ?? 0),
+              predicted: predictedRaw === 'H' || predictedRaw === 'D' || predictedRaw === 'A' ? predictedRaw : null,
+              expGoalsHome: n(eg.home),
+              expGoalsAway: n(eg.away),
+              over15: n(ou.prob_over_15),
+              over25: n(ou.prob_over_25),
+              over35: n(ou.prob_over_35),
+              bttsYes: n(btts.prob_yes),
+              mostLikelyScore: s(score.most_likely),
+              confidence: model.confidence != null ? Math.round(n(model.confidence)! * 100) : null,
+          }
+        : null;
+
+    // head-to-head
+    const total = n(h2h.total_matches) ?? 0;
+    const h2hSummary: H2HSummary | null = total > 0
+        ? {
+              total,
+              homeWins: n(h2h.home_wins) ?? 0,
+              draws: n(h2h.draws) ?? 0,
+              awayWins: n(h2h.away_wins) ?? 0,
+              homeGoals: n(h2h.home_goals) ?? 0,
+              awayGoals: n(h2h.away_goals) ?? 0,
+              recent: (Array.isArray(h2h.recent_matches) ? h2h.recent_matches : []).slice(0, 6).map((raw) => {
+                  const r = raw as Record<string, unknown>;
+                  return {
+                      home: String(r.home_team ?? r.home ?? ''),
+                      away: String(r.away_team ?? r.away ?? ''),
+                      homeScore: n(r.home_score),
+                      awayScore: n(r.away_score),
+                      date: s(r.date ?? r.event_date),
+                  };
+              }),
+          }
+        : null;
+
+    return { mlPrediction, momentum, shotmap, h2h: h2hSummary };
+}
+
+/** Fetch and normalise the v2 spatial/predictive extras for an event id. */
+export async function getEventExtras(id: number): Promise<MatchExtras> {
+    const empty: MatchExtras = { mlPrediction: null, momentum: [], shotmap: [], h2h: null };
+    if (!TOKEN) return empty;
+    const [stats, pred, h2h] = await Promise.all([
+        soft(get<Record<string, unknown>>(`/events/${id}/stats/`, 20_000), {}),
+        soft(get<Record<string, unknown>>(`/events/${id}/prediction/`, 5 * 60_000), {}),
+        soft(get<Record<string, unknown>>(`/events/${id}/h2h/`, 30 * 60_000), {}),
+    ]);
+    return normalizeExtras(stats, pred, h2h);
+}
+
 async function getVenue(id: number): Promise<Venue | null> {
     try {
         const raw = await get<{ id: number; name: string; city?: string; country?: string; capacity?: number; built_year?: number }>(`/venues/${id}/`, 30 * 60_000);
@@ -279,4 +374,137 @@ async function getVenue(id: number): Promise<Venue | null> {
     } catch {
         return null;
     }
+}
+
+// ---------- World Cup 2026 ----------
+
+const WC_SEASON_ID = 188;
+const WC_LIVE = new Set(['1st_half', '2nd_half', 'ht', 'halftime', 'extra_time', 'penalties', 'live']);
+
+/** WC 2026 fixtures + a slice of the qualified-squads list, for the hub page. */
+export async function getWorldCup(): Promise<WorldCup> {
+    const empty: WorldCup = { fixtures: [], squads: [] };
+    if (!TOKEN) return empty;
+
+    const [fxRaw, sqRaw] = await Promise.all([
+        soft(get<{ results?: Record<string, unknown>[] }>(`/events/?season_id=${WC_SEASON_ID}&limit=200`, 60_000), { results: [] }),
+        soft(get<{ results?: Record<string, unknown>[] }>(`/worldcup/squads/?limit=200`, 30 * 60_000), { results: [] }),
+    ]);
+
+    const fixtures: WCFixture[] = (fxRaw.results ?? []).map((e) => {
+        const status = String(e.status ?? '');
+        return {
+            id: Number(e.id),
+            homeTeam: String(e.home_team ?? 'TBD'),
+            awayTeam: String(e.away_team ?? 'TBD'),
+            homeTeamId: (e.home_team_id as number) ?? (e.home_team_obj as { id?: number })?.id ?? null,
+            awayTeamId: (e.away_team_id as number) ?? (e.away_team_obj as { id?: number })?.id ?? null,
+            homeScore: n(e.home_score),
+            awayScore: n(e.away_score),
+            date: s(e.event_date),
+            status: s(e.status),
+            round: s(e.round_name),
+            live: WC_LIVE.has(status),
+        };
+    });
+
+    // group squad players by team
+    const byTeam = new Map<number, WCSquadPlayer[]>();
+    for (const raw of sqRaw.results ?? []) {
+        const teamId = Number(raw.team_id);
+        if (!teamId) continue;
+        const list = byTeam.get(teamId) ?? [];
+        list.push({
+            playerId: n(raw.player_id),
+            name: String(raw.name ?? ''),
+            position: s(raw.position),
+            jerseyNumber: s(raw.jersey_number),
+            club: s(raw.club),
+            caps: n(raw.caps),
+            goals: n(raw.goals),
+            age: n(raw.age),
+        });
+        byTeam.set(teamId, list);
+    }
+    const squads = [...byTeam.entries()].map(([teamId, players]) => ({ teamId, players }));
+
+    return { fixtures, squads };
+}
+
+// ---------- managers / referees / venues (detail) ----------
+
+export async function getManager(id: number): Promise<ManagerDetail | null> {
+    let raw: Record<string, unknown>;
+    try {
+        raw = await get<Record<string, unknown>>(`/managers/${id}/`, 10 * 60_000);
+    } catch {
+        return null;
+    }
+    if (!raw?.id) return null;
+    const team = raw.current_team_id ? await soft(getTeamListItem(Number(raw.current_team_id)), null) : null;
+    return {
+        id: Number(raw.id),
+        name: String(raw.name ?? ''),
+        country: s(raw.country),
+        tacticalProfile: s(raw.tactical_profile),
+        preferredFormation: s(raw.preferred_formation),
+        currentTeamId: (raw.current_team_id as number) ?? null,
+        matchesTotal: n(raw.matches_total),
+        wins: n(raw.wins),
+        draws: n(raw.draws),
+        losses: n(raw.losses),
+        winPct: n(raw.win_pct),
+        avgGoalsScored: n(raw.avg_goals_scored),
+        avgGoalsConceded: n(raw.avg_goals_conceded),
+        avgPossession: n(raw.avg_possession),
+        cleanSheetPct: n(raw.clean_sheet_pct),
+        team,
+    };
+}
+
+export async function getReferee(id: number): Promise<RefereeDetail | null> {
+    let raw: Record<string, unknown>;
+    try {
+        raw = await get<Record<string, unknown>>(`/referees/${id}/`, 10 * 60_000);
+    } catch {
+        return null;
+    }
+    if (!raw?.id) return null;
+    return {
+        id: Number(raw.id),
+        name: String(raw.name ?? ''),
+        country: s(raw.country),
+        matches: n(raw.matches),
+        totalYellow: n(raw.total_yellow_cards),
+        totalRed: n(raw.total_red_cards),
+        avgYellowPerMatch: n(raw.avg_yellow_per_match),
+        avgRedPerMatch: n(raw.avg_red_per_match),
+        avgFoulsPerMatch: n(raw.avg_fouls_per_match),
+        avgGoalsPerMatch: n(raw.avg_goals_per_match),
+        careerGames: n(raw.career_games),
+    };
+}
+
+export async function getVenueDetail(id: number): Promise<VenueDetail | null> {
+    let raw: Record<string, unknown>;
+    try {
+        raw = await get<Record<string, unknown>>(`/venues/${id}/`, 30 * 60_000);
+    } catch {
+        return null;
+    }
+    if (!raw?.id) return null;
+    return {
+        id: Number(raw.id),
+        name: String(raw.name ?? ''),
+        city: s(raw.city),
+        country: s(raw.country),
+        capacity: (raw.capacity as number) ?? null,
+        builtYear: (raw.built_year as number) ?? null,
+        countryCode: s(raw.country_code),
+        latitude: n(raw.latitude),
+        longitude: n(raw.longitude),
+        pitchLengthM: n(raw.pitch_length_m),
+        pitchWidthM: n(raw.pitch_width_m),
+        homeTeamId: (raw.home_team_id as number) ?? null,
+    };
 }
