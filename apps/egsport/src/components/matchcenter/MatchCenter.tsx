@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { useMatchCenter } from '@/lib/hooks/useMatchCenter';
 import type { MatchCenter as MC, MCIncident, MCStat, MCPlayer } from '@/lib/bsd/types';
 import { Activity, Goal, RefreshCw, Repeat, Square, Flag, MapPin, User, Users, ShieldAlert } from 'lucide-react';
@@ -57,7 +58,7 @@ function ScoreHeader({ mc }: { mc: MC }) {
         <section className="rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-5">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
                 <div className="text-right">
-                    <p className="text-base font-bold text-white">{mc.home.name}</p>
+                    <TeamName name={mc.home.name} teamId={mc.home.teamId} />
                     {mc.home.coach ? <p className="text-[11px] text-gray-500">{mc.home.coach}</p> : null}
                 </div>
                 <div className="flex flex-col items-center">
@@ -77,7 +78,7 @@ function ScoreHeader({ mc }: { mc: MC }) {
                     ) : null}
                 </div>
                 <div className="text-left">
-                    <p className="text-base font-bold text-white">{mc.away.name}</p>
+                    <TeamName name={mc.away.name} teamId={mc.away.teamId} />
                     {mc.away.coach ? <p className="text-[11px] text-gray-500">{mc.away.coach}</p> : null}
                 </div>
             </div>
@@ -90,6 +91,13 @@ function ScoreHeader({ mc }: { mc: MC }) {
             ) : null}
         </section>
     );
+}
+
+function TeamName({ name, teamId }: { name: string; teamId: number | null }) {
+    if (teamId) {
+        return <Link href={`/teams/${teamId}`} className="text-base font-bold text-white hover:text-blue-300">{name}</Link>;
+    }
+    return <p className="text-base font-bold text-white">{name}</p>;
 }
 
 // ---------- game events ----------
@@ -246,7 +254,11 @@ function LineupCol({ title, players, subs, align = 'left' }: { title: string; pl
                 {players.map((p, i) => (
                     <li key={i} className={`flex items-center gap-1.5 text-xs text-gray-200 ${right ? 'flex-row-reverse text-right' : ''}`}>
                         <span className="w-5 shrink-0 tabular-nums text-gray-500">{p.number ?? ''}</span>
-                        <span className="truncate">{p.name}</span>
+                        {p.id ? (
+                            <Link href={`/players/${p.id}`} className="truncate hover:text-blue-300">{p.name}</Link>
+                        ) : (
+                            <span className="truncate">{p.name}</span>
+                        )}
                         {p.goals ? <Goal className="h-3 w-3 shrink-0 text-emerald-400" /> : null}
                         {p.yellow ? <span className="h-2.5 w-2 shrink-0 rounded-[1px] bg-yellow-400" /> : null}
                         {p.red ? <span className="h-2.5 w-2 shrink-0 rounded-[1px] bg-red-500" /> : null}

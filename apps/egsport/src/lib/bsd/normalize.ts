@@ -49,6 +49,7 @@ function coachName(obj: unknown): string | null {
 
 function mapPlayer(p: Record<string, unknown>): MCPlayer {
     return {
+        id: p.player_id != null ? num(p.player_id) : null,
         name: String(p.name ?? ''),
         number: (p.jersey_number as string) ?? null,
         position: (p.specific_position as string) ?? (p.position as string) ?? null,
@@ -192,6 +193,8 @@ export function normalizeMatchCenter(event: RawEvent, incidents: unknown[]): Mat
 
     const venueRaw = event.venue as { name?: string; city?: string; capacity?: number } | undefined;
     const refereeRaw = event.referee as { name?: string } | undefined;
+    const homeTeamId = (event.home_team_obj as { id?: number } | undefined)?.id ?? null;
+    const awayTeamId = (event.away_team_obj as { id?: number } | undefined)?.id ?? null;
     const homeForm = event.home_form as { form_string?: string } | undefined;
     const awayForm = event.away_form as { form_string?: string } | undefined;
 
@@ -206,6 +209,7 @@ export function normalizeMatchCenter(event: RawEvent, incidents: unknown[]): Mat
         kickoff: (event.event_date as string) ?? null,
         home: {
             name: String(event.home_team ?? 'Home'),
+            teamId: homeTeamId,
             score: event.home_score != null ? num(event.home_score) : null,
             htScore: event.home_score_ht != null ? num(event.home_score_ht) : null,
             xg: event.home_xg_live != null ? num(event.home_xg_live) : null,
@@ -214,6 +218,7 @@ export function normalizeMatchCenter(event: RawEvent, incidents: unknown[]): Mat
         },
         away: {
             name: String(event.away_team ?? 'Away'),
+            teamId: awayTeamId,
             score: event.away_score != null ? num(event.away_score) : null,
             htScore: event.away_score_ht != null ? num(event.away_score_ht) : null,
             xg: event.away_xg_live != null ? num(event.away_xg_live) : null,

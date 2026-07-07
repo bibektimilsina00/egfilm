@@ -28,6 +28,8 @@ export interface MCStat {
 }
 
 export interface MCPlayer {
+    /** BSD player id, when known — enables linking to the player page. */
+    id?: number | null;
     name: string;
     number?: string | null;
     position?: string | null;
@@ -39,6 +41,8 @@ export interface MCPlayer {
 
 export interface MCSide {
     name: string;
+    /** BSD team id, when known — enables linking to the team page. */
+    teamId: number | null;
     score: number | null;
     htScore: number | null;
     xg: number | null;
@@ -73,8 +77,8 @@ export const EMPTY_MATCH_CENTER: MatchCenter = {
     live: false,
     minute: null,
     kickoff: null,
-    home: { name: '', score: null, htScore: null, xg: null, coach: null, form: null },
-    away: { name: '', score: null, htScore: null, xg: null, coach: null, form: null },
+    home: { name: '', teamId: null, score: null, htScore: null, xg: null, coach: null, form: null },
+    away: { name: '', teamId: null, score: null, htScore: null, xg: null, coach: null, form: null },
     venue: null,
     referee: null,
     possession: null,
