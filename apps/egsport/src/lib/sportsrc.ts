@@ -40,9 +40,12 @@ interface ApiEnvelope<T> {
 async function sportsrcGet<T>(params: Record<string, string>): Promise<T> {
     await bucket.take();
     const res = await httpClient.get<ApiEnvelope<T> | T>('/', { params });
-    const body = res.data as ApiEnvelope<T> & { data?: T };
-    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
-        return body.data as T;
+    const body = res.data as ApiEnvelope<T> & { data?: T; error?: string };
+    if (body && typeof body === 'object' && 'success' in body) {
+        if (body.success === false) {
+            throw new Error(body.error || 'sportsrc request failed');
+        }
+        if ('data' in body) return body.data as T;
     }
     return body as T;
 }
@@ -167,12 +170,32 @@ export const sportsrc = {
     getSports(): Promise<SportCategory[]> {
         return sportsrcGet<SportCategory[]>({ data: 'sports' });
     },
-    getMatches(category: string): Promise<Match[]> {
-        return sportsrcGet<Match[]>({ data: 'matches', category });
+    async getMatches(category: string): Promise<Match[]> {
+        // The provider's per-sport `matches` buckets are now empty; all active
+        // matches are served from the single `live` bucket. Try the requested
+        // category first, then fall back to `live` filtered by the match's own
+        // `category` field so per-sport UI sections keep working.
+        const direct = await sportsrcGet<Match[]>({ data: 'matches', category });
+        if (Array.isArray(direct) && direct.length > 0) return direct;
+        if (category === 'live') return direct ?? [];
+        const live = await sportsrcGet<Match[]>({ data: 'matches', category: 'live' });
+        if (!Array.isArray(live)) return [];
+        return live.filter((m) => (m.category ?? '').toLowerCase() === category.toLowerCase());
     },
     async getMatchDetail(category: string, id: string): Promise<MatchDetail | null> {
-        const data = await sportsrcGet<MatchDetail | null>({ data: 'detail', category, id });
-        return data ?? null;
+        // Detail lookups only resolve under the `live` bucket now; the per-sport
+        // category returns "not found". Try the given category, then retry `live`.
+        try {
+            const data = await sportsrcGet<MatchDetail | null>({ data: 'detail', category, id });
+            if (data) return data;
+        } catch {
+            // fall through to the `live` bucket
+        }
+        if (category !== 'live') {
+            const live = await sportsrcGet<MatchDetail | null>({ data: 'detail', category: 'live', id });
+            if (live) return live;
+        }
+        return null;
     },
     getLeagues(): Promise<League[]> {
         return sportsrcGet<League[]>({ data: 'results', category: 'leagues' });
