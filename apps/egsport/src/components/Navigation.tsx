@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import SearchBox from './SearchBox';
 import {
     Activity,
     Trophy,
@@ -12,7 +13,6 @@ import {
     ListVideo,
     BookOpen,
     Film,
-    Search,
     Menu,
     X,
     LogIn,
@@ -35,13 +35,11 @@ interface NavLink {
 }
 
 export default function Navigation() {
-    const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const pathname = usePathname();
-    const router = useRouter();
     const { data: session } = useSession();
     const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -65,14 +63,6 @@ export default function Navigation() {
         { href: EGFILM_URL, label: 'Movies & TV', icon: Film, external: true },
         { href: BLOG_URL, label: 'Blog', icon: BookOpen, external: true },
     ], []);
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setSearchQuery('');
-        }
-    };
 
     const handleSignOut = useCallback(async () => {
         setIsSigningOut(true);
@@ -136,18 +126,7 @@ export default function Navigation() {
                     </nav>
 
                     <div className="flex items-end gap-2">
-                        <form onSubmit={handleSearch} className="relative hidden md:block">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search matches, teams, leagues..."
-                                className="bg-gray-800/50 text-white px-4 py-2 pr-10 rounded-full outline-none focus:ring-2 focus:ring-blue-500 focus:bg-gray-800 transition-all w-48 lg:w-64 xl:w-72 text-sm placeholder:text-gray-500"
-                            />
-                            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform" aria-label="Search">
-                                <Search className="w-4 h-4 text-gray-400 hover:text-blue-400" />
-                            </button>
-                        </form>
+                        <SearchBox variant="desktop" />
 
                         <div className="hidden md:flex items-center gap-2">
                             <div className="relative" ref={userMenuRef}>
@@ -266,15 +245,9 @@ export default function Navigation() {
                                 </Link>
                             );
                         })}
-                        <form onSubmit={handleSearch} className="pt-2">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
-                                className="bg-gray-800/50 text-white px-4 py-2 rounded-full outline-none focus:ring-2 focus:ring-blue-500 w-full text-sm placeholder:text-gray-500"
-                            />
-                        </form>
+                        <div className="pt-2">
+                            <SearchBox variant="mobile" />
+                        </div>
                         <div className="pt-2">
                             {session ? (
                                 <button

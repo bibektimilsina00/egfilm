@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSportsCategories, useMatchesByCategory } from '@/lib/hooks/useSports';
-import { isMatchLive } from '@/lib/sportsrc';
+import { isMatchLive, sortMatches } from '@/lib/sportsrc';
 import MatchCard from '@/components/MatchCard';
 import SportsTile from '@/components/SportsTile';
 import { Activity, Flame } from 'lucide-react';
@@ -11,7 +11,7 @@ const FEATURED_CATEGORIES = ['football', 'basketball', 'ufc', 'mma'];
 
 function LiveSection({ category }: { category: string }) {
     const { data: matches = [], isLoading } = useMatchesByCategory(category);
-    const live = matches.filter(isMatchLive);
+    const live = sortMatches(matches.filter(isMatchLive));
     if (isLoading || live.length === 0) return null;
     return (
         <div className="space-y-3">
@@ -30,7 +30,7 @@ function LiveSection({ category }: { category: string }) {
 
 function UpcomingSection({ category }: { category: string }) {
     const { data: matches = [], isLoading } = useMatchesByCategory(category);
-    const upcoming = matches.filter((m) => !isMatchLive(m)).slice(0, 4);
+    const upcoming = sortMatches(matches.filter((m) => !isMatchLive(m))).slice(0, 4);
     if (isLoading || upcoming.length === 0) return null;
     return (
         <div className="space-y-3">

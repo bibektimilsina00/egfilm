@@ -232,6 +232,19 @@ export function isMatchLive(match: Match | MatchDetail): boolean {
 }
 
 /**
+ * Order matches for display: popular/marquee fixtures first (World Cup, big
+ * finals — the provider flags these with `popular`), then by kickoff time.
+ * The provider returns matches in an arbitrary order, so we sort ourselves.
+ */
+export function sortMatches<T extends Match>(matches: T[]): T[] {
+    return [...matches].sort((a, b) => {
+        const pop = (b.popular ? 1 : 0) - (a.popular ? 1 : 0);
+        if (pop !== 0) return pop;
+        return (a.date ?? 0) - (b.date ?? 0);
+    });
+}
+
+/**
  * Resolve the iframe URL for a source.
  *
  * The API's `embedUrl` points at the `embed.streamapi.cc` wrapper, which injects
