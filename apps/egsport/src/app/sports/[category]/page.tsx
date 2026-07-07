@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 import { useMatchesByCategory } from '@/lib/hooks/useSports';
-import { isMatchLive, getMatchKickoff } from '@/lib/sportsrc';
+import { isMatchLive, getMatchKickoff, sortMatches } from '@/lib/sportsrc';
 import MatchCard from '@/components/MatchCard';
 import EmptyState from '@/components/EmptyState';
 import { Flame, Clock, CheckCircle2, CalendarOff, FlameKindling, History } from 'lucide-react';
@@ -12,12 +12,12 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
     const { category } = use(params);
     const { data: matches = [], isLoading, error } = useMatchesByCategory(category);
 
-    const live = matches.filter(isMatchLive);
-    const upcoming = matches.filter((m) => {
+    const live = sortMatches(matches.filter(isMatchLive));
+    const upcoming = sortMatches(matches.filter((m) => {
         if (isMatchLive(m)) return false;
         const k = getMatchKickoff(m);
         return !k || k.getTime() >= Date.now();
-    });
+    }));
     const finished = matches.filter((m) => {
         if (isMatchLive(m)) return false;
         const k = getMatchKickoff(m);
