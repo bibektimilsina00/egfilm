@@ -21,6 +21,14 @@ trap 'echo -e "\n${RED}✗ deploy failed — dumping logs${NC}"; docker compose 
 [[ -f .env ]] || fail ".env not found in $(pwd)"
 set -a; source .env; set +a
 log "Loaded .env"
+
+# Only redeploy the apps that actually changed this run. The CI workflow
+# writes DEPLOY_APPS (space-separated) into .env; if absent, deploy all.
+# Unlisted apps keep their running container + image untouched.
+if [[ -n "${DEPLOY_APPS:-}" ]]; then
+    read -r -a APPS <<< "$DEPLOY_APPS"
+fi
+log "Deploying apps: ${APPS[*]}"
 echo "  egfilm  → ${EGFILM_IMAGE_NAME:-<unset>}"
 echo "  egsport → ${EGSPORT_IMAGE_NAME:-<unset>}"
 echo "  egtv    → ${EGTV_IMAGE_NAME:-<unset>}"
@@ -77,8 +85,12 @@ fi
 # Use the *current* egfilm image (pre-deploy) as runner. Pin prisma@6
 # (Prisma 7 dropped env() syntax). Migration runs once against shared DB
 # before we start replacing app containers — same behaviour for all apps.
-log "Running prisma migrate deploy"
-docker compose run --rm --remove-orphans egfilm sh -c \
+# Runner = first app being deployed; every app image bundles packages/db, and
+# its :VERSION image is guaranteed to exist (it was just built). Schema changes
+# live in packages/db (shared) which rebuilds all apps, so migrations are always
+# present in the runner. When only an app changed, there is nothing to migrate.
+log "Running prisma migrate deploy (runner: ${APPS[0]})"
+docker compose run --rm --remove-orphans "${APPS[0]}" sh -c \
     'cd packages/db && npx --yes prisma@6.17.1 migrate deploy --schema=./prisma/schema.prisma' \
     || warn "prisma migrate failed — continuing (manual fix may be needed)"
 
@@ -119,10 +131,16 @@ check_health() {
         fail "${name} health check failed on :${port}"
     fi
 }
-check_health "${EGFILM_PORT:-8000}"  egfilm
-check_health "${EGSPORT_PORT:-5555}" egsport
-check_health "${EGTV_PORT:-3333}"    egtv
-check_health "${EGBLOG_PORT:-4444}"  egblog
-check_health "${EGADMIN_PORT:-5566}" egadmin
+# Only health-check the apps we (re)deployed; the others were never touched.
+declare -A APP_PORT=(
+    [egfilm]="${EGFILM_PORT:-8000}"
+    [egsport]="${EGSPORT_PORT:-5555}"
+    [egtv]="${EGTV_PORT:-3333}"
+    [egblog]="${EGBLOG_PORT:-4444}"
+    [egadmin]="${EGADMIN_PORT:-5566}"
+)
+for app in "${APPS[@]}"; do
+    check_health "${APP_PORT[$app]}" "$app"
+done
 
 log "Deploy complete"

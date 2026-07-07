@@ -35,19 +35,23 @@ jobs:
     name: 🔍 Pre-Deployment Validation
     runs-on: ubuntu-latest
     outputs:
-      should-deploy: ${{ steps.version.outputs.should-deploy }}
+      should-deploy: ${{ steps.plan.outputs.should-deploy }}
       version: ${{ steps.version.outputs.version }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      apps: ${{ steps.plan.outputs.apps }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Per-app change detection. A change under a single app rebuilds only
+      # that app; a change to shared code (packages, lockfile, docker, deploy
+      # scripts, workflow) rebuilds every app since they all share it.
       - uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: |
-            app:
-              - 'apps/**'
+            shared:
               - 'packages/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -56,6 +60,16 @@ jobs:
               - 'docker-compose.yml'
               - 'deploy.sh'
               - '.github/workflows/**'
+            egfilm:
+              - 'apps/egfilm/**'
+            egsport:
+              - 'apps/egsport/**'
+            egtv:
+              - 'apps/egtv/**'
+            egblog:
+              - 'apps/egblog/**'
+            egadmin:
+              - 'apps/egadmin/**'
 
       - id: version
         run: |
@@ -67,14 +81,59 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "🏷️  Version: $VERSION"
 
-          if [[ "${{ steps.changes.outputs.app }}" == "true" ]] || \
-             [[ "${{ github.event.inputs.force_deploy }}" == "true" ]] || \
-             [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "should-deploy=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should-deploy=false" >> "$GITHUB_OUTPUT"
-            echo "ℹ️  No relevant changes – skipping deployment"
+      - id: plan
+        env:
+          SHARED: ${{ steps.changes.outputs.shared }}
+          C_EGFILM: ${{ steps.changes.outputs.egfilm }}
+          C_EGSPORT: ${{ steps.changes.outputs.egsport }}
+          C_EGTV: ${{ steps.changes.outputs.egtv }}
+          C_EGBLOG: ${{ steps.changes.outputs.egblog }}
+          C_EGADMIN: ${{ steps.changes.outputs.egadmin }}
+          FORCE: ${{ github.event.inputs.force_deploy }}
+        run: |
+          set -euo pipefail
+          # app -> "public_app_name|app_url_var|default_url"
+          declare -A META=(
+            [egfilm]="EGFilm|EGFILM_URL|https://egfilm.xyz"
+            [egsport]="EGSport|EGSPORT_URL|https://sports.egfilm.xyz"
+            [egtv]="EGTV|EGTV_URL|https://tv.egfilm.xyz"
+            [egblog]="EGFilm Blog|EGBLOG_URL|https://blog.egfilm.xyz"
+            [egadmin]="EGFilm Admin|EGADMIN_URL|https://admin.egfilm.xyz"
+          )
+          ORDER=(egfilm egsport egtv egblog egadmin)
+
+          rebuild_all=false
+          if [[ "$SHARED" == "true" || "$FORCE" == "true" || "$GITHUB_REF" == refs/tags/* ]]; then
+            rebuild_all=true
+            echo "🔁 Shared change / forced — rebuilding all apps"
           fi
+
+          selected=()
+          for app in "${ORDER[@]}"; do
+            var="C_${app^^}"
+            if [[ "$rebuild_all" == "true" || "${!var:-false}" == "true" ]]; then
+              selected+=("$app")
+            fi
+          done
+
+          if [[ ${#selected[@]} -eq 0 ]]; then
+            echo "should-deploy=false" >> "$GITHUB_OUTPUT"
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            echo "apps=" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  No app changes – skipping deployment"
+            exit 0
+          fi
+
+          include=""
+          for app in "${selected[@]}"; do
+            IFS='|' read -r pub var url <<< "${META[$app]}"
+            item="{\"app\":\"$app\",\"public_app_name\":\"$pub\",\"app_url_var\":\"$var\",\"default_url\":\"$url\"}"
+            include="${include:+$include,}$item"
+          done
+          echo "should-deploy=true" >> "$GITHUB_OUTPUT"
+          echo "matrix={\"include\":[$include]}" >> "$GITHUB_OUTPUT"
+          echo "apps=${selected[*]}" >> "$GITHUB_OUTPUT"
+          echo "🚀 Deploying: ${selected[*]}"
 
   ci:
     name: 🧪 Lint, Type-check, Test & Build
@@ -135,28 +194,9 @@ jobs:
     if: needs.validate.outputs.should-deploy == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - app: egfilm
-            public_app_name: EGFilm
-            app_url_var: EGFILM_URL
-            default_url: https://egfilm.xyz
-          - app: egsport
-            public_app_name: EGSport
-            app_url_var: EGSPORT_URL
-            default_url: https://sports.egfilm.xyz
-          - app: egtv
-            public_app_name: EGTV
-            app_url_var: EGTV_URL
-            default_url: https://tv.egfilm.xyz
-          - app: egblog
-            public_app_name: EGFilm Blog
-            app_url_var: EGBLOG_URL
-            default_url: https://blog.egfilm.xyz
-          - app: egadmin
-            public_app_name: EGFilm Admin
-            app_url_var: EGADMIN_URL
-            default_url: https://admin.egfilm.xyz
+      # Only the apps flagged as changed by the validate job (per-app or all
+      # on a shared change) are built here.
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -270,6 +310,7 @@ jobs:
           NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
           NEXT_PUBLIC_BUILD_VERSION=${VER}
           NEXT_PUBLIC_GIT_SHA=${{ github.sha }}
+          DEPLOY_APPS="${{ needs.validate.outputs.apps }}"
           EOF
 
       - name: 📤 Copy files to server
