@@ -2,7 +2,10 @@
 CREATE TABLE "MatchComment" (
     "id" TEXT NOT NULL,
     "matchKey" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "authorKey" TEXT NOT NULL,
+    "authorName" TEXT NOT NULL,
+    "isGuest" BOOLEAN NOT NULL DEFAULT false,
+    "userId" TEXT,
     "content" TEXT NOT NULL,
     "parentId" TEXT,
     "isEdited" BOOLEAN NOT NULL DEFAULT false,
@@ -16,7 +19,8 @@ CREATE TABLE "MatchComment" (
 CREATE TABLE "MatchCommentReaction" (
     "id" TEXT NOT NULL,
     "commentId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "authorKey" TEXT NOT NULL,
+    "userId" TEXT,
     "type" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -25,6 +29,9 @@ CREATE TABLE "MatchCommentReaction" (
 
 -- CreateIndex
 CREATE INDEX "MatchComment_matchKey_idx" ON "MatchComment"("matchKey");
+
+-- CreateIndex
+CREATE INDEX "MatchComment_authorKey_idx" ON "MatchComment"("authorKey");
 
 -- CreateIndex
 CREATE INDEX "MatchComment_userId_idx" ON "MatchComment"("userId");
@@ -42,7 +49,7 @@ CREATE INDEX "MatchCommentReaction_commentId_idx" ON "MatchCommentReaction"("com
 CREATE INDEX "MatchCommentReaction_userId_idx" ON "MatchCommentReaction"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MatchCommentReaction_commentId_userId_type_key" ON "MatchCommentReaction"("commentId", "userId", "type");
+CREATE UNIQUE INDEX "MatchCommentReaction_commentId_authorKey_type_key" ON "MatchCommentReaction"("commentId", "authorKey", "type");
 
 -- AddForeignKey
 ALTER TABLE "MatchComment" ADD CONSTRAINT "MatchComment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

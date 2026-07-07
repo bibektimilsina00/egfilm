@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./server": "./src/server/index.ts",
+    "./commentBus": "./src/server/commentBus.ts",
     "./client/useNotifications": "./src/client/useNotifications.ts",
     "./client/useWatchRoom": "./src/client/useWatchRoom.ts",
     "./client/useUserSettings": "./src/client/useUserSettings.ts",

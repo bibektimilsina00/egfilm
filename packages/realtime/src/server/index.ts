@@ -8,6 +8,7 @@ import {
     saveChatMessage,
     updateRoomActivity,
 } from '@egfilm/services';
+import { setCommentIo, commentRoom } from './commentBus';
 
 export const config = {
     api: {
@@ -66,9 +67,19 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             },
         });
         res.socket.server.io = io;
+        setCommentIo(io);
 
         io.on('connection', (socket) => {
             console.log('New client connected:', socket.id);
+
+            // ---- match comments: clients join a per-match room to receive
+            // live comment/reaction updates (writes still go via the REST API).
+            socket.on('join-comments', ({ matchKey }: { matchKey?: string }) => {
+                if (matchKey) socket.join(commentRoom(matchKey));
+            });
+            socket.on('leave-comments', ({ matchKey }: { matchKey?: string }) => {
+                if (matchKey) socket.leave(commentRoom(matchKey));
+            });
 
             // Create a new watch party
             socket.on('create-party', ({ movieTitle, videoUrl, userName }) => {
