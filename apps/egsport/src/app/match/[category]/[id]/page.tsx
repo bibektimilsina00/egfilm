@@ -79,6 +79,8 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
                             </div>
                         </div>
                     </div>
+
+                    <PlayerNotice />
                 </div>
 
                 <aside className="space-y-4">
@@ -108,8 +110,6 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
             </div>
 
             <MatchCenter home={home?.name} away={away?.name} date={detail.date} />
-
-            <PlayerNotice />
         </div>
     );
 }

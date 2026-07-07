@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import io, { type Socket } from 'socket.io-client';
-import { MessageSquare, Send, Trash2, CornerDownRight, X, ArrowDown, SmilePlus, Radio } from 'lucide-react';
+import { MessageSquare, Send, Trash2, CornerDownRight, X, ArrowDown, SmilePlus, Radio, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ---- DTO ----
 interface ReactionDTO { type: string; count: number; reacted: boolean }
@@ -199,59 +199,76 @@ export default function CommentSection({ matchKey }: { matchKey: string }) {
     );
 }
 
-function Message({ c, canPost, onReact, onDelete, onReply, depth = 0 }: {
-    c: CommentDTO; canPost: boolean; depth?: number;
+function Message({ c, canPost, onReact, onDelete, onReply }: {
+    c: CommentDTO; canPost: boolean;
+    onReact: (id: string, type: string) => void; onDelete: (id: string) => void; onReply: (id: string, name: string) => void;
+}) {
+    const [openReplies, setOpenReplies] = useState(false);
+    return (
+        <div className="px-1 py-1.5">
+            <CommentRow c={c} canPost={canPost} onReact={onReact} onDelete={onDelete} onReply={onReply} />
+            {c.replies.length > 0 ? (
+                <div className="ml-11 mt-1">
+                    <button onClick={() => setOpenReplies((v) => !v)} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-blue-400 hover:bg-blue-500/10">
+                        {openReplies ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        {c.replies.length} {c.replies.length > 1 ? 'replies' : 'reply'}
+                    </button>
+                    {openReplies ? (
+                        <div className="mt-1 space-y-2">
+                            {c.replies.map((r) => <CommentRow key={r.id} c={r} canPost={canPost} reply onReact={onReact} onDelete={onDelete} onReply={onReply} />)}
+                        </div>
+                    ) : null}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function CommentRow({ c, canPost, reply = false, onReact, onDelete, onReply }: {
+    c: CommentDTO; canPost: boolean; reply?: boolean;
     onReact: (id: string, type: string) => void; onDelete: (id: string) => void; onReply: (id: string, name: string) => void;
 }) {
     const [picker, setPicker] = useState(false);
     const h = hue(c.author.name);
+    const size = reply ? 'h-7 w-7 text-[10px]' : 'h-9 w-9 text-xs';
     return (
-        <div className={depth === 0 ? '' : 'ml-8 border-l border-gray-800/70 pl-2'}>
-            <div className="group flex gap-2 rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ring-1 ring-white/10"
-                    style={{ background: `linear-gradient(135deg, hsl(${h} 60% 45%), hsl(${(h + 40) % 360} 60% 35%))` }}>
-                    {initials(c.author.name)}
-                </span>
-                <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug">
-                        <span className={`mr-1.5 font-semibold ${c.author.isGuest ? 'text-gray-400' : 'text-blue-300'}`}>{c.author.name}</span>
-                        <span className="mr-1.5 align-middle text-[10px] text-gray-600">{timeAgo(c.createdAt)}</span>
-                        <span className="whitespace-pre-wrap break-words text-gray-200">{c.content}</span>
-                    </p>
+        <div className="group flex gap-3">
+            <span className={`flex ${size} shrink-0 items-center justify-center rounded-full font-bold text-white ring-1 ring-white/10`}
+                style={{ background: `linear-gradient(135deg, hsl(${h} 60% 45%), hsl(${(h + 40) % 360} 60% 35%))` }}>
+                {initials(c.author.name)}
+            </span>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2">
+                    <span className={`truncate text-[13px] font-semibold ${c.author.isGuest ? 'text-gray-300' : 'text-white'}`}>{c.author.name}</span>
+                    <span className="shrink-0 text-[11px] text-gray-500">{timeAgo(c.createdAt)}</span>
+                </div>
+                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-snug text-gray-200">{c.content}</p>
 
-                    <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                        {c.reactions.map((r) => (
-                            <button key={r.type} disabled={!canPost} onClick={() => onReact(c.id, r.type)}
-                                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[11px] ring-1 transition-colors ${r.reacted ? 'bg-blue-500/15 text-blue-300 ring-blue-500/40' : 'bg-gray-800/60 text-gray-400 ring-transparent hover:ring-gray-700'}`}>
-                                <span>{EMOJI[r.type] ?? '👍'}</span>{r.count}
-                            </button>
-                        ))}
-
-                        {/* hover actions */}
-                        <span className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            {canPost ? (
-                                <span className="relative">
-                                    <button onClick={() => setPicker((v) => !v)} className="rounded-full p-0.5 text-gray-500 hover:text-blue-300" aria-label="React"><SmilePlus className="h-3.5 w-3.5" /></button>
-                                    {picker ? (
-                                        <span className="absolute bottom-full left-0 z-10 mb-1 flex gap-0.5 rounded-full border border-gray-800 bg-gray-950 px-1.5 py-1 shadow-xl">
-                                            {REACTIONS.map((r) => <button key={r.type} onClick={() => { onReact(c.id, r.type); setPicker(false); }} className="text-sm transition-transform hover:scale-125">{r.emoji}</button>)}
-                                        </span>
-                                    ) : null}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {c.reactions.map((r) => (
+                        <button key={r.type} disabled={!canPost} onClick={() => onReact(c.id, r.type)}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors ${r.reacted ? 'bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/40' : 'text-gray-400 hover:bg-gray-800/60'}`}>
+                            <span>{EMOJI[r.type] ?? '👍'}</span>{r.count}
+                        </button>
+                    ))}
+                    {canPost ? (
+                        <span className="relative">
+                            <button onClick={() => setPicker((v) => !v)} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-800/60 hover:text-blue-300"><SmilePlus className="h-3.5 w-3.5" /></button>
+                            {picker ? (
+                                <span className="absolute bottom-full left-0 z-10 mb-1 flex gap-1 rounded-full border border-gray-800 bg-gray-950 px-2 py-1 shadow-xl">
+                                    {REACTIONS.map((r) => <button key={r.type} onClick={() => { onReact(c.id, r.type); setPicker(false); }} className="text-base transition-transform hover:scale-125">{r.emoji}</button>)}
                                 </span>
                             ) : null}
-                            {canPost && depth === 0 ? (
-                                <button onClick={() => onReply(c.id, c.author.name)} className="rounded-full p-0.5 text-gray-500 hover:text-blue-300" aria-label="Reply"><CornerDownRight className="h-3.5 w-3.5" /></button>
-                            ) : null}
-                            {c.canDelete ? (
-                                <button onClick={() => onDelete(c.id)} className="rounded-full p-0.5 text-gray-500 hover:text-red-400" aria-label="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
-                            ) : null}
                         </span>
-                    </div>
+                    ) : null}
+                    {canPost && !reply ? (
+                        <button onClick={() => onReply(c.id, c.author.name)} className="rounded-full px-2 py-0.5 text-xs font-medium text-gray-500 hover:bg-gray-800/60 hover:text-blue-300">Reply</button>
+                    ) : null}
+                    {c.canDelete ? (
+                        <button onClick={() => onDelete(c.id)} className="rounded-full p-1 text-gray-600 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100" aria-label="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+                    ) : null}
                 </div>
             </div>
-            {c.replies.map((r) => (
-                <Message key={r.id} c={r} canPost={canPost} depth={depth + 1} onReact={onReact} onDelete={onDelete} onReply={onReply} />
-            ))}
         </div>
     );
 }
@@ -277,10 +294,10 @@ function ChatInput({ canPost, isMember, submitting, replyTo, onCancelReply, onSe
                     onChange={(e) => setValue(e.target.value.slice(0, MAX))}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
                     placeholder={isMember ? 'Say something…' : 'Comment as Anonymous…'}
-                    className="h-9 flex-1 rounded-full border border-gray-800 bg-gray-900 px-4 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-9 flex-1 rounded-lg border border-gray-800 bg-gray-900 px-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                 />
                 <button onClick={submit} disabled={!value.trim() || submitting || !canPost}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send">
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Send">
                     <Send className="h-4 w-4" />
                 </button>
             </div>
