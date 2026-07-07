@@ -1,0 +1,296 @@
+'use client';
+
+import type { ReactNode } from 'react';
+import { useMatchCenter } from '@/lib/hooks/useMatchCenter';
+import type { MatchCenter as MC, MCIncident, MCStat, MCPlayer } from '@/lib/bsd/types';
+import { Activity, Goal, RefreshCw, Repeat, Square, Flag, MapPin, User, Users, ShieldAlert } from 'lucide-react';
+
+const HOME = '#3b82f6'; // blue-500
+const AWAY = '#9ca3af'; // gray-400
+
+export default function MatchCenter({
+    home,
+    away,
+    date,
+}: {
+    home: string | undefined;
+    away: string | undefined;
+    date: number | undefined;
+}) {
+    const { data, isLoading } = useMatchCenter(home, away, date);
+
+    if (isLoading) {
+        return <div className="h-40 rounded-2xl bg-gray-900/60 border border-gray-800 animate-pulse" />;
+    }
+    if (!data?.found) return null;
+
+    return (
+        <div className="space-y-4">
+            <ScoreHeader mc={data} />
+            {data.incidents.length > 0 ? <GameEvents mc={data} /> : null}
+            {(data.possession || data.stats.length > 0) ? <StatsPanel mc={data} /> : null}
+            {data.prediction ? <Prediction mc={data} /> : null}
+            {data.lineups ? <Lineups mc={data} /> : null}
+            <GameInfo mc={data} />
+        </div>
+    );
+}
+
+// ---------- shared bits ----------
+
+function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+    return (
+        <section className="rounded-2xl border border-gray-800 bg-gray-900/70">
+            <header className="flex items-center gap-2 border-b border-gray-800 px-4 py-3">
+                {icon}
+                <h3 className="text-sm font-semibold text-white">{title}</h3>
+            </header>
+            <div className="p-4">{children}</div>
+        </section>
+    );
+}
+
+// ---------- score header ----------
+
+function ScoreHeader({ mc }: { mc: MC }) {
+    return (
+        <section className="rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-5">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                <div className="text-right">
+                    <p className="text-base font-bold text-white">{mc.home.name}</p>
+                    {mc.home.coach ? <p className="text-[11px] text-gray-500">{mc.home.coach}</p> : null}
+                </div>
+                <div className="flex flex-col items-center">
+                    {mc.live ? (
+                        <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-semibold text-red-400 ring-1 ring-red-500/30">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+                            {mc.minute != null ? `${mc.minute}'` : 'LIVE'}
+                        </span>
+                    ) : (
+                        <span className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">{mc.statusLabel}</span>
+                    )}
+                    <div className="text-3xl font-black tabular-nums text-white">
+                        {mc.home.score ?? '-'} <span className="text-gray-600">:</span> {mc.away.score ?? '-'}
+                    </div>
+                    {mc.home.htScore != null && mc.away.htScore != null ? (
+                        <p className="mt-0.5 text-[11px] text-gray-500">HT {mc.home.htScore} - {mc.away.htScore}</p>
+                    ) : null}
+                </div>
+                <div className="text-left">
+                    <p className="text-base font-bold text-white">{mc.away.name}</p>
+                    {mc.away.coach ? <p className="text-[11px] text-gray-500">{mc.away.coach}</p> : null}
+                </div>
+            </div>
+            {(mc.home.xg != null || mc.away.xg != null) ? (
+                <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-gray-500">
+                    <span className="tabular-nums text-gray-400">{mc.home.xg?.toFixed(2) ?? '—'}</span>
+                    <span className="uppercase tracking-wide">xG</span>
+                    <span className="tabular-nums text-gray-400">{mc.away.xg?.toFixed(2) ?? '—'}</span>
+                </div>
+            ) : null}
+        </section>
+    );
+}
+
+// ---------- game events ----------
+
+function incidentIcon(i: MCIncident) {
+    if (i.type === 'goal') return <Goal className="h-4 w-4 text-emerald-400" />;
+    if (i.type === 'substitution') return <Repeat className="h-4 w-4 text-blue-400" />;
+    if (i.type === 'card') return <Square className={`h-3.5 w-3.5 ${i.card === 'red' ? 'text-red-500 fill-red-500' : 'text-yellow-400 fill-yellow-400'}`} />;
+    if (i.type === 'var') return <ShieldAlert className="h-4 w-4 text-purple-400" />;
+    if (i.type === 'injuryTime') return <RefreshCw className="h-4 w-4 text-gray-500" />;
+    return <Flag className="h-4 w-4 text-gray-500" />;
+}
+
+function GameEvents({ mc }: { mc: MC }) {
+    const rows = mc.incidents.filter((i) => i.type !== 'period' || i.detail);
+    return (
+        <Card title="Game Events" icon={<Activity className="h-4 w-4 text-blue-400" />}>
+            <ol className="space-y-1.5">
+                {rows.map((i, idx) => {
+                    const left = i.side === 'home';
+                    const right = i.side === 'away';
+                    return (
+                        <li key={idx} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
+                            <div className={`flex items-center gap-2 ${left ? 'justify-end text-right' : 'opacity-0 pointer-events-none'}`}>
+                                {left ? <EventLabel i={i} /> : null}
+                            </div>
+                            <div className="flex flex-col items-center">
+                                <span className="text-[11px] font-semibold tabular-nums text-gray-400">
+                                    {i.minute != null ? `${i.minute}'` : '·'}
+                                </span>
+                                {incidentIcon(i)}
+                                {i.homeScore != null && i.type === 'goal' ? (
+                                    <span className="text-[10px] font-bold text-emerald-400">{i.homeScore}-{i.awayScore}</span>
+                                ) : null}
+                            </div>
+                            <div className={`flex items-center gap-2 ${right ? 'justify-start text-left' : 'opacity-0 pointer-events-none'}`}>
+                                {right ? <EventLabel i={i} /> : null}
+                            </div>
+                        </li>
+                    );
+                })}
+            </ol>
+        </Card>
+    );
+}
+
+function EventLabel({ i }: { i: MCIncident }) {
+    return (
+        <div className="min-w-0">
+            <p className="truncate font-medium text-white">{i.player ?? i.detail ?? i.type}</p>
+            {i.player && i.detail ? <p className="truncate text-[11px] text-gray-500">{i.detail}</p> : null}
+        </div>
+    );
+}
+
+// ---------- stats ----------
+
+function StatsPanel({ mc }: { mc: MC }) {
+    return (
+        <Card title="Match Stats" icon={<Activity className="h-4 w-4 text-blue-400" />}>
+            {mc.possession ? <PossessionDonut home={mc.possession.home} away={mc.possession.away} /> : null}
+            <div className="mt-2 space-y-3">
+                {mc.stats.map((s) => <StatBar key={s.label} s={s} />)}
+            </div>
+        </Card>
+    );
+}
+
+function PossessionDonut({ home, away }: { home: number; away: number }) {
+    const total = home + away || 1;
+    const homePct = (home / total) * 100;
+    const r = 42;
+    const c = 2 * Math.PI * r;
+    const homeLen = (homePct / 100) * c;
+    return (
+        <div className="flex flex-col items-center">
+            <div className="relative h-28 w-28">
+                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                    <circle cx="50" cy="50" r={r} fill="none" stroke={AWAY} strokeWidth="10" />
+                    <circle cx="50" cy="50" r={r} fill="none" stroke={HOME} strokeWidth="10" strokeDasharray={`${homeLen} ${c}`} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[10px] uppercase tracking-wide text-gray-500">Possession</span>
+                </div>
+            </div>
+            <div className="mt-1 flex w-full items-center justify-between px-2 text-sm font-bold">
+                <span style={{ color: HOME }}>{home}%</span>
+                <span style={{ color: AWAY }}>{away}%</span>
+            </div>
+        </div>
+    );
+}
+
+function StatBar({ s }: { s: MCStat }) {
+    const total = s.home + s.away || 1;
+    const homePct = (s.home / total) * 100;
+    const fmt = (v: number) => (s.label.includes('xG') ? v.toFixed(2) : String(v));
+    return (
+        <div>
+            <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="font-semibold tabular-nums text-white">{fmt(s.home)}</span>
+                <span className="text-gray-400">{s.label}</span>
+                <span className="font-semibold tabular-nums text-white">{fmt(s.away)}</span>
+            </div>
+            <div className="flex h-1.5 overflow-hidden rounded-full bg-gray-800">
+                <div style={{ width: `${homePct}%`, background: HOME }} />
+                <div style={{ width: `${100 - homePct}%`, background: AWAY }} />
+            </div>
+        </div>
+    );
+}
+
+// ---------- prediction ----------
+
+function Prediction({ mc }: { mc: MC }) {
+    const p = mc.prediction!;
+    return (
+        <Card title="Who will win?" icon={<Activity className="h-4 w-4 text-blue-400" />}>
+            <div className="mb-2 flex h-2 overflow-hidden rounded-full bg-gray-800">
+                <div style={{ width: `${p.home}%`, background: HOME }} />
+                <div style={{ width: `${p.draw}%` }} className="bg-gray-600" />
+                <div style={{ width: `${p.away}%`, background: AWAY }} />
+            </div>
+            <div className="flex items-center justify-between text-xs">
+                <div className="text-left"><p className="font-bold text-white">{p.home}%</p><p className="text-gray-500">{mc.home.name}</p></div>
+                <div className="text-center"><p className="font-bold text-white">{p.draw}%</p><p className="text-gray-500">Draw</p></div>
+                <div className="text-right"><p className="font-bold text-white">{p.away}%</p><p className="text-gray-500">{mc.away.name}</p></div>
+            </div>
+            <p className="mt-2 text-center text-[10px] text-gray-600">Implied from market odds</p>
+        </Card>
+    );
+}
+
+// ---------- lineups ----------
+
+function Lineups({ mc }: { mc: MC }) {
+    const l = mc.lineups!;
+    return (
+        <Card title="Lineups" icon={<Users className="h-4 w-4 text-blue-400" />}>
+            <div className="grid grid-cols-2 gap-4">
+                <LineupCol title={mc.home.name} players={l.home} subs={l.homeSubs} />
+                <LineupCol title={mc.away.name} players={l.away} subs={l.awaySubs} align="right" />
+            </div>
+        </Card>
+    );
+}
+
+function LineupCol({ title, players, subs, align = 'left' }: { title: string; players: MCPlayer[]; subs: MCPlayer[]; align?: 'left' | 'right' }) {
+    const right = align === 'right';
+    return (
+        <div>
+            <p className={`mb-2 text-xs font-semibold text-gray-400 ${right ? 'text-right' : ''}`}>{title}</p>
+            <ul className="space-y-1">
+                {players.map((p, i) => (
+                    <li key={i} className={`flex items-center gap-1.5 text-xs text-gray-200 ${right ? 'flex-row-reverse text-right' : ''}`}>
+                        <span className="w-5 shrink-0 tabular-nums text-gray-500">{p.number ?? ''}</span>
+                        <span className="truncate">{p.name}</span>
+                        {p.goals ? <Goal className="h-3 w-3 shrink-0 text-emerald-400" /> : null}
+                        {p.yellow ? <span className="h-2.5 w-2 shrink-0 rounded-[1px] bg-yellow-400" /> : null}
+                        {p.red ? <span className="h-2.5 w-2 shrink-0 rounded-[1px] bg-red-500" /> : null}
+                    </li>
+                ))}
+            </ul>
+            {subs.length > 0 ? (
+                <>
+                    <p className={`mb-1 mt-3 text-[11px] font-semibold uppercase tracking-wide text-gray-600 ${right ? 'text-right' : ''}`}>Subs</p>
+                    <ul className="space-y-1">
+                        {subs.map((p, i) => (
+                            <li key={i} className={`flex items-center gap-1.5 text-[11px] text-gray-500 ${right ? 'flex-row-reverse text-right' : ''}`}>
+                                <span className="w-5 shrink-0 tabular-nums">{p.number ?? ''}</span>
+                                <span className="truncate">{p.name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            ) : null}
+        </div>
+    );
+}
+
+// ---------- game info ----------
+
+function GameInfo({ mc }: { mc: MC }) {
+    const rows: Array<[ReactNode, string, string | null]> = [
+        [<MapPin key="v" className="h-3.5 w-3.5" />, 'Stadium', mc.venue ? `${mc.venue.name}${mc.venue.city ? ` (${mc.venue.city})` : ''}` : null],
+        [<Users key="c" className="h-3.5 w-3.5" />, 'Capacity', mc.venue?.capacity ? mc.venue.capacity.toLocaleString() : null],
+        [<User key="r" className="h-3.5 w-3.5" />, 'Referee', mc.referee],
+        [<Flag key="f" className="h-3.5 w-3.5" />, 'Form', mc.home.form || mc.away.form ? `${mc.home.form ?? '—'}  vs  ${mc.away.form ?? '—'}` : null],
+    ];
+    const visible = rows.filter(([, , v]) => v);
+    if (!visible.length) return null;
+    return (
+        <Card title="Game Info" icon={<Flag className="h-4 w-4 text-blue-400" />}>
+            <dl className="space-y-2 text-xs">
+                {visible.map(([icon, label, value], i) => (
+                    <div key={i} className="flex items-center justify-between gap-3">
+                        <dt className="flex items-center gap-1.5 text-gray-500">{icon}{label}</dt>
+                        <dd className="text-right text-gray-200">{value}</dd>
+                    </div>
+                ))}
+            </dl>
+        </Card>
+    );
+}

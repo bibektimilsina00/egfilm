@@ -7,6 +7,7 @@ import { useMatchDetail } from '@/lib/hooks/useSports';
 import { getMatchKickoff, isMatchLive } from '@/lib/sportsrc';
 import EmbedMatchPlayer from '@/components/EmbedMatchPlayer';
 import PlayerNotice from '@/components/PlayerNotice';
+import MatchCenter from '@/components/matchcenter/MatchCenter';
 import LiveBadge from '@/components/LiveBadge';
 import { Button } from '@egfilm/ui/components/ui/button';
 import { Users, CalendarClock, ArrowLeft } from 'lucide-react';
@@ -112,6 +113,8 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
             </div>
 
             <PlayerNotice />
+
+            <MatchCenter home={home?.name} away={away?.name} date={detail.date} />
         </div>
     );
 }

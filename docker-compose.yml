@@ -71,6 +71,7 @@ services:
       NEXT_PUBLIC_TURN_USERNAME: ${NEXT_PUBLIC_TURN_USERNAME:-}
       TURN_PASSWORD: ${TURN_PASSWORD:-}
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+      BSD_API_TOKEN: ${BSD_API_TOKEN:-}
 
   egtv:
     image: ${EGTV_IMAGE_NAME:-ghcr.io/bibektimilsina00/egtv:latest}
