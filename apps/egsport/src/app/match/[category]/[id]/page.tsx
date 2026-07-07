@@ -7,6 +7,7 @@ import { useMatchDetail } from '@/lib/hooks/useSports';
 import { getMatchKickoff, isMatchLive } from '@/lib/sportsrc';
 import EmbedMatchPlayer from '@/components/EmbedMatchPlayer';
 import PlayerNotice from '@/components/PlayerNotice';
+import CommentSection from '@/components/CommentSection';
 import LiveBadge from '@/components/LiveBadge';
 import { Button } from '@egfilm/ui/components/ui/button';
 import { Users, CalendarClock, ArrowLeft } from 'lucide-react';
@@ -92,13 +93,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
                         </Link>
                     </div>
 
-                    {detail.poster ? (
-                        <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-                            <div className="relative aspect-video bg-gray-950">
-                                <Image src={detail.poster} alt={detail.title} fill className="object-cover" sizes="33vw" unoptimized />
-                            </div>
-                        </div>
-                    ) : null}
+                    <CommentSection matchKey={`${cat}:${detail.id}`} />
 
                     <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 space-y-2">
                         <h3 className="text-sm font-semibold text-white">Match info</h3>
