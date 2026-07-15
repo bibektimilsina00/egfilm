@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, SkipForward, ThumbsDown } from 'lucide-react';
+import { AlertTriangle, SkipForward } from 'lucide-react';
 import { resolveEmbedUrl, type MatchSource } from '@/lib/sportsrc';
 import { useBadSources } from '@/lib/hooks/useBadSources';
 
@@ -10,14 +10,15 @@ import { useBadSources } from '@/lib/hooks/useBadSources';
  *
  * Reliability signals:
  *  - LOAD_GRACE_MS: if the iframe never signals a load within this window, treat
- *    the source as dead and advance.
+ *    the source as dead and advance (auto-report).
  *  - STALL_MS: after the initial load, if we see no postMessage from the iframe
- *    AND no user interaction for this long, show a "stream stuck?" nudge.
+ *    AND no user interaction for this long, show a "stream stuck?" nudge. If
+ *    the viewer clicks the nudge's "Try next", that's a strong signal → report.
+ *  - Manual "Try next" click in the action row just switches; NO report and
+ *    NO local blacklist (viewers churn sources for lots of reasons — bandwidth,
+ *    language pref, curiosity — reporting each click would spam the ranker).
  *  - useBadSources(matchKey): sources demoted for this user (localStorage) or
- *    demoted globally (server rankings) are moved to the back of the strip and
- *    struck through so they're picked last on auto-failover.
- *  - Every auto-fail / user report is recorded server-side so future users are
- *    protected from the same bad source.
+ *    demoted globally (server rankings) sort to the back and render struck-through.
  */
 
 const LOAD_GRACE_MS = 12_000;
@@ -72,25 +73,29 @@ export default function EmbedMatchPlayer({
     const activeSrc = active ? resolveEmbedUrl(active) : '';
     const activeKey = active ? sourceKeyOf(active) : '';
 
-    const advance = useCallback((reason: 'auto-failed' | 'user-report' | 'stall') => {
+    /** Move to next unfailed source. Optionally record this source as bad. */
+    const advance = useCallback((opts: { report: 'auto-failed' | 'stall' | null }) => {
         setFailed((prev) => {
             const next = new Set(prev).add(activeIndex);
             const candidate = orderedSources.findIndex((_, i) => !next.has(i));
             if (candidate !== -1) setActiveIndex(candidate);
             return next;
         });
-        if (active && effectiveMatchKey) {
+        if (opts.report && active && effectiveMatchKey) {
             markBad(activeKey);
-            reportToServer(activeKey, active.provider ?? 'unknown', reason);
+            reportToServer(activeKey, active.provider ?? 'unknown', opts.report);
         }
         setShowStall(false);
     }, [activeIndex, orderedSources, active, activeKey, effectiveMatchKey, markBad, reportToServer]);
+
+    const autoAdvance = useCallback((reason: 'auto-failed' | 'stall') => advance({ report: reason }), [advance]);
+    const manualSwitch = useCallback(() => advance({ report: null }), [advance]);
 
     // Initial-load watchdog.
     useEffect(() => {
         if (!active) return;
         if (loadTimer.current) clearTimeout(loadTimer.current);
-        loadTimer.current = setTimeout(() => advance('auto-failed'), LOAD_GRACE_MS);
+        loadTimer.current = setTimeout(() => autoAdvance('auto-failed'), LOAD_GRACE_MS);
         return () => {
             if (loadTimer.current) clearTimeout(loadTimer.current);
         };
@@ -115,7 +120,7 @@ export default function EmbedMatchPlayer({
             if (stallTimer.current) clearTimeout(stallTimer.current);
             stallTimer.current = setTimeout(() => setShowStall(true), STALL_MS);
         }
-        function onMsg() { ping(); } // any msg = activity
+        function onMsg() { ping(); }
         function onInteract() { ping(); }
 
         window.addEventListener('message', onMsg);
@@ -160,7 +165,7 @@ export default function EmbedMatchPlayer({
                     allowFullScreen
                     referrerPolicy="origin"
                     onLoad={onLoad}
-                    onError={() => advance('auto-failed')}
+                    onError={() => autoAdvance('auto-failed')}
                 />
 
                 {showStall && (
@@ -168,7 +173,7 @@ export default function EmbedMatchPlayer({
                         <AlertTriangle className="h-4 w-4 text-yellow-400" />
                         <span className="text-yellow-100 text-xs">Stream feels stuck?</span>
                         <button
-                            onClick={() => advance('stall')}
+                            onClick={() => autoAdvance('stall')}
                             className="ml-1 text-xs px-3 py-1 rounded-full bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-100 font-medium"
                         >
                             Try next
@@ -183,18 +188,11 @@ export default function EmbedMatchPlayer({
                 )}
             </div>
 
-            {/* Action row — Try next + Report broken up front */}
+            {/* Action row */}
             <div className="flex flex-wrap items-center gap-2">
-                <button
-                    onClick={() => advance('user-report')}
-                    className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md border border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
-                    title="Report this stream as broken and skip to the next"
-                >
-                    <ThumbsDown className="h-3.5 w-3.5" /> Not working
-                </button>
                 {orderedSources.length > 1 && (
                     <button
-                        onClick={() => advance('auto-failed')}
+                        onClick={manualSwitch}
                         className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md border border-blue-500/40 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20"
                         title="Switch to the next source"
                     >
@@ -222,7 +220,7 @@ export default function EmbedMatchPlayer({
                                         ? 'border-gray-800 bg-gray-900 text-gray-600 line-through hover:text-gray-400'
                                         : 'border-gray-800 bg-gray-900 text-gray-300 hover:border-blue-500/40 hover:text-blue-400')
                             }
-                            title={bad ? 'Previously reported as broken' : undefined}
+                            title={bad ? 'Previously flagged as broken' : undefined}
                         >
                             {label(s)}
                         </button>
