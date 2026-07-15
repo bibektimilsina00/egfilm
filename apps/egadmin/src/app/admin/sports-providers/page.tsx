@@ -17,7 +17,7 @@ type Row = {
     lastResponseTime: number | null;
 };
 
-const KINDS = ['sportsrc', 'streamed', 'esportex', 'dlhd'] as const;
+const KINDS = ['sportsrc', 'streamed', 'esportex'] as const;
 
 function statusIcon(s: string | null) {
     if (s === 'healthy') return <CheckCircle size={16} className="text-green-400" />;
@@ -302,21 +302,6 @@ export default function SportsProvidersPage() {
                                     placeholder="Leave blank for kind default"
                                 />
                             </div>
-                            {form.kind === 'dlhd' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        API Key {editingId && <span className="text-xs text-gray-500 font-normal">(leave blank to keep existing)</span>}
-                                    </label>
-                                    <input
-                                        type="password"
-                                        value={form.apiKey}
-                                        onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-                                        placeholder="dlhd API key"
-                                        autoComplete="new-password"
-                                    />
-                                </div>
-                            )}
                             <label className="flex items-center gap-3">
                                 <input
                                     type="checkbox"

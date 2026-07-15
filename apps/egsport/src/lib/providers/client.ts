@@ -3,7 +3,6 @@ import { SportsProvider } from './base';
 import { SportsrcProvider } from './sportsrc-provider';
 import { StreamedProvider } from './streamed-provider';
 import { EsportexProvider } from './esportex-provider';
-import { DlhdProvider } from './dlhd-provider';
 
 /**
  * Multi-provider client with cross-provider list merge.
@@ -58,9 +57,6 @@ function build(row: ProviderConfigRow): SportsProvider | null {
                 return new StreamedProvider(row.baseUrl, row.name);
             case 'esportex':
                 return new EsportexProvider(row.baseUrl ?? undefined, row.name);
-            case 'dlhd':
-                if (!row.apiKey) return null;
-                return new DlhdProvider({ baseURL: row.baseUrl ?? undefined, apiKey: row.apiKey, name: row.name });
             default:
                 console.warn(`[sports] unknown provider kind "${row.kind}"`);
                 return null;

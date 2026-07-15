@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/admin-auth';
 import { prisma } from '@egfilm/db';
 
-const VALID_KINDS = new Set(['sportsrc', 'streamed', 'esportex', 'dlhd']);
+const VALID_KINDS = new Set(['sportsrc', 'streamed', 'esportex']);
 
 // GET /api/admin/sports-providers — list all configs
 export async function GET() {

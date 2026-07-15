@@ -16,16 +16,14 @@ const DEFAULTS: Record<string, string> = {
     sportsrc: 'https://api.sportsrc.org',
     streamed: 'https://streamed.pk',
     esportex: 'https://api.esportex.site',
-    dlhd: 'https://dlhd.st',
 };
 
-function pingUrl(kind: string, baseUrl: string, apiKey: string | null): string {
+function pingUrl(kind: string, baseUrl: string): string {
     const b = baseUrl.replace(/\/$/, '');
     switch (kind) {
         case 'sportsrc': return `${b}/?data=sports`;
         case 'streamed': return `${b}/api/sports`;
         case 'esportex': return `${b}/api/streams?cache=${Date.now()}`;
-        case 'dlhd': return apiKey ? `${b}/daddyapi.php?key=${encodeURIComponent(apiKey)}&endpoint=info` : `${b}/`;
         default: return `${b}/`;
     }
 }
@@ -59,7 +57,7 @@ export async function POST(
         const base = p.baseUrl ?? DEFAULTS[p.kind];
         if (!base) return NextResponse.json({ error: 'No baseUrl configured' }, { status: 400 });
 
-        const url = pingUrl(p.kind, base, p.apiKey);
+        const url = pingUrl(p.kind, base);
         const r = await timedFetch(url, 8_000);
 
         let status: 'healthy' | 'degraded' | 'offline';
