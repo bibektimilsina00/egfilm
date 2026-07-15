@@ -8,24 +8,35 @@ import { useBadSources } from '@/lib/hooks/useBadSources';
 /**
  * Multi-source player with automatic + user-driven failover.
  *
- * Reliability signals:
- *  - LOAD_GRACE_MS: if the iframe never signals a load within this window, treat
- *    the source as dead and advance (auto-report).
- *  - STALL_MS: after the initial load, if we see no postMessage from the iframe
- *    AND no user interaction for this long, show a "stream stuck?" nudge. If
- *    the viewer clicks the nudge's "Try next", that's a strong signal → report.
- *  - Manual "Try next" click in the action row just switches; NO report and
- *    NO local blacklist (viewers churn sources for lots of reasons — bandwidth,
- *    language pref, curiosity — reporting each click would spam the ranker).
- *  - useBadSources(matchKey): sources demoted for this user (localStorage) or
- *    demoted globally (server rankings) sort to the back and render struck-through.
+ * Reliability signals (invisible to viewers — no strikethrough, no shame chips):
+ *  - LOAD_GRACE_MS: iframe never signals a load → auto-advance + report.
+ *  - STALL_MS: no postMessage from iframe + no user interaction → show a "stuck?"
+ *    nudge. Viewer's click on the nudge's Try next → report + blacklist.
+ *  - useBadSources reorders sources under the hood so bad ones are picked last
+ *    on auto-failover, but the UI shows every source the same.
+ *
+ * Layout:
+ *  - Language filter tabs so a viewer of a French match doesn't have to
+ *    scroll past 20 English chips.
+ *  - Within a language, HD sources are pulled to the front.
+ *  - Provider tag is a small dimmed pill on each chip.
  */
 
 const LOAD_GRACE_MS = 12_000;
 const STALL_MS = 60_000;
+const LANG_ALL = '__all__';
 
 function sourceKeyOf(s: MatchSource): string {
     return `${s.provider ?? ''}|${s.source ?? ''}|${s.id}|${s.streamNo}`;
+}
+
+function langOf(s: MatchSource): string {
+    return (s.language || 'Other').trim();
+}
+
+/** Order within a language group: HD first, then original order. */
+function orderInGroup(list: MatchSource[]): MatchSource[] {
+    return [...list].sort((a, b) => Number(!!b.hd) - Number(!!a.hd));
 }
 
 export default function EmbedMatchPlayer({
@@ -43,18 +54,25 @@ export default function EmbedMatchPlayer({
     const effectiveMatchKey = matchKey ?? '';
     const { isBad, markBad, reportToServer } = useBadSources(effectiveMatchKey);
 
-    // Reorder sources: not-bad first (in original order), bad after. Do this in
-    // a memo so state that indexes into the array stays valid across renders.
-    const orderedSources = useMemo(() => {
+    // Global order: good sources first, bad-ranked sources tail. Bad ones are
+    // silently deprioritized — never rendered differently.
+    const globallyOrdered = useMemo(() => {
         if (!sources?.length) return [];
         const good: MatchSource[] = [];
         const bad: MatchSource[] = [];
-        for (const s of sources) {
-            (isBad(sourceKeyOf(s)) ? bad : good).push(s);
-        }
+        for (const s of sources) (isBad(sourceKeyOf(s)) ? bad : good).push(s);
         return [...good, ...bad];
     }, [sources, isBad]);
 
+    // Distinct language tabs, ordered by descending count so the most common
+    // language for this match shows first.
+    const languages = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const s of globallyOrdered) counts.set(langOf(s), (counts.get(langOf(s)) ?? 0) + 1);
+        return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([lang, count]) => ({ lang, count }));
+    }, [globallyOrdered]);
+
+    const [lang, setLang] = useState<string>(LANG_ALL);
     const [activeIndex, setActiveIndex] = useState(initialIndex);
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [showStall, setShowStall] = useState(false);
@@ -62,22 +80,25 @@ export default function EmbedMatchPlayer({
     const stallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastActivity = useRef<number>(Date.now());
 
-    // Clamp activeIndex when the source list re-orders (e.g. rankings arrive
-    // after mount). Only reset to 0 if the currently-active index no longer
-    // points at a source; otherwise leave the viewer where they were.
-    useEffect(() => {
-        if (activeIndex >= orderedSources.length) setActiveIndex(0);
-    }, [orderedSources.length, activeIndex]);
+    // Visible sources under the current language filter. HD first within.
+    const visible = useMemo(() => {
+        const filtered = lang === LANG_ALL ? globallyOrdered : globallyOrdered.filter((s) => langOf(s) === lang);
+        return orderInGroup(filtered);
+    }, [globallyOrdered, lang]);
 
-    const active = orderedSources[activeIndex] ?? null;
+    // Clamp activeIndex when the visible list changes (language filter, ranker).
+    useEffect(() => {
+        if (activeIndex >= visible.length) setActiveIndex(0);
+    }, [visible.length, activeIndex]);
+
+    const active = visible[activeIndex] ?? null;
     const activeSrc = active ? resolveEmbedUrl(active) : '';
     const activeKey = active ? sourceKeyOf(active) : '';
 
-    /** Move to next unfailed source. Optionally record this source as bad. */
     const advance = useCallback((opts: { report: 'auto-failed' | 'stall' | null }) => {
         setFailed((prev) => {
             const next = new Set(prev).add(activeIndex);
-            const candidate = orderedSources.findIndex((_, i) => !next.has(i));
+            const candidate = visible.findIndex((_, i) => !next.has(i));
             if (candidate !== -1) setActiveIndex(candidate);
             return next;
         });
@@ -86,7 +107,7 @@ export default function EmbedMatchPlayer({
             reportToServer(activeKey, active.provider ?? 'unknown', opts.report);
         }
         setShowStall(false);
-    }, [activeIndex, orderedSources, active, activeKey, effectiveMatchKey, markBad, reportToServer]);
+    }, [activeIndex, visible, active, activeKey, effectiveMatchKey, markBad, reportToServer]);
 
     const autoAdvance = useCallback((reason: 'auto-failed' | 'stall') => advance({ report: reason }), [advance]);
     const manualSwitch = useCallback(() => advance({ report: null }), [advance]);
@@ -102,10 +123,7 @@ export default function EmbedMatchPlayer({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeSrc]);
 
-    // Stall watchdog + postMessage listener. Any message from the iframe or
-    // any pointer/keyboard activity resets the timer. When it fires we don't
-    // auto-advance (a temporary buffer isn't a broken stream) — we just show
-    // the "stuck?" nudge so the viewer decides.
+    // Stall watchdog + postMessage listener.
     useEffect(() => {
         if (!active) return;
         setShowStall(false);
@@ -150,11 +168,8 @@ export default function EmbedMatchPlayer({
         );
     }
 
-    const label = (s: MatchSource) =>
-        `#${s.streamNo} · ${s.language}${s.hd ? ' · HD' : ''}${s.provider ? ` · ${s.provider}` : ''}`;
-
     return (
-        <div className="space-y-2">
+        <div className="space-y-3">
             <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-800">
                 <iframe
                     key={activeSrc}
@@ -188,44 +203,73 @@ export default function EmbedMatchPlayer({
                 )}
             </div>
 
-            {/* Action row */}
+            {/* Header — Try next + counter */}
             <div className="flex flex-wrap items-center gap-2">
-                {orderedSources.length > 1 && (
+                {visible.length > 1 && (
                     <button
                         onClick={manualSwitch}
                         className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-md border border-blue-500/40 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20"
-                        title="Switch to the next source"
                     >
                         <SkipForward className="h-3.5 w-3.5" /> Try next
                     </button>
                 )}
                 <span className="ml-auto text-xs text-gray-500">
-                    Source {activeIndex + 1} of {orderedSources.length}
+                    Source {activeIndex + 1} of {visible.length}
+                    {lang !== LANG_ALL && <span className="text-gray-600"> · {lang}</span>}
                 </span>
             </div>
 
+            {/* Language filter tabs */}
+            {languages.length > 1 && (
+                <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-800 pb-2">
+                    <button
+                        onClick={() => setLang(LANG_ALL)}
+                        className={`text-xs px-3 py-1 rounded-full transition-colors ${lang === LANG_ALL
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                            : 'bg-gray-900 text-gray-400 border border-gray-800 hover:text-gray-200'
+                            }`}
+                    >
+                        All <span className="text-gray-500 ml-1">{globallyOrdered.length}</span>
+                    </button>
+                    {languages.map(({ lang: L, count }) => (
+                        <button
+                            key={L}
+                            onClick={() => setLang(L)}
+                            className={`text-xs px-3 py-1 rounded-full transition-colors ${lang === L
+                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                                : 'bg-gray-900 text-gray-400 border border-gray-800 hover:text-gray-200'
+                                }`}
+                        >
+                            {L} <span className="text-gray-500 ml-1">{count}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Source chips */}
             <div className="flex flex-wrap items-center gap-2">
-                {orderedSources.map((s, i) => {
-                    const bad = isBad(sourceKeyOf(s));
-                    return (
-                        <button
-                            key={`${s.provider ?? ''}-${s.id}-${s.streamNo}`}
-                            onClick={() => setActiveIndex(i)}
-                            className={
-                                'text-xs px-3 py-1.5 rounded-md border transition-colors ' +
-                                (i === activeIndex
-                                    ? 'border-blue-500 bg-blue-500/10 text-blue-300'
-                                    : failed.has(i) || bad
-                                        ? 'border-gray-800 bg-gray-900 text-gray-600 line-through hover:text-gray-400'
-                                        : 'border-gray-800 bg-gray-900 text-gray-300 hover:border-blue-500/40 hover:text-blue-400')
-                            }
-                            title={bad ? 'Previously flagged as broken' : undefined}
-                        >
-                            {label(s)}
-                        </button>
-                    );
-                })}
+                {visible.map((s, i) => (
+                    <button
+                        key={sourceKeyOf(s)}
+                        onClick={() => setActiveIndex(i)}
+                        className={
+                            'text-xs px-3 py-1.5 rounded-md border transition-colors flex items-center gap-2 ' +
+                            (i === activeIndex
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-300'
+                                : failed.has(i)
+                                    ? 'border-gray-800 bg-gray-900 text-gray-500 hover:text-gray-300'
+                                    : 'border-gray-800 bg-gray-900 text-gray-300 hover:border-blue-500/40 hover:text-blue-400')
+                        }
+                    >
+                        <span>{s.source ?? `#${s.streamNo}`}</span>
+                        {s.hd && (
+                            <span className="text-[10px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 leading-none">HD</span>
+                        )}
+                        {s.provider && (
+                            <span className="text-[10px] text-gray-500">· {s.provider}</span>
+                        )}
+                    </button>
+                ))}
             </div>
         </div>
     );

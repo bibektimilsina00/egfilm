@@ -5,22 +5,17 @@ import { prisma } from '@egfilm/db';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/admin/sports-analytics?window=24h|7d|30d
- *
- * Aggregates SportsSourceReport rows into three views:
- *   - bySource:  which sources fail the most (all reasons combined)
- *   - byProvider: which upstream provider is failing most
- *   - byMatch:   which matches suffered the most reports
- *   - byCountry: geographic spread (helps spot geo-blocks)
- */
-
 const WINDOWS: Record<string, number> = {
     '24h': 24 * 60 * 60 * 1000,
     '7d': 7 * 24 * 60 * 60 * 1000,
     '30d': 30 * 24 * 60 * 60 * 1000,
 };
 
+/**
+ * GET  /api/admin/sports-analytics?window=24h|7d|30d — aggregated stats.
+ * DELETE /api/admin/sports-analytics                — reset ALL reports.
+ * DELETE /api/admin/sports-analytics?olderThan=30d  — prune reports older than window.
+ */
 export async function GET(request: NextRequest) {
     const { error } = await requireAdminAuth();
     if (error) return error;
@@ -72,6 +67,33 @@ export async function GET(request: NextRequest) {
         });
     } catch (e) {
         console.error('sports-analytics failed', e);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
+/**
+ * Reset flags. With no query param, wipes the whole table (use when you want a
+ * clean slate after fixing a broken upstream). With ?olderThan=30d it only
+ * prunes old reports — safe periodic maintenance.
+ */
+export async function DELETE(request: NextRequest) {
+    const { error } = await requireAdminAuth();
+    if (error) return error;
+
+    try {
+        const { searchParams } = new URL(request.url);
+        const olderThan = searchParams.get('olderThan');
+        if (olderThan) {
+            const ms = WINDOWS[olderThan];
+            if (!ms) return NextResponse.json({ error: `olderThan must be one of: ${Object.keys(WINDOWS).join(', ')}` }, { status: 400 });
+            const cutoff = new Date(Date.now() - ms);
+            const result = await prisma.sportsSourceReport.deleteMany({ where: { createdAt: { lt: cutoff } } });
+            return NextResponse.json({ deleted: result.count, mode: 'prune', olderThan });
+        }
+        const result = await prisma.sportsSourceReport.deleteMany({});
+        return NextResponse.json({ deleted: result.count, mode: 'reset-all' });
+    } catch (e) {
+        console.error('sports-analytics DELETE failed', e);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

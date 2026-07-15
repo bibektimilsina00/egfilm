@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart3, Loader2, Globe, AlertTriangle } from 'lucide-react';
+import { BarChart3, Loader2, Globe, AlertTriangle, RotateCcw } from 'lucide-react';
 
 type Data = {
     window: string;
@@ -47,14 +47,36 @@ export default function SportsAnalyticsPage() {
     const [window, setWindow] = useState('7d');
     const [data, setData] = useState<Data | null>(null);
     const [loading, setLoading] = useState(true);
+    const [resetting, setResetting] = useState(false);
 
-    useEffect(() => {
+    function load() {
         setLoading(true);
         fetch(`/api/admin/sports-analytics?window=${window}`)
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => setData(d))
             .finally(() => setLoading(false));
-    }, [window]);
+    }
+
+    useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [window]);
+
+    async function reset(mode: 'all' | 'prune') {
+        const url = mode === 'prune'
+            ? '/api/admin/sports-analytics?olderThan=30d'
+            : '/api/admin/sports-analytics';
+        const label = mode === 'prune'
+            ? 'Delete reports older than 30 days?'
+            : 'Wipe ALL reliability reports? Every source becomes unflagged again.';
+        if (!confirm(label)) return;
+        setResetting(true);
+        try {
+            const r = await fetch(url, { method: 'DELETE' });
+            const d = await r.json().catch(() => ({}));
+            alert(`Removed ${d.deleted ?? 0} report(s).`);
+            load();
+        } finally {
+            setResetting(false);
+        }
+    }
 
     const maxSource = Math.max(1, ...(data?.bySource ?? []).map((x) => x.count));
     const maxProvider = Math.max(1, ...(data?.byProvider ?? []).map((x) => x.count));
@@ -72,16 +94,35 @@ export default function SportsAnalyticsPage() {
                         Reports of broken streams from viewers. Higher = worse.
                     </p>
                 </div>
-                <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-lg p-1">
-                    {WINDOWS.map((w) => (
-                        <button
-                            key={w.key}
-                            onClick={() => setWindow(w.key)}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${window === w.key ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            {w.label}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex gap-2 bg-gray-900 border border-gray-800 rounded-lg p-1">
+                        {WINDOWS.map((w) => (
+                            <button
+                                key={w.key}
+                                onClick={() => setWindow(w.key)}
+                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${window === w.key ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                {w.label}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => reset('prune')}
+                        disabled={resetting}
+                        className="text-sm px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-50"
+                        title="Delete reports older than 30 days"
+                    >
+                        Prune 30d+
+                    </button>
+                    <button
+                        onClick={() => reset('all')}
+                        disabled={resetting}
+                        className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 disabled:opacity-50"
+                        title="Wipe all reports — every source becomes unflagged"
+                    >
+                        <RotateCcw size={14} />
+                        Reset all flags
+                    </button>
                 </div>
             </div>
 
