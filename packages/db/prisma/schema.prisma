@@ -314,6 +314,25 @@ model SportsProviderConfig {
   @@index([isEnabled, sortOrder])
 }
 
+// ---------- EGSport source reliability signals ----------
+// One row per "this source didn't work" event. Aggregated by client + admin to
+// re-rank sources so a stream that fails often gets pushed to the back for
+// everyone. Country is best-effort from request headers, no PII beyond that.
+
+model SportsSourceReport {
+  id           String   @id @default(cuid())
+  matchKey     String // "<category>:<matchId>" — same shape as MatchComment.matchKey
+  sourceKey    String // "<providerName>|<sourceId>|<streamNo>" — stable across page loads
+  providerName String
+  reason       String // 'auto-failed' | 'user-report' | 'stall'
+  country      String? // ISO-3166 two-letter, from CF-IPCountry / x-vercel-ip-country
+  createdAt    DateTime @default(now())
+
+  @@index([matchKey, createdAt])
+  @@index([sourceKey])
+  @@index([createdAt])
+}
+
 // ============================================
 // BLOG MODELS (Used by Admin App)
 // ============================================

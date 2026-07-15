@@ -54,6 +54,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ category
                     <EmbedMatchPlayer
                         sources={detail.sources ?? []}
                         title={detail.title}
+                        matchKey={`${cat}:${detail.id}`}
                     />
 
                     <div className="flex items-center justify-between gap-3">
