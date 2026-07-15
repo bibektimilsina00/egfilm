@@ -289,6 +289,31 @@ model VideoProvider {
   @@index([isDefault])
 }
 
+// ---------- EGSport upstream provider configs ----------
+// Each row is one upstream provider instance. `kind` selects the code-side
+// adapter (sportsrc, streamed, esportex, dlhd). baseUrl overrides the adapter's
+// default host; apiKey is only used by adapters that require it (dlhd).
+
+model SportsProviderConfig {
+  id        String  @id @default(cuid())
+  kind      String  // 'sportsrc' | 'streamed' | 'esportex' | 'dlhd'
+  name      String  @unique // Display name / logical id ("sportsrc", "streamed.pk", ...)
+  baseUrl   String? // Optional host override; adapter uses its default when null
+  apiKey    String? // For key-protected upstreams (dlhd). Never send to client.
+  isEnabled Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  // Health monitoring
+  lastChecked      DateTime?
+  lastResponseTime Int?
+  lastStatus       String? // 'healthy' | 'degraded' | 'offline'
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isEnabled, sortOrder])
+}
+
 // ============================================
 // BLOG MODELS (Used by Admin App)
 // ============================================

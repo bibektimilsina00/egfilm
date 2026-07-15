@@ -14,6 +14,7 @@ import {
     Bell,
     LogOut,
     BookOpen,
+    Radio,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -21,6 +22,7 @@ const adminLinks = [
     { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
     { href: '/admin/users', icon: Users, label: 'Users' },
     { href: '/admin/content', icon: Tv, label: 'Content' },
+    { href: '/admin/sports-providers', icon: Radio, label: 'Sports Providers' },
     { href: '/admin/blog', icon: BookOpen, label: 'Blog' },
     { href: '/admin/comments', icon: MessageSquare, label: 'Comments' },
     { href: '/admin/rooms', icon: Users2, label: 'Watch Rooms' },
