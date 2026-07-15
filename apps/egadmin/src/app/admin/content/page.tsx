@@ -476,6 +476,24 @@ export default function ContentPage() {
                             <div className="flex items-center justify-center h-64">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                             </div>
+                        ) : orderedSources.length === 0 ? (
+                            <div className="text-center py-16 bg-gray-900 border border-gray-800 rounded-lg">
+                                <p className="text-gray-300 font-medium mb-2">No providers configured</p>
+                                <p className="text-gray-500 text-sm mb-6">
+                                    Seed defaults from the shell:{' '}
+                                    <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded">
+                                        pnpm --filter @egfilm/db seed
+                                    </code>
+                                    {' '}or click Add Provider above.
+                                </p>
+                                <button
+                                    onClick={() => setShowAddModal(true)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                                >
+                                    <Plus size={18} />
+                                    Add Provider
+                                </button>
+                            </div>
                         ) : (
                             orderedSources.map((source, index) => (
                                 <SortableSourceCard

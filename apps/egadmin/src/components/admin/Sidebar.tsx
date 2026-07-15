@@ -22,6 +22,7 @@ const adminLinks = [
     { href: '/admin/users', icon: Users, label: 'Users' },
     { href: '/admin/content', icon: Tv, label: 'Content' },
     { href: '/admin/blog', icon: BookOpen, label: 'Blog' },
+    { href: '/admin/comments', icon: MessageSquare, label: 'Comments' },
     { href: '/admin/rooms', icon: Users2, label: 'Watch Rooms' },
     { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
     { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
