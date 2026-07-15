@@ -1,10 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ShieldAlert, SkipForward, ThumbsDown } from 'lucide-react';
+import { AlertTriangle, SkipForward, ThumbsDown } from 'lucide-react';
 import { resolveEmbedUrl, type MatchSource } from '@/lib/sportsrc';
 import { useBadSources } from '@/lib/hooks/useBadSources';
-import { useAdblockDetect } from '@/lib/hooks/useAdblockDetect';
 
 /**
  * Multi-source player with automatic + user-driven failover.
@@ -42,7 +41,6 @@ export default function EmbedMatchPlayer({
 }) {
     const effectiveMatchKey = matchKey ?? '';
     const { isBad, markBad, reportToServer } = useBadSources(effectiveMatchKey);
-    const adblockOn = useAdblockDetect();
 
     // Reorder sources: not-bad first (in original order), bad after. Do this in
     // a memo so state that indexes into the array stays valid across renders.
@@ -59,7 +57,6 @@ export default function EmbedMatchPlayer({
     const [activeIndex, setActiveIndex] = useState(initialIndex);
     const [failed, setFailed] = useState<Set<number>>(new Set());
     const [showStall, setShowStall] = useState(false);
-    const [adblockDismissed, setAdblockDismissed] = useState(false);
     const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const stallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastActivity = useRef<number>(Date.now());
@@ -153,24 +150,6 @@ export default function EmbedMatchPlayer({
 
     return (
         <div className="space-y-2">
-            {adblockOn && !adblockDismissed && (
-                <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-200">
-                    <ShieldAlert className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                        <div className="font-semibold">Ad-blocker detected</div>
-                        <div className="text-yellow-300/80 text-xs mt-0.5">
-                            Many sports streams need ads to load. If your stream is stuck, try disabling your ad-blocker for this page.
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setAdblockDismissed(true)}
-                        className="text-xs text-yellow-300 hover:text-yellow-100"
-                    >
-                        Dismiss
-                    </button>
-                </div>
-            )}
-
             <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-800">
                 <iframe
                     key={activeSrc}
